@@ -1,0 +1,12 @@
+## Interface: 80200
+## Title: Mama
+## Notes: Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba) (|cFF99E5FF/mama|r)
+## Author: MooreaTV moorea@ymail.com
+## Version: @project-version@
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariables: MamaSaved
+## Globe: check-classic
+MoLib/MoLib.lua
+MoLib/MoLibUI.lua
+Mama.lua
