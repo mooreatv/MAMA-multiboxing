@@ -1,4 +1,5 @@
 # Mama
+<img src="https://raw.githubusercontent.com/mooreatv/Mama/master/Mama_icon.png" height=64 width=64 align=right>
 
 ## About MAMA
 
