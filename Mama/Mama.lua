@@ -58,7 +58,6 @@ function MM:SetupMenu()
   end)
   MM:MakeMoveable(b, MM.SavePositionCB)
   MM.mmb = b
-  MM.mmb.icon = icon
 end
 
 function MM.SavePositionCB(_f, pos, _scale)
