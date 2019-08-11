@@ -23,6 +23,7 @@ local L = MM.L
 
 -- MM.debug = 9 -- to debug before saved variables are loaded
 
+local DB = _G.DynBoxer
 
 -- TODO: move most of this to MoLib
 
@@ -30,22 +31,22 @@ function MM:SetupMenu()
   MM:WipeFrame(MM.mmb)
   MM.minimapButtonAngle = 137 -- not overlap with PPA/default angle
   local b = MM:minimapButton(MM.buttonPos)
-  local _nw, _nh, s, w, h = MM:PixelPerfectSnap(b)
-  self:Debug("new w % h %", w, h)
   local t = b:CreateTexture(nil, "ARTWORK")
-	t:SetSize(19, 19)
+  t:SetSize(19, 19)
   t:SetTexture("Interface/Addons/Mama/mama.blp")
-	t:SetPoint("TOPLEFT", 7, -6)
+  t:SetPoint("TOPLEFT", 7, -6)
   b:SetScript("OnClick", function(_w, button, _down)
     if button == "RightButton" then
       MM.Slash("config")
+    elseif button == "MiddleButton" then
+      DB.Slash("party disband")
     else
-      MM:PrintDefault("Mama TODO: do something when clicked...")
+      DB.Slash("party")
     end
   end)
   b.tooltipText = "|cFFF2D80CMama|r:\n" ..
-                    L["|cFF99E5FFLeft|r click to TODO\n" .. "|cFF99E5FFRight|r click for options\n\n" ..
-                      "Drag to move this button."]
+                    L["|cFF99E5FFLeft|r click to invite your team\n" .. "|cFF99E5FFMiddle|r click to disband\n" ..
+                      "|cFF99E5FFRight|r click for options\n\n" .. "Drag to move this button."]
   b:SetScript("OnEnter", function()
     MM:ShowToolTip(b, "ANCHOR_LEFT")
     MM.inButton = true
@@ -94,8 +95,7 @@ MM.EventHdlrs = {
     if MM.manifestVersion == "@" .. "project-version" .. "@" then
       MM.manifestVersion = "vX.YY.ZZ"
     end
-    MM:PrintDefault("Mama " .. MM.manifestVersion ..
-                            " by MooreaTv: type /mama for command list/help.")
+    MM:PrintDefault("Mama " .. MM.manifestVersion .. " by MooreaTv: type /mama for command list/help.")
     if MamaSaved == nil then
       MM:Debug("Initialized empty saved vars")
       MamaSaved = {}
@@ -104,6 +104,7 @@ MM.EventHdlrs = {
     MamaSaved.addonHash = "@project-abbreviated-hash@"
     MM:deepmerge(MM, nil, MamaSaved)
     MM:Debug(3, "Merged in saved variables.")
+    DB.name = "Mama" -- only allowed because they are both my addons
   end
 }
 
@@ -117,10 +118,9 @@ function MM:OnEvent(event, first, ...)
 end
 
 function MM:Help(msg)
-  MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config\n" ..
-                          "/mama bug -- report a bug\n" ..
-                          "/mama debug on/off/level -- for debugging on at level or off.\n" ..
-                          "/mama version -- shows addon version")
+  MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config\n" .. "/mama bug -- report a bug\n" ..
+                    "/mama debug on/off/level -- for debugging on at level or off.\n" ..
+                    "/mama version -- shows addon version")
 end
 
 -- returns 1 if changed, 0 if same as live value
@@ -158,7 +158,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
   elseif cmd == "v" then
     -- version
     MM:PrintDefault("PixelPerfectAlign " .. MM.manifestVersion ..
-                            " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
+                      " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -215,16 +215,15 @@ function MM:CreateOptionsPanel()
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
 
-  p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4,
-                                                                                                                    20)
+  p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4, 20)
 
   p:addButton(L["Reset minimap button"], L["Resets the minimap button to back to initial default location"], function()
     MM:SetSaved("buttonPos", nil)
     MM:SetupMenu()
   end):Place(4, 20)
 
-  local debugLevel = p:addSlider(L["Debug level"], L["Sets the debug level"] .. "\n|cFF99E5FF/mama debug X|r", 0,
-                                 9, 1, "Off"):Place(16, 30)
+  local debugLevel = p:addSlider(L["Debug level"], L["Sets the debug level"] .. "\n|cFF99E5FF/mama debug X|r", 0, 9, 1,
+                                 "Off"):Place(16, 30)
 
   function p:refresh()
     MM:Debug("Options Panel refresh!")
