@@ -1,18 +1,46 @@
 # Mama
 
-Things to do for new addon:
+## About MAMA
 
-- Create github repo (named Mama CamelCase) and short description
-- use newaddon.sh Mama to copy initial files
-- Create curseforge addon and setup source link and webhook for build from github using project id
-    - needs a sshot or logo https://spark.adobe.com/
-- Create wowinterface addon upload zip created by curseforge
-- update ~/installaddons.bat and ../MoLib/installmolib.bat
+MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design goals:
 
-- Variables are: (must not have substring of one another as it's brute force search and replaced)
-  - Mama eg "PixelPerfectAlign"
-  - MM eg "PPA"
-  - Mama eg "Pixel Perfect Align"
-  - MAMA eg "PIXELPERFECTALIGN"
-  - mama eg "ppa"
-  - Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba) eg "Pixel Perfect Align Grid and Measuring tape"
+- Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
+
+- High quality code
+
+- Minimal dependencies
+
+- Low footprint (both memory and cpu and addon chatter)
+
+- Works with a single code base on both Wow Classic and regular (BfA as of this writing)
+
+MAMA stands for MooreaTv's/minimal yet Awesome Multiboxing Assistant in reverence to grandfather of all (good) multi-boxing addons: Jamba
+
+
+## What does it do ?
+
+Mama ensures your multiboxing or dual boxing team can:
+
+- Invite your team including automatically convert to raid as needed (for more than 5 characters)
+
+- Fly to the same place
+
+- Accept/be on the same quests
+
+And some convenience like
+
+- Auto vendor/repair
+
+- And more features per your request(s) !
+
+Mama works well in conjuction with ISBoxer and DynamicBoxer but also with other multiboxing software or hardware
+
+## More info
+
+Get the binary release using curse/twitch client or on wowinterface
+https://www.curseforge.com/wow/addons/mama-multiboxing
+
+The source of the addon resides on https://github.com/mooreatv/Mama
+(and the MoLib library at https://github.com/mooreatv/MoLib)
+
+Releases detail/changes are on https://github.com/mooreatv/Mama/releases
