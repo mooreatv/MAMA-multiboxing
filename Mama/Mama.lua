@@ -28,6 +28,7 @@ local L = MM.L
 
 function MM:SetupMenu()
   MM:WipeFrame(MM.mmb)
+  MM.minimapButtonAngle = 137 -- not overlap with PPA/default angle
   local b = MM:minimapButton(MM.buttonPos)
   local _nw, _nh, s, w, h = MM:PixelPerfectSnap(b)
   self:Debug("new w % h %", w, h)
