@@ -31,17 +31,10 @@ function MM:SetupMenu()
   local b = MM:minimapButton(MM.buttonPos)
   local _nw, _nh, s, w, h = MM:PixelPerfectSnap(b)
   self:Debug("new w % h %", w, h)
-  local icon = CreateFrame("Frame", nil, b)
-  -- set scale to be pixels
-  icon:SetScale(s / icon:GetEffectiveScale())
-  MM:Debug("Scale is now % es % ppf es %", icon:GetScale(), icon:GetEffectiveScale(), s)
-  local delta = math.floor((w - 32) / 2)
-  icon:SetPoint("BOTTOMLEFT", delta, delta)
-  icon:SetFlattensRenderLayers(true)
-  icon:SetSize(48, 48)
-  icon:SetIgnoreParentAlpha(true)
-  -- based on 32x32
-  -- TODO draw something or load texture
+  local t = b:CreateTexture(nil, "ARTWORK")
+	t:SetSize(19, 19)
+  t:SetTexture("Interface/Addons/Mama/mama.blp")
+	t:SetPoint("TOPLEFT", 7, -6)
   b:SetScript("OnClick", function(_w, button, _down)
     if button == "RightButton" then
       MM.Slash("config")
