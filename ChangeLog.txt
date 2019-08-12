@@ -4,6 +4,8 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.02.00 Aug 12th 2019
+- (wip) Auction House scan
 v0.01.00 Aug 11th 2019
 - requires DynamicBoxer v2.05.00
 - initial version, created from MooreaTv/WowAddonTemplate

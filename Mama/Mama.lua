@@ -102,6 +102,7 @@ MM.EventHdlrs = {
     MamaSaved.addonVersion = MM.manifestVersion
     MamaSaved.addonHash = "@project-abbreviated-hash@"
     MM:deepmerge(MM, nil, MamaSaved)
+    MM.savedVar = MamaSaved -- reference not copy, changes to one change the other
     MM:Debug(3, "Merged in saved variables.")
     DB.name = "Mama" -- only allowed because they are both my addons
   end

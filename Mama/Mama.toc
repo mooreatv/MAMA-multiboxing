@@ -9,5 +9,6 @@
 ## Dependencies: DynamicBoxer
 ## Globe: check-classic
 MoLib/MoLib.lua
+MoLib/MoLibAH.lua
 MoLib/MoLibUI.lua
 Mama.lua
