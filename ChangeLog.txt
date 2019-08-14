@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.02.01 Aug 14th 2019
+- Some code is now shared in MoLib
+- Sync the /mama debug with /dbox's
+- Fixed typo/leftover ppa text from template
 v0.02.00 Aug 12th 2019
 - (wip) Auction House scan
 v0.01.00 Aug 11th 2019

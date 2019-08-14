@@ -108,34 +108,10 @@ MM.EventHdlrs = {
   end
 }
 
-function MM:OnEvent(event, first, ...)
-  MM:Debug(8, "OnEvent called for % e=% %", self:GetName(), event, first)
-  local handler = MM.EventHdlrs[event]
-  if handler then
-    return handler(self, event, first, ...)
-  end
-  MM:Error("Unexpected event without handler %", event)
-end
-
 function MM:Help(msg)
-  MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config\n" .. "/mama bug -- report a bug\n" ..
+  MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
-                    "/mama version -- shows addon version")
-end
-
--- returns 1 if changed, 0 if same as live value
--- number instead of boolean so we can add them in handleOk
--- (saved var isn't checked/always set)
-function MM:SetSaved(name, value)
-  local changed = (value ~= self[name])
-  self[name] = value
-  MamaSaved[name] = value
-  MM:Debug(8, "(Saved) Setting % set to % - MamaSaved=%", name, value, MamaSaved)
-  if changed then
-    return 1
-  else
-    return 0
-  end
+                    "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
 function MM.Slash(arg) -- can't be a : because used directly as slash command
@@ -157,8 +133,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:BugReport(subText, "@project-abbreviated-hash@\n\n" .. L["Bug report from slash command"])
   elseif cmd == "v" then
     -- version
-    MM:PrintDefault("PixelPerfectAlign " .. MM.manifestVersion ..
-                      " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
+    MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -168,12 +143,16 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     -- debug
     if rest == "on" then
       MM:SetSaved("debug", 1)
+      DB:SetSaved("debug", 1)
     elseif rest == "off" then
       MM:SetSaved("debug", nil)
+      DB:SetSaved("debug", nil)
     else
-      MM:SetSaved("debug", tonumber(rest))
+      local lvl = tonumber(rest)
+      MM:SetSaved("debug", lvl)
+      DB:SetSaved("debug", lvl)
     end
-    MM:PrintDefault("PixelPerfectAlign debug now %", MM.debug)
+    MM:PrintDefault("Mama and DynamicBoxer debug now " .. (MM.debug and tostring(MM.debug) or "Off"))
   else
     MM:Help('unknown command "' .. arg .. '", usage:')
   end
@@ -188,12 +167,7 @@ SlashCmdList["Mama_Slash_Command"] = MM.Slash
 SLASH_Mama_Slash_Command1 = "/mama"
 
 -- Events handling
-MM.frame = CreateFrame("Frame")
-
-MM.frame:SetScript("OnEvent", MM.OnEvent)
-for k, _ in pairs(MM.EventHdlrs) do
-  MM.frame:RegisterEvent(k)
-end
+MM:RegisterEventHandlers()
 
 -- Options panel
 
