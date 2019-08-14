@@ -14,7 +14,7 @@ MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design 
 
 - Works with a single code base on both Wow Classic and regular (BfA as of this writing)
 
-MAMA stands for MooreaTv's/minimal yet Awesome Multiboxing Assistant in reverence to grandfather of all (good) multi-boxing addons: Jamba
+**M.A.M.A.** stands for **M**ooreaTv's/minimal yet **A**wesome **M**ultiboxing **A**ssistant in reverence to grandfather of all (good) multi-boxing addons: _Jamba_ (Jafula's Awesome MultiBoxing Assistant)
 
 
 ## What does it do ?
