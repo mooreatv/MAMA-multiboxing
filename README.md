@@ -1,5 +1,5 @@
-## About M.A.M.A. Multiboxing
 <img src="https://raw.githubusercontent.com/mooreatv/Mama/master/Mama_icon.png" height=64 width=64 align=right>
+## About M.A.M.A. Multiboxing
 
 MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design goals:
 
