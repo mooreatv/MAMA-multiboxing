@@ -1,6 +1,6 @@
 ## Interface: 80200
-## Title: Mama
-## Notes: Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba) (|cFF99E5FF/mama|r)
+## Title: M.A.M.A.
+## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (name inspired by Jamba) (|cFF99E5FF/mama|r)
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled
