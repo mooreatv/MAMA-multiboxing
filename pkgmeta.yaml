@@ -2,6 +2,8 @@ package-as: Mama
 
 ignore:
     - install.bat
+    - classictag.sh
+    - Mama_icon.png
     - luaformat.cfg
     - MoLib/installmolib.bat
     - MoLib/MoLib.toc
