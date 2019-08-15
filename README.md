@@ -33,14 +33,14 @@ And some convenience like
 
 - And more features per your request(s) !
 
-Mama works well in conjuction with ISBoxer and DynamicBoxer but also with other multiboxing software or hardware
+Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other multiboxing software or hardware
 
 ## More info
 
 Get the binary release using curse/twitch client or on wowinterface
 https://www.curseforge.com/wow/addons/mama-multiboxing
 
-The source of the addon resides on https://github.com/mooreatv/Mama
+The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing
 (and the MoLib library at https://github.com/mooreatv/MoLib)
 
-Releases detail/changes are on https://github.com/mooreatv/Mama/releases
+Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
