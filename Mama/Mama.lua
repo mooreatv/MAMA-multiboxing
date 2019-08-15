@@ -127,7 +127,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     rest = string.sub(arg, posRest + 1)
   end
   if cmd == "b" then
-    local subText = L["Please submit on discord or on curse or github or email"]
+    local subText = L["Please submit on discord or on https://|cFF99E5FFbit.ly/mamabug|r or email"]
     MM:PrintDefault(L["Mama bug report open: "] .. subText)
     -- base molib will add version and date/timne
     MM:BugReport(subText, "@project-abbreviated-hash@\n\n" .. L["Bug report from slash command"])

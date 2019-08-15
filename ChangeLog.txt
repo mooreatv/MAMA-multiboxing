@@ -4,6 +4,8 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.02.03 Aug 14th 2019
+- [bit.ly/mamabug](https://bit.ly/mamabug) for `/mama bug`
 v0.02.02 Aug 14th 2019
 - Minor toc update, going for M.A.M.A. instead of Mama.
 v0.02.01 Aug 14th 2019
