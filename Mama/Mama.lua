@@ -64,7 +64,15 @@ function MM.SavePositionCB(_f, pos, _scale)
   MM:SetSaved("buttonPos", pos)
 end
 
-MM.EventHdlrs = {
+MM.slashCmdName = "mama"
+MM.addonHash = "@project-abbreviated-hash@"
+MM.savedVarName = "MamaSaved"
+
+function MM:AfterSavedVars()
+  DB.name = "Mama" -- only ok/allowed because they are both my addons
+end
+
+local additionalEventHandlers = {
 
   PLAYER_ENTERING_WORLD = function(_self, ...)
     MM:Debug("OnPlayerEnteringWorld " .. MM:Dump(...))
@@ -83,29 +91,8 @@ MM.EventHdlrs = {
     if MM.mmb then
       MM:SetupMenu() -- buffer with the one above?
     end
-  end,
-
-  ADDON_LOADED = function(_self, _event, name)
-    MM:Debug(9, "Addon % loaded", name)
-    if name ~= addon then
-      return -- not us, return
-    end
-    -- check for dev version (need to split the tags or they get substituted)
-    if MM.manifestVersion == "@" .. "project-version" .. "@" then
-      MM.manifestVersion = "vX.YY.ZZ"
-    end
-    MM:PrintDefault("Mama " .. MM.manifestVersion .. " by MooreaTv: type /mama for command list/help.")
-    if MamaSaved == nil then
-      MM:Debug("Initialized empty saved vars")
-      MamaSaved = {}
-    end
-    MamaSaved.addonVersion = MM.manifestVersion
-    MamaSaved.addonHash = "@project-abbreviated-hash@"
-    MM:deepmerge(MM, nil, MamaSaved)
-    MM.savedVar = MamaSaved -- reference not copy, changes to one change the other
-    MM:Debug(3, "Merged in saved variables.")
-    DB.name = "Mama" -- only allowed because they are both my addons
   end
+
 }
 
 function MM:Help(msg)
@@ -167,7 +154,7 @@ SlashCmdList["Mama_Slash_Command"] = MM.Slash
 SLASH_Mama_Slash_Command1 = "/mama"
 
 -- Events handling
-MM:RegisterEventHandlers()
+MM:RegisterEventHandlers(additionalEventHandlers)
 
 -- Options panel
 
@@ -228,18 +215,18 @@ function MM:CreateOptionsPanel()
     if sliderVal == 0 then
       sliderVal = nil
       if MM.debug then
-        MM:PrintDefault("Options setting debug level changed from % to OFF.", MM.debug)
+        MM:PrintDefault("Mama: options setting debug level changed from % to OFF.", MM.debug)
       end
     else
       if MM.debug ~= sliderVal then
-        MM:PrintDefault("Options setting debug level changed from % to %.", MM.debug, sliderVal)
+        MM:PrintDefault("Mama: options setting debug level changed from % to %.", MM.debug, sliderVal)
       end
     end
     MM:SetSaved("debug", sliderVal)
   end
 
   function p:cancel()
-    MM:Warning("Options screen cancelled, not making any changes.")
+    MM:Warning("Mama: options screen cancelled, not making any changes.")
   end
 
   function p:okay()

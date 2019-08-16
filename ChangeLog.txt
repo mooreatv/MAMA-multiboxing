@@ -4,6 +4,8 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.02.05 Aug 15th 2019
+- moved more code to MoLib (saved var, addon loaded event handling)
 v0.02.04 Aug 14th 2019
 - cleanup the zip, adding missing ignores entry in pkgmeta
 v0.02.03 Aug 14th 2019
