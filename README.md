@@ -19,6 +19,10 @@ MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design 
 
 ## What does it do ?
 
+**Right now M.A.M.A relies on my DynamicBoxer for most of the functionality and isn't yet very _useful_ by itself, please check it out LATER/after you see the first Released file**
+
+_Input on feature prioritization is most welcome!_
+
 Mama ensures your multiboxing or dual boxing team can:
 
 - Invite your team including automatically convert to raid as needed (for more than 5 characters)

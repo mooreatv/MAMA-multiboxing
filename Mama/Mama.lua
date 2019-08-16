@@ -69,7 +69,7 @@ MM.addonHash = "@project-abbreviated-hash@"
 MM.savedVarName = "MamaSaved"
 
 function MM:AfterSavedVars()
-  DB.name = "Mama" -- only ok/allowed because they are both my addons
+  DB.name = "Mama-DBox" -- only ok/allowed because they are both my addons
 end
 
 local additionalEventHandlers = {
@@ -167,10 +167,14 @@ function MM:CreateOptionsPanel()
 
   local p = MM:Frame(L["Mama"])
   MM.optionsPanel = p
-  p:addText(L["Mama options"], "GameFontNormalLarge"):Place()
-  p:addText(L["Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba)"]):Place()
+  p:addText(L["M.A.M.A options"], "GameFontNormalLarge"):Place()
+  p:addText(
+    L["|cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (name inspired by Jamba)"])
+    :Place()
   p:addText(L["These options let you control the behavior of Mama"] .. " " .. MM.manifestVersion ..
               " @project-abbreviated-hash@"):Place()
+
+  p:addText(L["For now, please use the |cFF99E5FFDynamicBoxer|r options tab to configure Mama - this a very early alpha/prototype"]):Place(0, 16)
 
   -- TODO add some option
 
@@ -226,7 +230,7 @@ function MM:CreateOptionsPanel()
   end
 
   function p:cancel()
-    MM:Warning("Mama: options screen cancelled, not making any changes.")
+    MM:PrintDefault("Mama: options screen cancelled, not making any changes.")
   end
 
   function p:okay()
