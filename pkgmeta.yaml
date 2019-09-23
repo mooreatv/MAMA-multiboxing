@@ -16,7 +16,9 @@ externals:
     MoLib:
         url: https://github.com/mooreatv/MoLib
 
-manual-changelog: ChangeLog.txt
+manual-changelog:
+    filename: ChangeLog.txt
+    markup-type: plain
 
 move-folders:
   Mama/Mama: Mama
