@@ -169,12 +169,14 @@ function MM:CreateOptionsPanel()
   MM.optionsPanel = p
   p:addText(L["M.A.M.A options"], "GameFontNormalLarge"):Place()
   p:addText(
-    L["|cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (name inspired by Jamba)"])
-    :Place()
+    L["|cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant "] ..
+      L["(name inspired by Jamba)"]):Place()
   p:addText(L["These options let you control the behavior of Mama"] .. " " .. MM.manifestVersion ..
               " @project-abbreviated-hash@"):Place()
 
-  p:addText(L["For now, please use the |cFF99E5FFDynamicBoxer|r options tab to configure Mama - this a very early alpha/prototype"]):Place(0, 16)
+  p:addText(
+    L["For now, please use the |cFF99E5FFDynamicBoxer|r options tab to configure Mama - this a very early alpha/prototype"])
+    :Place(0, 16)
 
   -- TODO add some option
 

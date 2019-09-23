@@ -7,14 +7,14 @@
 -->
 <Bindings>
     <Binding name="MM_SOMETHING" header="MM" category="MAMA">
-        PixelPerfectAlign.Slash("TODO")
+        Mama.Slash("TODO")
     </Binding>
     <!--
     <Binding name="MM_COORDS" category="MAMA">
-        PixelPerfectAlign.Slash("coords")
+        Mama.Slash("coords")
     </Binding>
     <Binding name="MM_INFO" category="MAMA">
-        PixelPerfectAlign.Slash("info")
+        Mama.Slash("info")
     </Binding>
 -->
 </Bindings>
