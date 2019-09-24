@@ -18,7 +18,7 @@ externals:
 
 manual-changelog:
     filename: ChangeLog.txt
-    markup-type: plain
+    markup-type: text
 
 move-folders:
   Mama/Mama: Mama
