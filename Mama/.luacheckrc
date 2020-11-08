@@ -9,6 +9,11 @@ globals = {
     "geterrorhandler",
     "C_Timer",
     "GameTooltip",
+    "C_ChatInfo",
+    "UnitIsGroupLeader",
+    "IsInGroup",
+    "PromoteToLeader",
+    "FollowUnit",
 }
 max_line_length = 132
 ignore = {

@@ -4,9 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
-v0.03.00 Nov 8th 2020
+v0.03.01 Nov 8th 2020
 - Reboot with new multiboxing restrictions, make it work without ISBoxer
-  new /mama follow and /mama lead commands and keybindings [wip]
+  new /mama follow and /mama lead commands and keybindings!
 
 v0.02.06 Aug 16th 2019
 - Make it more clear this is WIP addon at this stage

@@ -2,7 +2,7 @@
 
 ## About M.A.M.A. Multiboxing
 
-MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design goals:
+MAMA is an open-source MultiBoxing (dual-boxing) addon with the following design goals:
 
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
 
@@ -12,14 +12,20 @@ MAMA is an opensource MultiBoxing (dual-boxing) addon with the following design 
 
 - Low footprint (both memory and cpu and addon chatter)
 
-- Works with a single code base on both Wow Classic and regular (BfA as of this writing)
+- Works with a single code base on both Wow Classic and regular (SL as of this writing)
+
+- Let's you have dynamic teams with or without ISBoxer
 
 **M.A.M.A.** stands for **M**ooreaTv's/minimal yet **A**wesome **M**ultiboxing **A**ssistant in reverence to grandfather of all (good) multi-boxing addons: _Jamba_ (Jafula's Awesome MultiBoxing Assistant), which also inspired the _EMA_ name.
 
 
 ## What does it do ?
 
-**Right now M.A.M.A relies on my DynamicBoxer for most of the functionality and isn't yet very _useful_ by itself, please check it out LATER/after you see the first Released file**
+**Right now M.A.M.A relies on my DynamicBoxer for most of the functionality**
+
+- Let's you use DynamicBoxer without requiring ISBoxer - just set your window slot # in the options panel
+
+- Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
 
 _Input on feature prioritization is most welcome!_
 
@@ -43,6 +49,8 @@ Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other
 
 Get the binary release using curse/twitch/overwolf/... clients
 https://www.curseforge.com/wow/addons/mama-multiboxing
+
+You will also need https://www.curseforge.com/wow/addons/dynamicboxer
 
 The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing
 (and the MoLib library at https://github.com/mooreatv/MoLib)

@@ -21,11 +21,107 @@ local MM = _G[addon]
 MM.L = MM:GetLocalization()
 local L = MM.L
 
+MM.chatPrefix = "mama1" -- protocol version in prefix for the addon messages
+
 -- MM.debug = 9 -- to debug before saved variables are loaded
 
 local DB = _G.DynBoxer
 
--- TODO: move most of this to MoLib
+
+
+function MM:FollowCommand(fullName)
+  local payload =  "F" .. " " .. fullName
+  DB:Debug(3, "Created follow payload for %: %", fullName, payload)
+  return payload
+end
+
+function MM:LeadCommand(fullName)
+  local payload =  "L" .. " " .. fullName
+  DB:Debug(3, "Created lead payload for %: %", fullName, payload)
+  return payload
+end
+
+function MM:SecureCommand(payload)
+  return DB:CreateSecureMessage(payload, DB.Channel, DB.Secret)
+end
+
+function MM:SendSecureCommand(payload, partyOnly)
+  MM:Debug("Sending %", payload)
+  local secureMessage, _messageId = MM:SecureCommand(payload)
+  if not partyOnly and DB.GuildCache.n > 0 then
+    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "GUILD")
+    MM:Debug("Guild msg for % ret %", payload, ret)
+  end
+  if IsInGroup() then
+    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "RAID")
+    MM:Debug("Party/raid msg for % ret %", payload, ret)
+  end
+end
+
+function MM:MakeMeLead()
+  -- first check if we aren't already lead
+  if UnitIsGroupLeader("Player") then
+    MM:Debug("Already leader, skipping...")
+    return
+  end
+  if not IsInGroup() then
+    MM:Debug("Not in a group, skipping make me lead...")
+  end
+  MM:PrintDefault("Mama: Requesting to be made lead")
+  MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
+end
+
+function MM:ProcessMessage(source, from, data)
+  -- refactor shared copy/pasta with dynamicboxer's version
+  local directMessage = (source == "WHISPER" or source == "CHAT_FILTER")
+  if from == DB.fullName then
+    MM:Debug(2, "Skipping our own message on %: %", source, data)
+    return
+  end
+  -- check authenticity (channel sends unsigned messages)
+  local valid, msg, lag, msgId = DB:VerifySecureMessage(data, DB.Channel, DB.Secret)
+  if valid then
+    MM:Debug(2, "Received valid secure direct=% message from % lag is %s, msg id is % part of full message %",
+               directMessage, from, lag, msgId, data)
+    if DB.duplicateMsg:exists(msgId) then
+      MM:Debug("!!!Received % duplicate msg from %, will ignore: %", source, from, data)
+      return
+    end
+    DB.duplicateMsg:add(msgId)
+  else
+    -- in theory warning if the source isn't guild/say/...
+    DB:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
+    return
+  end
+  local cmd, fullName = msg:match("^([LF]) ([^ ]+)") -- or strplit(" ", data)
+  MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
+  local shortName = DB:ShortName(fullName)
+  if cmd == "F" then
+    MM:PrintDefault("Mama: following % (%)", shortName, fullName)
+    FollowUnit(shortName)
+  elseif cmd == "L" then
+    -- must be L then...
+    if not UnitIsGroupLeader("Player") then
+      MM:Debug("I'm not leader, skipping %", msg)
+      return
+    end
+    MM:PrintDefault("Mama: Setting % (%) as leader", shortName, fullName)
+    PromoteToLeader(shortName)
+  else
+    MM:Warning("Unexpected command in % from %", msg, from)
+  end
+end
+
+function MM:ChatAddonMsg(event, prefix, data, channel, sender, zoneChannelID, localID, name, instanceID)
+  MM:Debug(7, "OnChatEvent called for % e=% channel=% p=% data=% from % z=%, lid=%, name=%, instance=%", self:GetName(),
+           event, channel, prefix, data, sender, zoneChannelID, localID, name, instanceID)
+  if prefix == MM.chatPrefix then
+    MM:ProcessMessage(channel, sender, data)
+    return
+  end
+  MM:Debug(9, "wrong prefix % or channel % or instance % vs %, skipping!", prefix, channel, instanceID, DB.joinedChannel)
+  return -- not our message(s)
+end
 
 function MM:SetupMenu()
   MM:WipeFrame(MM.mmb)
@@ -58,6 +154,10 @@ function MM:SetupMenu()
   end)
   MM:MakeMoveable(b, MM.SavePositionCB)
   MM.mmb = b
+
+  local ret = C_ChatInfo.RegisterAddonMessagePrefix(MM.chatPrefix)
+  DB:Debug("Prefix register success %", ret)
+
 end
 
 function MM.SavePositionCB(_f, pos, _scale)
@@ -73,6 +173,8 @@ function MM:AfterSavedVars()
 end
 
 local additionalEventHandlers = {
+
+  CHAT_MSG_ADDON = MM.ChatAddonMsg,
 
   PLAYER_ENTERING_WORLD = function(_self, ...)
     MM:Debug("OnPlayerEnteringWorld " .. MM:Dump(...))
@@ -95,27 +197,12 @@ local additionalEventHandlers = {
 
 }
 
-function DB:SlotCommand(slot, fullName, firstFlag)
-  local payload =
-    "S" .. tostring(slot) .. " " .. fullName .. " " .. firstFlag .. " msg " .. tostring(DB.syncNum) .. "/" ..
-      tostring(DB.sentMessageCount)
-  DB:Debug(3, "Created slot payload for slot %: %", slot, payload)
-  return payload
-end
-
-
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
                     "/mama follow [x] -- follow me or follow optional slot x.\n" ..
                     "/mama lead [x] -- make me lead or make optional slot x the lead.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
-end
-
-function MM:FollowCommand(_slot)
-end
-
-function MM:LeadCommand(_slot)
 end
 
 function MM.Slash(arg) -- can't be a : because used directly as slash command
@@ -140,10 +227,11 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "f" then
     -- follow
-    MM:PrintDefault("Mama: Requesting to be followed - not yet implemented")
+    MM:PrintDefault("Mama: Requesting to be followed")
+    MM:SendSecureCommand(MM:FollowCommand(DB.fullName))
   elseif cmd == "l" then
-    -- follow
-    MM:PrintDefault("Mama: Requesting to be made lead - not yet implemented")
+    -- lead
+    MM:MakeMeLead()
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
