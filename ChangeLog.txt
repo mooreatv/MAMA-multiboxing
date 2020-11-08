@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.03.02 Nov 8th 2020
+- Fix for retail/shadowlands with AH event exception and more
+
 v0.03.01 Nov 8th 2020
 - Reboot with new multiboxing restrictions, make it work without ISBoxer
   new /mama follow and /mama lead commands and keybindings!

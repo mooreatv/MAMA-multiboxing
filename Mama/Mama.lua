@@ -27,8 +27,6 @@ MM.chatPrefix = "mama1" -- protocol version in prefix for the addon messages
 
 local DB = _G.DynBoxer
 
-
-
 function MM:FollowCommand(fullName)
   local payload =  "F" .. " " .. fullName
   DB:Debug(3, "Created follow payload for %: %", fullName, payload)
@@ -47,14 +45,27 @@ end
 
 function MM:SendSecureCommand(payload, partyOnly)
   MM:Debug("Sending %", payload)
-  local secureMessage, _messageId = MM:SecureCommand(payload)
-  if not partyOnly and DB.GuildCache.n > 0 then
-    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "GUILD")
-    MM:Debug("Guild msg for % ret %", payload, ret)
-  end
+  local secureMessage, messageId = MM:SecureCommand(payload)
   if IsInGroup() then
     local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "RAID")
     MM:Debug("Party/raid msg for % ret %", payload, ret)
+  end
+  if partyOnly then
+    return
+  end
+  -- TODO: that's broken in SL but it's ok because in SL we have the channel anyway
+  if DB.GuildCache.n > 0 then
+    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "GUILD")
+    MM:Debug("Guild msg for % ret %", payload, ret)
+  end
+  if DB.channelId and DB.channelId > 0 then
+    -- retail
+    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "CHANNEL", DB.channelId)
+    MM:Debug("Retail channel msg for %: % (mid %)", payload, ret, messageId)
+  else
+    -- classic
+    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "SAY")
+    MM:Debug("Classic Say msg for %: % (mid %)", payload, ret, messageId)
   end
 end
 
@@ -66,6 +77,7 @@ function MM:MakeMeLead()
   end
   if not IsInGroup() then
     MM:Debug("Not in a group, skipping make me lead...")
+    return
   end
   MM:PrintDefault("Mama: Requesting to be made lead")
   MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
