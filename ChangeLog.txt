@@ -4,23 +4,34 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.03.00 Nov 8th 2020
+- Reboot with new multiboxing restrictions, make it work without ISBoxer
+  new /mama follow and /mama lead commands and keybindings [wip]
+
 v0.02.06 Aug 16th 2019
 - Make it more clear this is WIP addon at this stage
 - Tweaks to options panel handling/indicate functionality/settings are in DynamicBoxer at the moment.
+
 v0.02.05 Aug 15th 2019
 - moved more code to MoLib (saved var, addon loaded event handling)
+
 v0.02.04 Aug 14th 2019
 - cleanup the zip, adding missing ignores entry in pkgmeta
+
 v0.02.03 Aug 14th 2019
 - [bit.ly/mamabug](https://bit.ly/mamabug) for `/mama bug`
+
 v0.02.02 Aug 14th 2019
 - Minor toc update, going for M.A.M.A. instead of Mama.
+
 v0.02.01 Aug 14th 2019
 - Some code is now shared in MoLib
 - Sync the /mama debug with /dbox's
 - Fixed typo/leftover ppa text from template
+
 v0.02.00 Aug 12th 2019
 - (wip) Auction House scan
+
 v0.01.00 Aug 11th 2019
 - requires DynamicBoxer v2.05.00
 - initial version, created from MooreaTv/WowAddonTemplate

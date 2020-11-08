@@ -41,7 +41,7 @@ Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other
 
 ## More info
 
-Get the binary release using curse/twitch client or on wowinterface
+Get the binary release using curse/twitch/overwolf/... clients
 https://www.curseforge.com/wow/addons/mama-multiboxing
 
 The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing

@@ -95,10 +95,27 @@ local additionalEventHandlers = {
 
 }
 
+function DB:SlotCommand(slot, fullName, firstFlag)
+  local payload =
+    "S" .. tostring(slot) .. " " .. fullName .. " " .. firstFlag .. " msg " .. tostring(DB.syncNum) .. "/" ..
+      tostring(DB.sentMessageCount)
+  DB:Debug(3, "Created slot payload for slot %: %", slot, payload)
+  return payload
+end
+
+
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
+                    "/mama follow [x] -- follow me or follow optional slot x.\n" ..
+                    "/mama lead [x] -- make me lead or make optional slot x the lead.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
+end
+
+function MM:FollowCommand(_slot)
+end
+
+function MM:LeadCommand(_slot)
 end
 
 function MM.Slash(arg) -- can't be a : because used directly as slash command
@@ -121,6 +138,12 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
   elseif cmd == "v" then
     -- version
     MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
+  elseif cmd == "f" then
+    -- follow
+    MM:PrintDefault("Mama: Requesting to be followed")
+  elseif cmd == "l" then
+    -- follow
+    MM:PrintDefault("Mama: Requesting to be made lead")
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -175,10 +198,19 @@ function MM:CreateOptionsPanel()
               " @project-abbreviated-hash@"):Place()
 
   p:addText(
-    L["For now, please use the |cFF99E5FFDynamicBoxer|r options tab to configure Mama - this a very early alpha/prototype"])
+    L["Remember to use the |cFF99E5FFDynamicBoxer|r options tab to configure many additional options\n"..
+    "This a very early alpha/prototype. See also keybindings and |cFF99E5FF/mama|r slash commands."])
     :Place(0, 16)
 
   -- TODO add some option
+
+--  local teamSize = p:addSlider("Team size", "How many wow windows\n" ..
+ --                                "or e.g |cFF99E5FF/mama teamsize 5|r for 5 windows", 2, 11,
+ --                              1):Place(4,20)
+
+  local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
+                               "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
+                             1):Place(4,20)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
 
@@ -208,6 +240,8 @@ function MM:CreateOptionsPanel()
   function p:HandleRefresh()
     p:Init()
     debugLevel:SetValue(MM.debug or 0)
+    -- teamSize:SetValue(DB.manualTeamSize or 0)
+    slot:SetValue(DB.manual)
   end
 
   function p:HandleOk()
@@ -228,6 +262,8 @@ function MM:CreateOptionsPanel()
         MM:PrintDefault("Mama: options setting debug level changed from % to %.", MM.debug, sliderVal)
       end
     end
+--    DB:SetSaved("manualTeamSize", teamSize:GetValue())
+    DB:SetSaved("manual", slot:GetValue())
     MM:SetSaved("debug", sliderVal)
   end
 
@@ -254,7 +290,8 @@ end
 -- bindings / localization
 _G.MAMA = "Mama"
 _G.BINDING_HEADER_MM = L["Mama addon key bindings"]
-_G.BINDING_NAME_MM_SOMETHING = L["TODO something"] .. " |cFF99E5FF/mama todo|r"
+_G.BINDING_NAME_MM_FOLLOWME = L["Follow me"] .. " |cFF99E5FF/mama follow me|r (or |cFF99E5FF/mama f|r for short)"
+_G.BINDING_NAME_MM_LEAD = L["Make me lead"] .. " |cFF99E5FF/mama lead|r (or |cFF99E5FF/mama l|r for short)"
 
 -- MM.debug = 2
 MM:Debug("mama main file loaded")

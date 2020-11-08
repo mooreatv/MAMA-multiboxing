@@ -1,0 +1,36 @@
+name: Build addon zip
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  build:
+    name: packager
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install and run Luacheck
+        run: |
+          sudo apt-get install luarocks
+          luarocks install --local luacheck
+          exec /home/runner/.luarocks/bin/luacheck Mama/ --no-color --config ./Mama/.luacheckrc -q
+      - name: Get the packager
+        run: |
+          curl -s https://raw.githubusercontent.com/mooreatv/packager/master/release.sh > ./release.sh
+          chmod 755 ./release.sh
+      - name: Create Retail Package
+        run: ./release.sh -m pkgmeta.yaml -p 334197
+        env:
+         CF_API_KEY: ${{ secrets.CF_API_KEY }}
+         GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Classic Package
+        run: ./release.sh -m pkgmeta.yaml -g 1.13.5 -p 334197
+        env:
+         CF_API_KEY: ${{ secrets.CF_API_KEY }}
+         GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@master
+        with:
+          name: MamaBuild-${{ github.sha }}
+          path: .release/

@@ -6,8 +6,11 @@
    defaults don't work (https://github.com/Stanzilla/WoWUIBugs/issues/12) so removed them for now
 -->
 <Bindings>
-    <Binding name="MM_SOMETHING" header="MM" category="MAMA">
-        Mama.Slash("TODO")
+    <Binding name="MM_FOLLOWME" header="MM" category="MAMA">
+        Mama.Slash("followme")
+    </Binding>
+    <Binding name="MM_LEAD" category="MAMA">
+        Mama.Slash("lead")
     </Binding>
     <!--
     <Binding name="MM_COORDS" category="MAMA">
