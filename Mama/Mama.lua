@@ -140,10 +140,10 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "f" then
     -- follow
-    MM:PrintDefault("Mama: Requesting to be followed")
+    MM:PrintDefault("Mama: Requesting to be followed - not yet implemented")
   elseif cmd == "l" then
     -- follow
-    MM:PrintDefault("Mama: Requesting to be made lead")
+    MM:PrintDefault("Mama: Requesting to be made lead - not yet implemented")
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -198,7 +198,7 @@ function MM:CreateOptionsPanel()
               " @project-abbreviated-hash@"):Place()
 
   p:addText(
-    L["Remember to use the |cFF99E5FFDynamicBoxer|r options tab to configure many additional options\n"..
+    L["Remember to use the |cFF99E5FFDynamicBoxer|r (v3 or newer) options tab to configure many additional options\n"..
     "This a very early alpha/prototype. See also keybindings and |cFF99E5FF/mama|r slash commands."])
     :Place(0, 16)
 
@@ -210,7 +210,7 @@ function MM:CreateOptionsPanel()
 
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
-                             1):Place(4,20)
+                             1):Place(4,40)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
 
