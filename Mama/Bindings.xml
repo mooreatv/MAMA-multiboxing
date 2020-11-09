@@ -9,6 +9,9 @@
     <Binding name="MM_FOLLOWME" header="MM" category="MAMA">
         Mama.Slash("followme")
     </Binding>
+    <Binding name="MM_FOLLOW_STOP" category="MAMA">
+        Mama.Slash("follow stop")
+    </Binding>
     <Binding name="MM_LEAD" category="MAMA">
         Mama.Slash("lead")
     </Binding>

@@ -109,6 +109,11 @@ function MM:ProcessMessage(source, from, data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   local shortName = DB:ShortName(fullName)
   if cmd == "F" then
+    if fullName == "stop" then
+      MM:PrintDefault("Mama: stopping follow per request from %", from)
+      FollowUnit("player")
+      return
+    end
     MM:PrintDefault("Mama: following % (%)", shortName, fullName)
     FollowUnit(shortName)
   elseif cmd == "L" then
@@ -212,8 +217,8 @@ local additionalEventHandlers = {
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
-                    "/mama follow [x] -- follow me or follow optional slot x.\n" ..
-                    "/mama lead [x] -- make me lead or make optional slot x the lead.\n" ..
+                    "/mama follow [stop|Name-Server] -- follow me (no arg) or request stop follow.\n" ..
+                    "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
@@ -239,11 +244,41 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "f" then
     -- follow
-    MM:PrintDefault("Mama: Requesting to be followed")
-    MM:SendSecureCommand(MM:FollowCommand(DB.fullName))
+    if rest ~= "" then
+      MM:PrintDefault("Mama: Requesting follow %", rest)
+      local shortName = DB:ShortName(rest)
+      if rest == "stop" then
+        shortName = "player"
+      end
+      DB:Debug("calling local FollowUnit(%)", shortName)
+      FollowUnit(shortName)
+    else
+      MM:PrintDefault("Mama: Requesting to be followed")
+      rest = DB.fullName
+    end
+    MM:SendSecureCommand(MM:FollowCommand(rest))
   elseif cmd == "l" then
     -- lead
-    MM:MakeMeLead()
+    if rest == "" then
+      MM:MakeMeLead()
+    else
+      if UnitIsGroupLeader("Player") then
+        local shortName = DB:ShortName(rest)
+        MM:PrintDefault("Mama: directly setting % (%) as leader", shortName, rest)
+        PromoteToLeader(shortName)
+      else
+        MM:PrintDefault("Mama: Requesting % to be made lead", rest)
+        MM:SendSecureCommand(MM:LeadCommand(rest))
+      end
+    end
+  elseif cmd == "s" then
+    -- slot setting
+    local sn = tonumber(rest)
+    if not sn or sn < 0 or sn > 40 then
+      MM:Error("Use /mama slot number to set slot#, % is not a valid number", rest)
+      return
+    end
+    DB:SetSaved("manual", sn)
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -390,7 +425,8 @@ end
 -- bindings / localization
 _G.MAMA = "Mama"
 _G.BINDING_HEADER_MM = L["Mama addon key bindings"]
-_G.BINDING_NAME_MM_FOLLOWME = L["Follow me"] .. " |cFF99E5FF/mama follow me|r (or |cFF99E5FF/mama f|r for short)"
+_G.BINDING_NAME_MM_FOLLOWME = L["Follow me"] .. " |cFF99E5FF/mama followme|r (or |cFF99E5FF/mama f|r for short)"
+_G.BINDING_NAME_MM_FOLLOW_STOP = L["Stop Follow"] .. " |cFF99E5FF/mama follow stop|r (or |cFF99E5FF/mama f stop|r for short)"
 _G.BINDING_NAME_MM_LEAD = L["Make me lead"] .. " |cFF99E5FF/mama lead|r (or |cFF99E5FF/mama l|r for short)"
 
 -- MM.debug = 2

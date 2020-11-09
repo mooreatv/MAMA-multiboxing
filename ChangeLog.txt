@@ -4,6 +4,12 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.3.3 Nov 8th 2020
+- Adding `/mama f stop` and keybinding for stopping follow on team
+  also works from any window
+- Adding `/mama s N` to set slot from slash command
+- `/mama leader x` sets leader to x (no x = request for self)
+
 v0.03.02 Nov 8th 2020
 - Fix for retail/shadowlands with AH event exception and more
 
