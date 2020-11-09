@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.3.4 Nov 9th 2020
+- Make it clear you need to use `/mama slot x` on each window or through
+  `/mama config` first and do the dynamicboxer one time token setup.
+
 v0.3.3 Nov 8th 2020
 - Adding `/mama f stop` and keybinding for stopping follow on team
   also works from any window

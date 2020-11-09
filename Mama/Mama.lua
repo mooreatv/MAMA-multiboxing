@@ -45,6 +45,9 @@ end
 
 function MM:SendSecureCommand(payload, partyOnly)
   MM:Debug("Sending %", payload)
+  if not MM:IsSetup() then
+    return
+  end
   local secureMessage, messageId = MM:SecureCommand(payload)
   if IsInGroup() then
     local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "RAID")
@@ -214,6 +217,14 @@ local additionalEventHandlers = {
 
 }
 
+function MM:IsSetup()
+  if DB.fullName and DB.Secret then
+    return true
+  end
+  MM:Error("You need to setup Mama and your DynamicBoxer team one time setup first: |cFF99E5FF/mama config|r")
+  return false
+end
+
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
@@ -244,6 +255,9 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:PrintDefault("Mama " .. MM.manifestVersion .. " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif cmd == "f" then
     -- follow
+    if not MM:IsSetup() then
+      return
+    end
     if rest ~= "" then
       MM:PrintDefault("Mama: Requesting follow %", rest)
       local shortName = DB:ShortName(rest)
@@ -259,6 +273,9 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:SendSecureCommand(MM:FollowCommand(rest))
   elseif cmd == "l" then
     -- lead
+    if not MM:IsSetup() then
+      return
+    end
     if rest == "" then
       MM:MakeMeLead()
     else
@@ -334,7 +351,7 @@ function MM:CreateOptionsPanel()
 
   p:addText(
     L["Remember to use the |cFF99E5FFDynamicBoxer|r (v3 or newer) options tab to configure many additional options\n"..
-    "This a very early alpha/prototype. See also keybindings and |cFF99E5FF/mama|r slash commands."])
+    "And do dbox one time setup and |cFF99E5FF/reload|rbra. See also keybindings and |cFF99E5FF/mama|r slash commands."])
     :Place(0, 16)
 
   -- TODO add some option
@@ -345,9 +362,9 @@ function MM:CreateOptionsPanel()
 
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
-                             1):Place(4,40)
+                             1):Place(4,50)
 
-  p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
+  p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 60)
 
   p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4, 20)
 
