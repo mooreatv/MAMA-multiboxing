@@ -15,12 +15,7 @@
     <Binding name="MM_LEAD" category="MAMA">
         Mama.Slash("lead")
     </Binding>
-    <!--
-    <Binding name="MM_COORDS" category="MAMA">
-        Mama.Slash("coords")
+    <Binding name="MM_FL_COMBO"  category="MAMA">
+        Mama.Slash("altogether")
     </Binding>
-    <Binding name="MM_INFO" category="MAMA">
-        Mama.Slash("info")
-    </Binding>
--->
 </Bindings>

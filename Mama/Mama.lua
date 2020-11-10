@@ -39,6 +39,12 @@ function MM:LeadCommand(fullName)
   return payload
 end
 
+function MM:AltogetherCommand(fullName)
+  local payload =  "A" .. " " .. fullName
+  DB:Debug(3, "Created combo F+L=A payload for %: %", fullName, payload)
+  return payload
+end
+
 function MM:SecureCommand(payload)
   return DB:CreateSecureMessage(payload, DB.Channel, DB.Secret)
 end
@@ -86,6 +92,22 @@ function MM:MakeMeLead()
   MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
 end
 
+function MM:ExecuteLeadCommand(fullName)
+  local shortName = DB:ShortName(fullName)
+  if not UnitIsGroupLeader("Player") then
+    MM:Debug("I'm not leader, skipping %", msg)
+    return
+  end
+  MM:PrintDefault("Mama: Setting % (%) as leader", shortName, fullName)
+  PromoteToLeader(shortName)
+end
+
+function MM:ExecuteFollowCommand(fullName)
+  local shortName = DB:ShortName(fullName)
+  MM:PrintDefault("Mama: following % (%)", shortName, fullName)
+  FollowUnit(shortName)
+end
+
 function MM:ProcessMessage(source, from, data)
   -- refactor shared copy/pasta with dynamicboxer's version
   local directMessage = (source == "WHISPER" or source == "CHAT_FILTER")
@@ -108,25 +130,23 @@ function MM:ProcessMessage(source, from, data)
     DB:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LF]) ([^ ]+)") -- or strplit(" ", data)
+  local cmd, fullName = msg:match("^([LFA]) ([^ ]+)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
-  local shortName = DB:ShortName(fullName)
   if cmd == "F" then
+    -- Follow cmd...
     if fullName == "stop" then
       MM:PrintDefault("Mama: stopping follow per request from %", from)
       FollowUnit("player")
       return
     end
-    MM:PrintDefault("Mama: following % (%)", shortName, fullName)
-    FollowUnit(shortName)
+    MM:ExecuteFollowCommand(fullName)
   elseif cmd == "L" then
-    -- must be L then...
-    if not UnitIsGroupLeader("Player") then
-      MM:Debug("I'm not leader, skipping %", msg)
-      return
-    end
-    MM:PrintDefault("Mama: Setting % (%) as leader", shortName, fullName)
-    PromoteToLeader(shortName)
+    -- Lead cmd...
+    MM:ExecuteLeadCommand(fullName)
+  elseif cmd == "A" then
+    -- Follow+Lead cmd
+    MM:ExecuteLeadCommand(fullName)
+    MM:ExecuteFollowCommand(fullName)
   else
     MM:Warning("Unexpected command in % from %", msg, from)
   end
@@ -230,6 +250,7 @@ function MM:Help(msg)
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
                     "/mama follow [stop|Name-Server] -- follow me (no arg) or request stop follow.\n" ..
                     "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
+                    "/mama altogether -- both makemelead and followme in 1 combo command.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
@@ -288,6 +309,13 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
         MM:SendSecureCommand(MM:LeadCommand(rest))
       end
     end
+  elseif cmd == "a" then
+    -- lead and follow in 1 command
+    if not MM:IsSetup() then
+      return
+    end
+    MM:PrintDefault("Mama: Requesting to both be made lead and followed")
+    MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))
   elseif cmd == "s" then
     -- slot setting
     local sn = tonumber(rest)
@@ -445,6 +473,8 @@ _G.BINDING_HEADER_MM = L["Mama addon key bindings"]
 _G.BINDING_NAME_MM_FOLLOWME = L["Follow me"] .. " |cFF99E5FF/mama followme|r (or |cFF99E5FF/mama f|r for short)"
 _G.BINDING_NAME_MM_FOLLOW_STOP = L["Stop Follow"] .. " |cFF99E5FF/mama follow stop|r (or |cFF99E5FF/mama f stop|r for short)"
 _G.BINDING_NAME_MM_LEAD = L["Make me lead"] .. " |cFF99E5FF/mama lead|r (or |cFF99E5FF/mama l|r for short)"
+_G.BINDING_NAME_MM_FL_COMBO = L["Combo make me lead and follow me"] ..
+  " |cFF99E5FF/mama altogether|r (or |cFF99E5FF/mama a|r for short)"
 
 -- MM.debug = 2
 MM:Debug("mama main file loaded")
