@@ -4,7 +4,7 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
-v0.4.0 Nov 10th 2020
+v0.4.1 Nov 10th 2020
 - New `/mama altogether` and keybinding to do both "follow me" and "make me lead"
   in one efficient command. (1 addon message). Fixes #1
 

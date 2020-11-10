@@ -92,7 +92,7 @@ function MM:MakeMeLead()
   MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
 end
 
-function MM:ExecuteLeadCommand(fullName)
+function MM:ExecuteLeadCommand(fullName, msg)
   local shortName = DB:ShortName(fullName)
   if not UnitIsGroupLeader("Player") then
     MM:Debug("I'm not leader, skipping %", msg)
@@ -142,10 +142,10 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteFollowCommand(fullName)
   elseif cmd == "L" then
     -- Lead cmd...
-    MM:ExecuteLeadCommand(fullName)
+    MM:ExecuteLeadCommand(fullName, msg)
   elseif cmd == "A" then
     -- Follow+Lead cmd
-    MM:ExecuteLeadCommand(fullName)
+    MM:ExecuteLeadCommand(fullName, msg)
     MM:ExecuteFollowCommand(fullName)
   else
     MM:Warning("Unexpected command in % from %", msg, from)
