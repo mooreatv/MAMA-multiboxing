@@ -27,6 +27,23 @@ MM.chatPrefix = "mama1" -- protocol version in prefix for the addon messages
 
 local DB = _G.DynBoxer
 
+MM.emaSetMaster = true -- do it by default, turn off in config if not needed
+
+function MM:SetEMAMaster(fullName)
+  if not MM.emaSetMaster then
+    MM:Debug("EMA set master config is off, not setting ema master")
+    return
+  end
+  if not DB.EMA then
+    MM:Debug("EMA not installed, not setting master")
+    return
+  end
+  MM:PrintDefault("Mama: Setting EMA master to %", fullName)
+  DB.EMA.CommandIAmMaster()
+  --DB.EMA.db.master = fullName
+  --DB.EMA:SendMessage(DB.EMA.MESSAGE_TEAM_ORDER_CHANGED) -- needed to refresh EMA ui if set
+end
+
 function MM:FollowCommand(fullName)
   local payload =  "F" .. " " .. fullName
   DB:Debug(3, "Created follow payload for %: %", fullName, payload)
@@ -88,12 +105,16 @@ function MM:MakeMeLead()
     MM:Debug("Not in a group, skipping make me lead...")
     return
   end
+  MM:SetEMAMaster(DB.fullName)
   MM:PrintDefault("Mama: Requesting to be made lead")
   MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
 end
 
 function MM:ExecuteLeadCommand(fullName, msg)
   local shortName = DB:ShortName(fullName)
+  if fullName == DB.fullName then
+    MM:SetEMAMaster(fullName)
+  end
   if not UnitIsGroupLeader("Player") then
     MM:Debug("I'm not leader, skipping %", msg)
     return
@@ -104,7 +125,7 @@ end
 
 function MM:ExecuteFollowCommand(fullName)
   local shortName = DB:ShortName(fullName)
-  MM:PrintDefault("Mama: following % (%)", shortName, fullName)
+  MM:PrintDefault("Mama: Following % (%)", shortName, fullName)
   FollowUnit(shortName)
 end
 
@@ -314,6 +335,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if not MM:IsSetup() then
       return
     end
+    MM:SetEMAMaster(DB.fullName)
     MM:PrintDefault("Mama: Requesting to both be made lead and followed")
     MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))
   elseif cmd == "s" then
@@ -379,7 +401,7 @@ function MM:CreateOptionsPanel()
 
   p:addText(
     L["Remember to use the |cFF99E5FFDynamicBoxer|r (v3 or newer) options tab to configure many additional options\n"..
-    "And do dbox one time setup and |cFF99E5FF/reload|rbra. See also keybindings and |cFF99E5FF/mama|r slash commands."])
+    "And do dbox one time setup and |cFF99E5FF/reload|r. See also keybindings and |cFF99E5FF/mama|r slash commands."])
     :Place(0, 16)
 
   -- TODO add some option
@@ -391,6 +413,9 @@ function MM:CreateOptionsPanel()
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
                              1):Place(4,50)
+
+  local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
+      "Sets the EMA master when setting the group leader"):Place(4,20)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 60)
 
@@ -422,6 +447,7 @@ function MM:CreateOptionsPanel()
     debugLevel:SetValue(MM.debug or 0)
     -- teamSize:SetValue(DB.manualTeamSize or 0)
     slot:SetValue(DB.manual)
+    emaSetMaster:SetChecked(MM.emaSetMaster)
   end
 
   function p:HandleOk()
@@ -445,6 +471,7 @@ function MM:CreateOptionsPanel()
 --    DB:SetSaved("manualTeamSize", teamSize:GetValue())
     DB:SetSaved("manual", slot:GetValue())
     MM:SetSaved("debug", sliderVal)
+    MM:SetSaved("emaSetMaster", emaSetMaster:GetChecked())
   end
 
   function p:cancel()

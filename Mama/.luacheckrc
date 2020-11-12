@@ -14,6 +14,7 @@ globals = {
     "IsInGroup",
     "PromoteToLeader",
     "FollowUnit",
+    "EMAApi",
 }
 max_line_length = 132
 ignore = {
