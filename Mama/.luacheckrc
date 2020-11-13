@@ -15,6 +15,8 @@ globals = {
     "PromoteToLeader",
     "FollowUnit",
     "EMAApi",
+    "Dismount",
+    "C_MountJournal",
 }
 max_line_length = 132
 ignore = {

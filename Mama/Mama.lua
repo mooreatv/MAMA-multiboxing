@@ -62,6 +62,12 @@ function MM:AltogetherCommand(fullName)
   return payload
 end
 
+function MM:MountCommand(onoff)
+  local payload =  "M" .. " " .. tostring(onoff)
+  DB:Debug(3, "Created mount payload for %: %", onoff, payload)
+  return payload
+end
+
 function MM:SecureCommand(payload)
   return DB:CreateSecureMessage(payload, DB.Channel, DB.Secret)
 end
@@ -129,6 +135,20 @@ function MM:ExecuteFollowCommand(fullName)
   FollowUnit(shortName)
 end
 
+function MM:ExecuteMountCommand(onoff)
+  if onoff == "true" or onoff == "mount" or onoff == "on" or onoff == "" or onoff == "up" then
+    if DB.isClassic then
+      MM:PrintDefault("Mounting requested - can't implement on classic")
+    else
+      MM:PrintDefault("Mounting requested")
+      C_MountJournal.SummonByID(0)
+    end
+  else
+    MM:PrintDefault("Dismount requested")
+    Dismount()
+  end
+end
+
 function MM:ProcessMessage(source, from, data)
   -- refactor shared copy/pasta with dynamicboxer's version
   local directMessage = (source == "WHISPER" or source == "CHAT_FILTER")
@@ -151,7 +171,7 @@ function MM:ProcessMessage(source, from, data)
     DB:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LFA]) ([^ ]+)") -- or strplit(" ", data)
+  local cmd, fullName = msg:match("^([LFAM]) ([^ ]+)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
@@ -168,6 +188,8 @@ function MM:ProcessMessage(source, from, data)
     -- Follow+Lead cmd
     MM:ExecuteLeadCommand(fullName, msg)
     MM:ExecuteFollowCommand(fullName)
+  elseif cmd == "M" then
+    MM:ExecuteMountCommand(fullName)
   else
     MM:Warning("Unexpected command in % from %", msg, from)
   end
@@ -272,6 +294,7 @@ function MM:Help(msg)
                     "/mama follow [stop|Name-Server] -- follow me (no arg) or request stop follow.\n" ..
                     "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
                     "/mama altogether -- both makemelead and followme in 1 combo command.\n" ..
+                    "/mama mount on|off -- mount or dismount team.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
@@ -338,6 +361,13 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     MM:SetEMAMaster(DB.fullName)
     MM:PrintDefault("Mama: Requesting to both be made lead and followed")
     MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))
+  elseif cmd == "m" then
+    -- mount
+    if not MM:IsSetup() then
+      return
+    end
+    MM:ExecuteMountCommand(rest)
+    MM:SendSecureCommand(MM:MountCommand(rest))
   elseif cmd == "s" then
     -- slot setting
     local sn = tonumber(rest)
@@ -401,7 +431,7 @@ function MM:CreateOptionsPanel()
 
   p:addText(
     L["Remember to use the |cFF99E5FFDynamicBoxer|r (v3 or newer) options tab to configure many additional options\n"..
-    "And do dbox one time setup and |cFF99E5FF/reload|r. See also keybindings and |cFF99E5FF/mama|r slash commands."])
+    "And do dbox one time setup and |cFF99E5FF/reload|r . See also keybindings and |cFF99E5FF/mama|r slash commands."])
     :Place(0, 16)
 
   -- TODO add some option
@@ -502,6 +532,8 @@ _G.BINDING_NAME_MM_FOLLOW_STOP = L["Stop Follow"] .. " |cFF99E5FF/mama follow st
 _G.BINDING_NAME_MM_LEAD = L["Make me lead"] .. " |cFF99E5FF/mama lead|r (or |cFF99E5FF/mama l|r for short)"
 _G.BINDING_NAME_MM_FL_COMBO = L["Combo make me lead and follow me"] ..
   " |cFF99E5FF/mama altogether|r (or |cFF99E5FF/mama a|r for short)"
+_G.BINDING_NAME_MM_MOUNT_UP = L["Mount up"] .. " |cFF99E5FF/mama mount up|r (or |cFF99E5FF/mama m|r for short)"
+_G.BINDING_NAME_MM_DISMOUNT = L["Dismount"] .. " |cFF99E5FF/mama mount dismount|r (or |cFF99E5FF/mama m d|r for short)"
 
 -- MM.debug = 2
 MM:Debug("mama main file loaded")

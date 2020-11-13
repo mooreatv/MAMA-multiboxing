@@ -18,4 +18,10 @@
     <Binding name="MM_FL_COMBO"  category="MAMA">
         Mama.Slash("altogether")
     </Binding>
+    <Binding name="MM_MOUNT_UP"  category="MAMA">
+        Mama.Slash("mount up")
+    </Binding>
+    <Binding name="MM_DISMOUNT"  category="MAMA">
+        Mama.Slash("mount dismount")
+    </Binding>
 </Bindings>
