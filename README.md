@@ -24,17 +24,23 @@ Optionally: have a look at [WowOpenBox.org](https://www.WowOpenBox.org/) for the
 
 **Right now M.A.M.A relies on my DynamicBoxer for most of the functionality**
 
-- Let's you use DynamicBoxer without requiring the now banned ISBoxer - just set your window slot # in the options panel
+- Let's you use DynamicBoxer without requiring the now banned ISBoxer, including fast in order invite/disband, EMA sync, etc... just set your window slot # in the options panel or with `/mama s N`. 
 
 - Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
 
-- Let's you mount/dismount and more... see `/mama`
+- Set EMA master when setting group lead (if EMA is installed and config checkbox is on)
+
+- `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
+
+- `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
+
+- and more coming quite often... see `/mama`
+>>>>>>> 0343a2a71ddaecb5d04c448881dd4a72130eca9e
+
 
 _Input on feature prioritization is most welcome!_
 
-Mama ensures your multiboxing or dual boxing team can:
-
-- Invite your team including automatically convert to raid as needed (for more than 5 characters)
+Mama might eventually also ensure your multiboxing or dual boxing team can:
 
 - Fly to the same place
 
