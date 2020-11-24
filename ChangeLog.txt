@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.7.0 Nov 24th 2020
+- Shadowlands 9.0.2 pull fix for blizzard checkboxes missing SetValue from MoLib.
+- Update TOC
+
 v0.6.0 Nov 12th 2020
 - New `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting
   as a team. Note that only dismount works in classic.

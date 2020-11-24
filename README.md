@@ -18,14 +18,17 @@ MAMA is an open-source MultiBoxing (dual-boxing) addon with the following design
 
 **M.A.M.A.** stands for **M**ooreaTv's/minimal yet **A**wesome **M**ultiboxing **A**ssistant in reverence to grandfather of all (good) multi-boxing addons: _Jamba_ (Jafula's Awesome MultiBoxing Assistant), which also inspired the _EMA_ name.
 
+Optionally: have a look at [WowOpenBox.org](https://www.WowOpenBox.org/) for the only open-source windows multiboxing software verifiably compliant with Blizzard's new rules.
 
 ## What does it do ?
 
 **Right now M.A.M.A relies on my DynamicBoxer for most of the functionality**
 
-- Let's you use DynamicBoxer without requiring ISBoxer - just set your window slot # in the options panel
+- Let's you use DynamicBoxer without requiring the now banned ISBoxer - just set your window slot # in the options panel
 
 - Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
+
+- Let's you mount/dismount and more... see `/mama`
 
 _Input on feature prioritization is most welcome!_
 
