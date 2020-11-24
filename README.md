@@ -35,8 +35,6 @@ Optionally: have a look at [WowOpenBox.org](https://www.WowOpenBox.org/) for the
 - `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
 
 - and more coming quite often... see `/mama`
->>>>>>> 0343a2a71ddaecb5d04c448881dd4a72130eca9e
-
 
 _Input on feature prioritization is most welcome!_
 
