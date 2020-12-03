@@ -18,7 +18,7 @@ MAMA is an open-source MultiBoxing (dual-boxing) addon with the following design
 
 **M.A.M.A.** stands for **M**ooreaTv's/minimal yet **A**wesome **M**ultiboxing **A**ssistant in reverence to grandfather of all (good) multi-boxing addons: _Jamba_ (Jafula's Awesome MultiBoxing Assistant), which also inspired the _EMA_ name.
 
-Optionally: have a look at [WowOpenBox.org](https://www.WowOpenBox.org/) for the only open-source windows multiboxing software verifiably compliant with Blizzard's new rules.
+Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the only open-source windows multiboxing software verifiably compliant with Blizzard's new rules.
 
 ## What does it do ?
 

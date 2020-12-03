@@ -2,7 +2,7 @@
 ## Interface: 90002
 #@end-retail@
 #@non-retail@
-# ## Interface: 11305
+# ## Interface: 11306
 #@end-non-retail@
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
@@ -13,6 +13,9 @@
 ## SavedVariables: MamaSaved
 ## Dependencies: DynamicBoxer
 ## Globe: check-classic
+## X-OpenSource-License: LPGLv3
+## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
+## X-Curse-Project-ID: 334197
 MoLib/MoLib.lua
 MoLib/MoLibUI.lua
 Mama.lua
