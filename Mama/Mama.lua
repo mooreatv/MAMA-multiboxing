@@ -28,6 +28,7 @@ MM.chatPrefix = "mama1" -- protocol version in prefix for the addon messages
 local DB = _G.DynBoxer
 
 MM.emaSetMaster = true -- do it by default, turn off in config if not needed
+MM.followAfterMount = true
 
 function MM:SetEMAMaster(fullName)
   if not MM.emaSetMaster then
@@ -135,13 +136,21 @@ function MM:ExecuteFollowCommand(fullName)
   FollowUnit(shortName)
 end
 
-function MM:ExecuteMountCommand(onoff)
+function MM:ExecuteMountCommand(onoff, from)
   if onoff == "true" or onoff == "mount" or onoff == "on" or onoff == "" or onoff == "up" then
     if DB.isClassic then
-      MM:PrintDefault("Mounting requested - can't implement on classic")
+      MM:PrintDefault("Mounting requested from % - can't implement on classic. follow after mount is %", from, MM.followAfterMount)
     else
-      MM:PrintDefault("Mounting requested")
-      C_MountJournal.SummonByID(0)
+      MM:PrintDefault("Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
+      if IsMounted() then
+        MM:PrintDefault("Mounting requested from %, already mounted. Follow after mount is %", from, MM.followAfterMount)
+      else
+        MM:PrintDefault("Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
+        C_MountJournal.SummonByID(0)
+      end
+    end
+    if MM.followAfterMount then
+      MM:ExecuteFollowCommand(from)
     end
   else
     MM:PrintDefault("Dismount requested")
@@ -189,7 +198,7 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteLeadCommand(fullName, msg)
     MM:ExecuteFollowCommand(fullName)
   elseif cmd == "M" then
-    MM:ExecuteMountCommand(fullName)
+    MM:ExecuteMountCommand(fullName, from)
   else
     MM:Warning("Unexpected command in % from %", msg, from)
   end
@@ -366,7 +375,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if not MM:IsSetup() then
       return
     end
-    MM:ExecuteMountCommand(rest)
+    MM:ExecuteMountCommand(rest, "player")
     MM:SendSecureCommand(MM:MountCommand(rest))
   elseif cmd == "s" then
     -- slot setting
@@ -447,6 +456,9 @@ function MM:CreateOptionsPanel()
   local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
       "Sets the EMA master when setting the group leader"):Place(4,20)
 
+  local followAfterMount = p:addCheckBox("Follow after mount",
+      "Automatically follow in addition to mount up"):Place(4,20)
+
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 60)
 
   p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4, 20)
@@ -478,6 +490,7 @@ function MM:CreateOptionsPanel()
     -- teamSize:SetValue(DB.manualTeamSize or 0)
     slot:SetValue(DB.manual)
     emaSetMaster:SetChecked(MM.emaSetMaster)
+    followAfterMount:SetChecked(MM.followAfterMount)
   end
 
   function p:HandleOk()
@@ -502,6 +515,7 @@ function MM:CreateOptionsPanel()
     DB:SetSaved("manual", slot:GetValue())
     MM:SetSaved("debug", sliderVal)
     MM:SetSaved("emaSetMaster", emaSetMaster:GetChecked())
+    MM:SetSaved("followAfterMount", followAfterMount:GetChecked())
   end
 
   function p:cancel()

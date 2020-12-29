@@ -4,6 +4,12 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.8.0 Dec 29th 2020
+- Mount command now also follows by default.
+ (note that if your minions are a bit far they'll follow and break the cast 
+  of the mount but you can spam the key now, because:)
+- Mount command doesn't unmount.
+
 v0.7.1 Dec 2nd 2020
 - Classic 1.13.06 + Toc info/pointers for other addon managers.
 

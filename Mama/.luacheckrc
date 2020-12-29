@@ -17,6 +17,7 @@ globals = {
     "EMAApi",
     "Dismount",
     "C_MountJournal",
+    "IsMounted",
 }
 max_line_length = 132
 ignore = {
