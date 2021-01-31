@@ -303,10 +303,11 @@ end
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
-                    "/mama follow [stop|Name-Server|train] -- follow me (no arg) or request stop follow or make a follow train.\n" ..
+                    "/mama follow [stop||Name-Server||train] -- follow me (no arg)" ..
+                    " or request stop follow or make a follow train.\n" ..
                     "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
                     "/mama altogether -- both makemelead and followme in 1 combo command.\n" ..
-                    "/mama mount on|off -- mount or dismount team.\n" ..
+                    "/mama mount on||off -- mount or dismount team.\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
