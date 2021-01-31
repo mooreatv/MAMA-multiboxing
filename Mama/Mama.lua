@@ -177,14 +177,17 @@ function MM:ProcessMessage(source, from, data)
     DB.duplicateMsg:add(msgId)
   else
     -- in theory warning if the source isn't guild/say/...
-    DB:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
+    MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
   local cmd, fullName = msg:match("^([LFAM]) ([^ ]+)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
-    if fullName == "stop" then
+    if fullName == "train" then
+      fullName = DB.watched[(DB.watched.slot%DB.expectedCount)+1]
+      MM:PrintDefault("Mama: follow train per request from %: following %", from, fullName)
+    elseif fullName == "stop" then
       MM:PrintDefault("Mama: stopping follow per request from %", from)
       FollowUnit("player")
       return
@@ -300,7 +303,7 @@ end
 function MM:Help(msg)
   MM:PrintDefault("Mama: " .. msg .. "\n" .. "/mama config -- open addon config.\n" .. "/mama bug -- report a bug.\n" ..
                     "/mama debug on/off/level -- for debugging on at level or off.\n" ..
-                    "/mama follow [stop|Name-Server] -- follow me (no arg) or request stop follow.\n" ..
+                    "/mama follow [stop|Name-Server|train] -- follow me (no arg) or request stop follow or make a follow train.\n" ..
                     "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
                     "/mama altogether -- both makemelead and followme in 1 combo command.\n" ..
                     "/mama mount on|off -- mount or dismount team.\n" ..
@@ -332,7 +335,10 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if not MM:IsSetup() then
       return
     end
-    if rest ~= "" then
+    if rest == "train" then
+      MM:PrintDefault("Mama: Requesting follow train!", rest)
+      FollowUnit("player") -- implies stop follow for issuer
+    elseif rest ~= "" then
       MM:PrintDefault("Mama: Requesting follow %", rest)
       local shortName = DB:ShortName(rest)
       if rest == "stop" then
@@ -543,6 +549,7 @@ _G.MAMA = "Mama"
 _G.BINDING_HEADER_MM = L["Mama addon key bindings"]
 _G.BINDING_NAME_MM_FOLLOWME = L["Follow me"] .. " |cFF99E5FF/mama followme|r (or |cFF99E5FF/mama f|r for short)"
 _G.BINDING_NAME_MM_FOLLOW_STOP = L["Stop Follow"] .. " |cFF99E5FF/mama follow stop|r (or |cFF99E5FF/mama f stop|r for short)"
+_G.BINDING_NAME_MM_FOLLOW_TRAIN = L["Follow train"] .. " |cFF99E5FF/mama follow train|r (or |cFF99E5FF/mama f train|r for short)"
 _G.BINDING_NAME_MM_LEAD = L["Make me lead"] .. " |cFF99E5FF/mama lead|r (or |cFF99E5FF/mama l|r for short)"
 _G.BINDING_NAME_MM_FL_COMBO = L["Combo make me lead and follow me"] ..
   " |cFF99E5FF/mama altogether|r (or |cFF99E5FF/mama a|r for short)"

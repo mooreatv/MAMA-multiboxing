@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v0.9.0 Jan 31st 2021
+- Added `/mama follow train` and key binding to make a train of follow instead 
+  of all following same
+
 v0.8.0 Dec 29th 2020
 - Mount command now also follows by default.
  (note that if your minions are a bit far they'll follow and break the cast 
