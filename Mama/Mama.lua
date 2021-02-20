@@ -22,6 +22,7 @@ MM.L = MM:GetLocalization()
 local L = MM.L
 
 MM.chatPrefix = "mama1" -- protocol version in prefix for the addon messages
+MM.showMinimapIcon = true
 
 -- MM.debug = 9 -- to debug before saved variables are loaded
 
@@ -219,13 +220,15 @@ function MM:ChatAddonMsg(event, prefix, data, channel, sender, zoneChannelID, lo
 end
 
 function MM:SetupMenu()
-  MM:WipeFrame(MM.mmb)
+  local ret = C_ChatInfo.RegisterAddonMessagePrefix(MM.chatPrefix)
+  DB:Debug("Prefix register success %", ret)
+  MM:WipeFrame(MM.mmb) -- doesn't really wipe anymore, just hides
+  if not MM.showMinimapIcon then
+    MM:Debug("Not showing minimap icon per config")
+    return
+  end
   MM.minimapButtonAngle = 137 -- not overlap with PPA/default angle
-  local b = MM:minimapButton(MM.buttonPos)
-  local t = b:CreateTexture(nil, "ARTWORK")
-  t:SetSize(19, 19)
-  t:SetTexture("Interface/Addons/Mama/mama.blp")
-  t:SetPoint("TOPLEFT", 7, -6)
+  local b = MM:minimapButton(MM.buttonPos, nil, "Interface/Addons/Mama/mama.blp")
   b:SetScript("OnClick", function(_w, button, _down)
     if button == "RightButton" then
       MM.Slash("config")
@@ -249,10 +252,6 @@ function MM:SetupMenu()
   end)
   MM:MakeMoveable(b, MM.SavePositionCB)
   MM.mmb = b
-
-  local ret = C_ChatInfo.RegisterAddonMessagePrefix(MM.chatPrefix)
-  DB:Debug("Prefix register success %", ret)
-
 end
 
 function MM.SavePositionCB(_f, pos, _scale)
@@ -466,6 +465,9 @@ function MM:CreateOptionsPanel()
   local followAfterMount = p:addCheckBox("Follow after mount",
       "Automatically follow in addition to mount up"):Place(4,20)
 
+  local showMinimapIcon = p:addCheckBox("Show minimap icon",
+      "Show/Hide the minimap button"):Place(4,20)
+
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 60)
 
   p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4, 20)
@@ -498,6 +500,7 @@ function MM:CreateOptionsPanel()
     slot:SetValue(DB.manual)
     emaSetMaster:SetChecked(MM.emaSetMaster)
     followAfterMount:SetChecked(MM.followAfterMount)
+    showMinimapIcon:SetChecked(MM.showMinimapIcon)
   end
 
   function p:HandleOk()
@@ -523,6 +526,9 @@ function MM:CreateOptionsPanel()
     MM:SetSaved("debug", sliderVal)
     MM:SetSaved("emaSetMaster", emaSetMaster:GetChecked())
     MM:SetSaved("followAfterMount", followAfterMount:GetChecked())
+    if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
+      MM:SetupMenu()
+    end
   end
 
   function p:cancel()

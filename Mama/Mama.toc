@@ -12,6 +12,7 @@
 ## LoadOnDemand: 0
 ## SavedVariables: MamaSaved
 ## Dependencies: DynamicBoxer
+## OptionalDeps: SexyMap, ProjectAzilroka
 ## Globe: check-classic
 ## X-OpenSource-License: LPGLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases

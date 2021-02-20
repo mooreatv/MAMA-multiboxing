@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.0.0 Feb 20th 2021
+- Option to hide the minimap button and compatibility fixes from MoLib.
+- Stable and useful enough to call 1.0!
+
 v0.9.1 Jan 31st 2021
 - Added `/mama follow train` and key binding to make a train of follow instead 
   of all following same
