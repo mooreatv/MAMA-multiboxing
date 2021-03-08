@@ -18,6 +18,8 @@ globals = {
     "Dismount",
     "C_MountJournal",
     "IsMounted",
+    "UIParent",
+    "InCombatLockdown"
 }
 max_line_length = 132
 ignore = {
