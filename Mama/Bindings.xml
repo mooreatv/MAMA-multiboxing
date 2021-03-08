@@ -27,4 +27,6 @@
     <Binding name="MM_DISMOUNT"  category="MAMA">
         Mama.Slash("mount dismount")
     </Binding>
+    <Binding name="CLICK MamaAssist:LeftButton"  category="MAMA">
+    </Binding>
 </Bindings>

@@ -31,6 +31,8 @@ local DB = _G.DynBoxer
 MM.emaSetMaster = true -- do it by default, turn off in config if not needed
 MM.followAfterMount = true
 
+MM.lead = "player"
+
 function MM:SetEMAMaster(fullName)
   if not MM.emaSetMaster then
     MM:Debug("EMA set master config is off, not setting ema master")
@@ -104,6 +106,8 @@ function MM:SendSecureCommand(payload, partyOnly)
 end
 
 function MM:MakeMeLead()
+  MM.lead = "player"
+  MM:UpdateAssist()
   -- first check if we aren't already lead
   if UnitIsGroupLeader("Player") then
     MM:Debug("Already leader, skipping...")
@@ -120,6 +124,8 @@ end
 
 function MM:ExecuteLeadCommand(fullName, msg)
   local shortName = DB:ShortName(fullName)
+  MM.lead = shortName
+  MM:UpdateAssist()
   if fullName == DB.fullName then
     MM:SetEMAMaster(fullName)
   end
@@ -287,9 +293,35 @@ local additionalEventHandlers = {
     if MM.mmb then
       MM:SetupMenu() -- buffer with the one above?
     end
+  end,
+
+  PLAYER_REGEN_ENABLED  = function(_self, ...)
+    MM:DebugEvCall(1, ...)
+    MM:UpdateAssist()
   end
 
 }
+
+function MM:AssistButton()
+  local b = CreateFrame("Button", "MamaAssist", UIParent, "SecureActionButtonTemplate")
+  b:SetAttribute("type", "assist")
+  b:SetAttribute("unit", MM.lead)
+end
+
+MM:AssistButton()
+
+function MM:UpdateAssist()
+  MM:Debug("Updating assist to %", MM.lead)
+  if InCombatLockdown() then
+    MM:Debug("Can't update in combat")
+    return
+  end
+  _G["MamaAssist"]:SetAttribute("unit", MM.lead)
+end
+
+-- function MM:Assist()
+--  MM:Debug("Assist called - lead is %", MM.lead)
+--end
 
 function MM:IsSetup()
   if DB.fullName and DB.Secret then
@@ -359,8 +391,10 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if rest == "" then
       MM:MakeMeLead()
     else
+      local shortName = DB:ShortName(rest)
+      MM.lead = shortName
+      MM:UpdateAssist()
       if UnitIsGroupLeader("Player") then
-        local shortName = DB:ShortName(rest)
         MM:PrintDefault("Mama: directly setting % (%) as leader", shortName, rest)
         PromoteToLeader(shortName)
       else
@@ -373,6 +407,8 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if not MM:IsSetup() then
       return
     end
+    MM.lead = "player"
+    MM:UpdateAssist()
     MM:SetEMAMaster(DB.fullName)
     MM:PrintDefault("Mama: Requesting to both be made lead and followed")
     MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))
@@ -457,7 +493,7 @@ function MM:CreateOptionsPanel()
 
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
-                             1):Place(4,50)
+                             1):Place(4,32)
 
   local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
       "Sets the EMA master when setting the group leader"):Place(4,20)
@@ -468,7 +504,9 @@ function MM:CreateOptionsPanel()
   local showMinimapIcon = p:addCheckBox("Show minimap icon",
       "Show/Hide the minimap button"):Place(4,20)
 
-  p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 60)
+  p:addText(L["Use |cFF99E5FF/click MamaMaster|r in your macros for assisting the lead."]):Place(0,16)
+
+  p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 32)
 
   p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/mama bug|r", "bug"):Place(4, 20)
 
@@ -562,6 +600,7 @@ _G.BINDING_NAME_MM_FL_COMBO = L["Combo make me lead and follow me"] ..
   " |cFF99E5FF/mama altogether|r (or |cFF99E5FF/mama a|r for short)"
 _G.BINDING_NAME_MM_MOUNT_UP = L["Mount up"] .. " |cFF99E5FF/mama mount up|r (or |cFF99E5FF/mama m|r for short)"
 _G.BINDING_NAME_MM_DISMOUNT = L["Dismount"] .. " |cFF99E5FF/mama mount dismount|r (or |cFF99E5FF/mama m d|r for short)"
+_G["BINDING_NAME_CLICK MamaAssist:LeftButton"] = L["Assist"] .. " |cFF99E5FF/click MamaAssist|r " .. L["in macros"]
 
 -- MM.debug = 2
 MM:Debug("mama main file loaded")

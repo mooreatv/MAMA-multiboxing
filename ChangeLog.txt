@@ -4,6 +4,11 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.1.0 March 7th 2021
+- Added `/click MamaAssist` and key binding which will assist whichever toon is the
+  current lead. Add this to your macros.
+  (value can't be changed in combat; continue to use party1 for in combat switching)
+
 v1.0.0 Feb 20th 2021
 - Option to hide the minimap button and compatibility fixes from MoLib.
 - Stable and useful enough to call 1.0!
