@@ -31,7 +31,19 @@ local DB = _G.DynBoxer
 MM.emaSetMaster = true -- do it by default, turn off in config if not needed
 MM.followAfterMount = true
 
-MM.lead = "player"
+MM.lead = nil
+
+function MM:SetLead(name)
+  MM.lead = name
+  MM:UpdateAssist()
+end
+
+function MM:GetLead()
+  if MM.lead then
+    return MM.lead
+  end
+  return "player"
+end
 
 function MM:SetEMAMaster(fullName)
   if not MM.emaSetMaster then
@@ -106,8 +118,7 @@ function MM:SendSecureCommand(payload, partyOnly)
 end
 
 function MM:MakeMeLead()
-  MM.lead = "player"
-  MM:UpdateAssist()
+  MM:SetLead("player")
   -- first check if we aren't already lead
   if UnitIsGroupLeader("Player") then
     MM:Debug("Already leader, skipping...")
@@ -124,8 +135,7 @@ end
 
 function MM:ExecuteLeadCommand(fullName, msg)
   local shortName = DB:ShortName(fullName)
-  MM.lead = shortName
-  MM:UpdateAssist()
+  MM:SetLead(shortName)
   if fullName == DB.fullName then
     MM:SetEMAMaster(fullName)
   end
@@ -298,25 +308,49 @@ local additionalEventHandlers = {
   PLAYER_REGEN_ENABLED  = function(_self, ...)
     MM:DebugEvCall(1, ...)
     MM:UpdateAssist()
-  end
+  end,
 
+  PARTY_LEADER_CHANGED = function(_self, ...)
+    MM:DebugEvCall(1, ...)
+    MM:LeaderChange()
+  end
 }
 
 function MM:AssistButton()
   local b = CreateFrame("Button", "MamaAssist", UIParent, "SecureActionButtonTemplate")
   b:SetAttribute("type", "assist")
-  b:SetAttribute("unit", MM.lead)
+  b:SetAttribute("unit", MM:GetLead())
 end
 
 MM:AssistButton()
 
 function MM:UpdateAssist()
-  MM:Debug("Updating assist to %", MM.lead)
+  local l = MM:GetLead()
+  MM:Debug("Updating assist to %", l)
   if InCombatLockdown() then
     MM:Debug("Can't update in combat")
     return
   end
-  _G["MamaAssist"]:SetAttribute("unit", MM.lead)
+  _G["MamaAssist"]:SetAttribute("unit", l)
+end
+
+function MM:LeaderChange()
+  if MM.lead then
+    return -- we already have a lead configured
+  end
+  if UnitIsGroupLeader("player") then
+    MM:SetLead("player")
+    return
+  end
+  local sz = GetNumGroupMembers()
+  for i = 1, sz do
+    local x = GetRaidRosterInfo(i)
+    if UnitIsGroupLeader(x) then
+      MM:Debug("Found lead at index %: %", i, x)
+      MM:SetLead(x)
+      return
+    end
+  end
 end
 
 -- function MM:Assist()
@@ -392,8 +426,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
       MM:MakeMeLead()
     else
       local shortName = DB:ShortName(rest)
-      MM.lead = shortName
-      MM:UpdateAssist()
+      MM:SetLead(shortName)
       if UnitIsGroupLeader("Player") then
         MM:PrintDefault("Mama: directly setting % (%) as leader", shortName, rest)
         PromoteToLeader(shortName)
@@ -407,8 +440,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     if not MM:IsSetup() then
       return
     end
-    MM.lead = "player"
-    MM:UpdateAssist()
+    MM:SetLead("player")
     MM:SetEMAMaster(DB.fullName)
     MM:PrintDefault("Mama: Requesting to both be made lead and followed")
     MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))

@@ -19,7 +19,9 @@ globals = {
     "C_MountJournal",
     "IsMounted",
     "UIParent",
-    "InCombatLockdown"
+    "InCombatLockdown",
+    "GetNumGroupMembers",
+    "GetRaidRosterInfo"
 }
 max_line_length = 132
 ignore = {

@@ -4,6 +4,11 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.1.1 March 9th 2021
+- Initialize MamaAssist to the party leader at first (but do use the "alltogether" keybinding)
+  cleaned up leader code.
+- Bumped retail TOC
+
 v1.1.0 March 7th 2021
 - Added `/click MamaAssist` and key binding which will assist whichever toon is the
   current lead. Add this to your macros.
