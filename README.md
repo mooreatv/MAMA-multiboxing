@@ -28,11 +28,13 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
 
-- Set EMA master when setting group lead (if EMA is installed and config checkbox is on)
-
 - `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
 
+- add `/click MamaAssist` in front of your macro to assist whoever you are leading with.
+
 - `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
+
+- Set EMA master when setting group lead (if EMA is installed and config checkbox is on, but `/click MamaAssist` is faster and more reliable)
 
 - and more coming quite often... see `/mama`
 
@@ -51,6 +53,17 @@ And some convenience like
 - And more features per your request(s) !
 
 Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other multiboxing software or hardware
+
+## Setup
+
+As mentioned above there is a one time setup/pairing with DynamicBoxer: 
+
+`/mama s 1` in window 1, `/mama s 2` in window 2, `/mama s 3` in window 3 etc... then copy the token from dynamicboxer window 1 and paste in the other windows
+
+Set in game keybind for "mama alltogether" so you can trigger both follow me and make leader in 1 key/addon message. (and the other commands too)
+
+Add `/click MamaAssist` in front of your macro to assist whoever you are leading with.
+
 
 ## More info
 
