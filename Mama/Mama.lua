@@ -345,7 +345,7 @@ function MM:LeaderChange()
   local sz = GetNumGroupMembers()
   for i = 1, sz do
     local x = GetRaidRosterInfo(i)
-    if UnitIsGroupLeader(x) then
+    if x and UnitIsGroupLeader(x) then
       MM:Debug("Found lead at index %: %", i, x)
       MM:SetLead(x)
       return
