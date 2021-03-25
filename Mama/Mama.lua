@@ -318,8 +318,8 @@ local additionalEventHandlers = {
 
 function MM:AssistButton()
   local b = CreateFrame("Button", "MamaAssist", UIParent, "SecureActionButtonTemplate")
-  b:SetAttribute("type", "assist")
-  b:SetAttribute("unit", MM:GetLead())
+  b:SetAttribute("type", "macro")
+  b:SetAttribute("macrotext", "/assist " .. MM:GetLead())
 end
 
 MM:AssistButton()
@@ -331,7 +331,7 @@ function MM:UpdateAssist()
     MM:Debug("Can't update in combat")
     return
   end
-  _G["MamaAssist"]:SetAttribute("unit", l)
+  _G["MamaAssist"]:SetAttribute("macrotext", "/assist " .. l)
 end
 
 function MM:LeaderChange()
