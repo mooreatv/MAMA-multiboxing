@@ -128,23 +128,27 @@ function MM:MakeMeLead()
     MM:Debug("Not in a group, skipping make me lead...")
     return
   end
-  MM:SetEMAMaster(DB.fullName)
   MM:PrintDefault("Mama: Requesting to be made lead")
   MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
+  MM:SetEMAMaster(DB.fullName)
 end
 
 function MM:ExecuteLeadCommand(fullName, msg)
   local shortName = DB:ShortName(fullName)
   MM:SetLead(shortName)
-  if fullName == DB.fullName then
-    MM:SetEMAMaster(fullName)
-  end
   if not UnitIsGroupLeader("Player") then
     MM:Debug("I'm not leader, skipping %", msg)
+    if fullName == DB.fullName then
+        -- Do ema stuff last as it tends to error out
+        MM:SetEMAMaster(fullName)
+    end
     return
   end
   MM:PrintDefault("Mama: Setting % (%) as leader", shortName, fullName)
   PromoteToLeader(shortName)
+  if fullName == DB.fullName then
+    MM:SetEMAMaster(fullName)
+  end
 end
 
 function MM:ExecuteFollowCommand(fullName)
@@ -215,8 +219,8 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteLeadCommand(fullName, msg)
   elseif cmd == "A" then
     -- Follow+Lead cmd
-    MM:ExecuteLeadCommand(fullName, msg)
     MM:ExecuteFollowCommand(fullName)
+    MM:ExecuteLeadCommand(fullName, msg)
   elseif cmd == "M" then
     MM:ExecuteMountCommand(fullName, from)
   else
@@ -441,9 +445,9 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
       return
     end
     MM:SetLead("player")
-    MM:SetEMAMaster(DB.fullName)
     MM:PrintDefault("Mama: Requesting to both be made lead and followed")
     MM:SendSecureCommand(MM:AltogetherCommand(DB.fullName))
+    MM:SetEMAMaster(DB.fullName)
   elseif cmd == "m" then
     -- mount
     if not MM:IsSetup() then

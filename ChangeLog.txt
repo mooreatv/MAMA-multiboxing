@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.1.4 March 28th 2021
+- Avoid that EMA errors prevent executing Mama core functions
+
 v1.1.3 March 24th 2021
 - Fixed out of party /click MamaAssist
 
