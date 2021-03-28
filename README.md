@@ -58,7 +58,7 @@ Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other
 
 As mentioned above there is a one time setup/pairing with DynamicBoxer: 
 
-`/mama s 1` in window 1, `/mama s 2` in window 2, `/mama s 3` in window 3 etc... then copy the token from dynamicboxer window 1 and paste in the other windows
+`/mama s 1` in window 1, `/mama s 2` in window 2, `/mama s 3` in window 3 etc... then copy the token from dynamicboxer window 1 and paste in the other windows. Type return after `Ctrl-C` (copy) from window1 then paste `Ctrl-V` in all other windows as prompted. It may take a `/reload` the first time to complete the one time setup.
 
 Set in game keybind for "mama alltogether" so you can trigger both follow me and make leader in 1 key/addon message. (and the other commands too)
 
