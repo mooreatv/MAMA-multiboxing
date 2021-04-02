@@ -64,6 +64,7 @@ Set in game keybind for "mama alltogether" so you can trigger both follow me and
 
 Add `/click MamaAssist` in front of your macro to assist whoever you are leading with.
 
+If you see anything red in the dbox-mama blue status window: something is wrong! try `/reload` and read the messages in the chat window if it persists. Repeat the setup carefully (`/dbox show` if you closed the dialog) and if that still doesn't work come to discord.
 
 ## More info
 
