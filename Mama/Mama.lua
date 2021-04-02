@@ -540,7 +540,7 @@ function MM:CreateOptionsPanel()
   local showMinimapIcon = p:addCheckBox("Show minimap icon",
       "Show/Hide the minimap button"):Place(4,20)
 
-  p:addText(L["Use |cFF99E5FF/click MamaMaster|r in your macros for assisting the lead."]):Place(0,16)
+  p:addText(L["Use |cFF99E5FF/click MamaAssist|r in your macros for assisting the lead."]):Place(0,16)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 32)
 
