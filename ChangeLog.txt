@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.1.6 April 18th 2021
+- Pick up new MoLib with multi line output improvements so /mama help output is scrollable
+
 v1.1.5 April 2nd 2021
 - Typo in addon config option fixed
 
