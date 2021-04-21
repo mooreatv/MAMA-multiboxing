@@ -335,7 +335,11 @@ function MM:UpdateAssist()
     MM:Debug("Can't update in combat")
     return
   end
-  _G["MamaAssist"]:SetAttribute("macrotext", "/assist " .. l)
+  if l == "player" then
+    _G["MamaAssist"]:SetAttribute("macrotext", "")
+  else
+    _G["MamaAssist"]:SetAttribute("macrotext", "/assist " .. l)
+  end
 end
 
 function MM:LeaderChange()
