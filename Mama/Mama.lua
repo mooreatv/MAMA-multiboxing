@@ -467,6 +467,8 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
       return
     end
     DB:SetSaved("manual", sn)
+    DB.Slash("enable")
+    MM:PrintDefault("After exchange token (hit return on s1 after copy, before pasting): /reload to save/confirm all is setup")
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
