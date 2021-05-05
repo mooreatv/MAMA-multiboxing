@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.2.2 May (the) 4th (be with you) 2021
+- Put the alltogether keybind first as it's the most useful/important one
+- Raise the max slot to 16
+
 v1.2.1 April 25th 2021
 - Make sure that `/mama s N` also forces DynamicBoxer to be enabled.
 

@@ -33,6 +33,8 @@ MM.followAfterMount = true
 
 MM.lead = nil
 
+MM.maxSlot = 16
+
 function MM:SetLead(name)
   MM.lead = name
   MM:UpdateAssist()
@@ -468,7 +470,9 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     end
     DB:SetSaved("manual", sn)
     DB.Slash("enable")
-    MM:PrintDefault("After exchange token (hit return on s1 after copy, before pasting): /reload to save/confirm all is setup")
+    MM:PrintDefault(
+      "MAMA slot % set. After exchange token (hit return on s1 after copy, before pasting): /reload to save/confirm all is setup",
+      sn)
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
@@ -534,8 +538,8 @@ function MM:CreateOptionsPanel()
  --                              1):Place(4,20)
 
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
-                               "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to ISboxer", 0, 11,
-                             1):Place(4,32)
+                               "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to plain DynamicBoxer",
+                               0, MM.maxSlot, 1):Place(4,32)
 
   local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
       "Sets the EMA master when setting the group leader"):Place(4,20)
