@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.3.2 Sept 2nd 2021
+- Updated TOC for Burning Crusade 2.5.2
+
 v1.3.1 June 29th 2021
 - Updated TOCs for Shadowlands Chains of Domination (90100)
 
