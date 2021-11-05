@@ -44,8 +44,6 @@ Mama might eventually also ensure your multiboxing or dual boxing team can:
 
 - Fly to the same place
 
-- Accept/be on the same quests
-
 And some convenience like
 
 - Auto vendor/repair
