@@ -181,6 +181,27 @@ function MM:ExecuteMountCommand(onoff, from)
   end
 end
 
+function MM:AcceptQuest()
+  MM:Debug("Accepting quest")
+  AcceptQuest()
+end
+
+function MM:ShareQuest(index)
+  MM:Debug("Request to share quest (index=%)", index)
+  SelectQuestLogEntry(index);
+  if (GetQuestLogPushable()) then
+    MM:Debug("Attempting to share quest index=% with your group", index);
+    QuestLogPushQuest();
+  end
+  MM:Debug("Unable to share quest index=% with your group", index);
+end
+
+-- Handler for QUEST_ACCEPTED events
+function MM:ProcessQuestAcceptedEvent(...)
+  local arg = {...}
+  MM:ShareQuest(arg[2])
+end
+
 function MM:ProcessMessage(source, from, data)
   -- refactor shared copy/pasta with dynamicboxer's version
   local directMessage = (source == "WHISPER" or source == "CHAT_FILTER")
@@ -319,6 +340,27 @@ local additionalEventHandlers = {
   PARTY_LEADER_CHANGED = function(_self, ...)
     MM:DebugEvCall(1, ...)
     MM:LeaderChange()
+  end,
+
+  QUEST_ACCEPT_CONFIRM = function(_self, ...)
+    MM:DebugEvCall(1, ...)
+    if MM.autoQuest then
+      MM:AcceptQuest()
+    end
+  end,
+
+  QUEST_DETAIL = function(_self, ...)
+    MM:DebugEvCall(1, ...)
+    if MM.autoQuest then
+      MM:AcceptQuest()
+    end
+  end,
+
+  QUEST_ACCEPTED = function(_self, ...)
+    MM:DebugEvCall(1, ...)
+    if MM.autoQuest then
+      MM:ProcessQuestAcceptedEvent(...)
+    end
   end
 }
 
@@ -383,6 +425,7 @@ function MM:Help(msg)
                     "/mama lead [Name-Server] -- make me lead or make optional Name-Server the lead.\n" ..
                     "/mama altogether -- both makemelead and followme in 1 combo command.\n" ..
                     "/mama mount on||off -- mount or dismount team.\n" ..
+                    "/mama quest on||off -- automatically accept and share quests\n" ..
                     "/mama version -- shows addon version.\nSee also /dbox commands.")
 end
 
@@ -478,6 +521,13 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
     InterfaceOptionsFrame:Show() -- onshow will clear the category if not already displayed
     InterfaceOptionsFrame_OpenToCategory(MM.optionsPanel) -- gets our name selected
+  elseif MM:StartsWith(arg, "q") then
+    if rest == "on" then
+      MM:SetSaved("autoQuest", 1)
+    elseif rest == "off" then
+      MM:SetSaved("autoQuest", nil)
+    end
+    MM:PrintDefault("Mama autoQuest is " .. (MM.autoQuest and "on" or "off"))
   elseif MM:StartsWith(arg, "debug") then
     -- debug
     if rest == "on" then
@@ -550,6 +600,9 @@ function MM:CreateOptionsPanel()
   local showMinimapIcon = p:addCheckBox("Show minimap icon",
       "Show/Hide the minimap button"):Place(4,20)
 
+  local autoQuest = p:addCheckBox("Automatically accept and share quests",
+      "Enable/Disable automatically accepting and sharing quests"):Place(4,20)
+
   p:addText(L["Use |cFF99E5FF/click MamaAssist|r in your macros for assisting the lead."]):Place(0,16)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 32)
@@ -585,6 +638,7 @@ function MM:CreateOptionsPanel()
     emaSetMaster:SetChecked(MM.emaSetMaster)
     followAfterMount:SetChecked(MM.followAfterMount)
     showMinimapIcon:SetChecked(MM.showMinimapIcon)
+    autoQuest:SetChecked(MM.autoQuest)
   end
 
   function p:HandleOk()
@@ -613,6 +667,7 @@ function MM:CreateOptionsPanel()
     if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
       MM:SetupMenu()
     end
+    MM:SetSaved("autoQuest", autoQuest:GetChecked())
   end
 
   function p:cancel()
