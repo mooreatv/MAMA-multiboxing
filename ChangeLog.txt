@@ -6,7 +6,7 @@ Coming next:
 
 v1.4.0 November 28th 2021
 - New option to set auto set loot to FFA (and reset to group if inviting extra people)
-- New option to auto share/accept quests (thanks @patrick-east for the contribution!)
+- New option to auto share/accept quests (`/mama quest`, thanks @patrick-east for the contribution!)
 - TOC updates for SoM and Shadowlands
 
 v1.3.2 Sept 2nd 2021
