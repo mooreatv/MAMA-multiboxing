@@ -28,8 +28,9 @@ MM.showMinimapIcon = true
 
 local DB = _G.DynBoxer
 
-MM.emaSetMaster = true -- do it by default, turn off in config if not needed
+MM.emaSetMaster = false -- don't it by default as ema is mostly gone, turn on in config if not needed
 MM.followAfterMount = true
+MM.ffa = true
 
 MM.lead = nil
 
@@ -311,15 +312,39 @@ local additionalEventHandlers = {
     end
   end,
 
-  PLAYER_REGEN_ENABLED  = function(_self, ...)
+  PLAYER_REGEN_ENABLED = function(_self, ...)
     MM:DebugEvCall(1, ...)
     MM:UpdateAssist()
   end,
 
-  PARTY_LEADER_CHANGED = function(_self, ...)
-    MM:DebugEvCall(1, ...)
+  PARTY_LEADER_CHANGED = function()
     MM:LeaderChange()
+  end,
+
+  GROUP_ROSTER_UPDATE = function()
+    if UnitIsGroupLeader("player") then
+      local curLoot = GetLootMethod()
+      local numInParty = GetNumGroupMembers(LE_PARTY_CATEGORY_HOME)
+      if numInParty == 1 then
+        MM.ffaIssued = false
+        MM.groupIssued = false
+        return
+      end
+      MM:Debug("numInParty % expected % loot %", numInParty, DB.expectedCount, curLoot)
+      if MM.ffa then
+        if not MM.ffaIssued and numInParty == DB.expectedCount and curLoot ~= "freeforall" then
+          MM:PrintDefault("Setting loot to ffa as configured, was %. expected team size %", curLoot, DB.expectedCount)
+          SetLootMethod("freeforall")
+          MM.ffaIssued = true
+        elseif not MM.groupIssued and numInParty > DB.expectedCount and curLoot == "freeforall" then
+          MM:PrintDefault("Extra people in party/r  (% vs %), switching to group loot", numInParty, DB.expectedCount)
+          SetLootMethod("group")
+          MM.groupIssued = true
+        end
+      end
+    end
   end
+
 }
 
 function MM:AssistButton()
@@ -541,6 +566,9 @@ function MM:CreateOptionsPanel()
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to plain DynamicBoxer",
                                0, MM.maxSlot, 1):Place(4,32)
 
+  local ffa = p:addCheckBox("Set loot to FFA after invite",
+              "Automatically set the loot to Free For All when inviting"):Place(4,20)
+
   local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
       "Sets the EMA master when setting the group leader"):Place(4,20)
 
@@ -585,6 +613,7 @@ function MM:CreateOptionsPanel()
     emaSetMaster:SetChecked(MM.emaSetMaster)
     followAfterMount:SetChecked(MM.followAfterMount)
     showMinimapIcon:SetChecked(MM.showMinimapIcon)
+    ffa:SetChecked(MM.ffa)
   end
 
   function p:HandleOk()
@@ -610,6 +639,7 @@ function MM:CreateOptionsPanel()
     MM:SetSaved("debug", sliderVal)
     MM:SetSaved("emaSetMaster", emaSetMaster:GetChecked())
     MM:SetSaved("followAfterMount", followAfterMount:GetChecked())
+    MM:SetSaved("ffa", ffa:GetChecked())
     if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
       MM:SetupMenu()
     end

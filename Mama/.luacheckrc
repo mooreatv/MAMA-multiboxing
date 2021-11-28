@@ -21,7 +21,9 @@ globals = {
     "UIParent",
     "InCombatLockdown",
     "GetNumGroupMembers",
-    "GetRaidRosterInfo"
+    "GetRaidRosterInfo",
+    "SetLootMethod",
+    "GetLootMethod"
 }
 max_line_length = 132
 ignore = {

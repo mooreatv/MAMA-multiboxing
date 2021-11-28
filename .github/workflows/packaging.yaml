@@ -26,7 +26,7 @@ jobs:
          CF_API_KEY: ${{ secrets.CF_API_KEY }}
          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Classic Package
-        run: ./release.sh -m pkgmeta.yaml -g 1.13.7 -p 334197
+        run: ./release.sh -m pkgmeta.yaml -g 2.5.2 -p 334197
         env:
          CF_API_KEY: ${{ secrets.CF_API_KEY }}
          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

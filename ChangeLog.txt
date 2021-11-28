@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.4.0 November 28th 2021
+- New option to set auto set loot to FFA (and reset to group if inviting extra people)
+- TOC updates for SoM and Shadowlands
+
 v1.3.2 Sept 2nd 2021
 - Updated TOC for Burning Crusade 2.5.2
 
