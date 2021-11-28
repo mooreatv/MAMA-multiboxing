@@ -22,19 +22,23 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 ## What does it do ?
 
-**Right now M.A.M.A relies on my DynamicBoxer for most of the functionality**
+**Right now M.A.M.A relies on my DynamicBoxer for a lot of the functionality**
 
-- Let's you use DynamicBoxer without requiring the now banned ISBoxer, including fast in order invite/disband, EMA sync, etc... just set your window slot # in the options panel or with `/mama s N`. 
+- Let's you use DynamicBoxer without requiring the now banned ISBoxer, including fast in order invite/disband, EMA sync, etc... just set your window slot # in the options panel or with `/mama s N`.
 
 - Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
 
 - `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
 
-- add `/click MamaAssist` in front of your macro to assist whoever you are leading with.
+- add `/click MamaAssist` in front of your macro to assist whoever you are leading with. (you can `/mama lead othertoon` to assist another character like a tank when it's not your own/you joined another party)
 
 - `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
 
 - Set EMA master when setting group lead (if EMA is installed and config checkbox is on, but `/click MamaAssist` is faster and more reliable)
+
+- Set loot to free for all (and back to group when inviting extra)
+
+- Share/accept quests on minions
 
 - and more coming quite often... see `/mama`
 
@@ -43,8 +47,6 @@ _Input on feature prioritization is most welcome!_
 Mama might eventually also ensure your multiboxing or dual boxing team can:
 
 - Fly to the same place
-
-- Accept/be on the same quests
 
 And some convenience like
 
@@ -56,7 +58,7 @@ Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other
 
 ## Setup
 
-As mentioned above there is a one time setup/pairing with DynamicBoxer: 
+As mentioned above there is a one time setup/pairing with DynamicBoxer:
 
 `/mama s 1` in window 1, `/mama s 2` in window 2, `/mama s 3` in window 3 etc... then copy the token from dynamicboxer window 1 and paste in the other windows. Type return after `Ctrl-C` (copy) from window1 then paste `Ctrl-V` in all other windows as prompted. It may take a `/reload` the first time to complete the one time setup.
 

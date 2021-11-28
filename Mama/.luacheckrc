@@ -23,7 +23,11 @@ globals = {
     "GetNumGroupMembers",
     "GetRaidRosterInfo",
     "SetLootMethod",
-    "GetLootMethod"
+    "GetLootMethod",
+    "AcceptQuest",
+    "SelectQuestLogEntry",
+    "GetQuestLogPushable",
+    "QuestLogPushQuest"
 }
 max_line_length = 132
 ignore = {
