@@ -212,7 +212,8 @@ end
 function MM:ExecuteMountCommand(onoff, from)
   if onoff == "true" or onoff == "mount" or onoff == "on" or onoff == "" or onoff == "up" then
     if DB.isClassic then
-      MM:PrintDefault("Mama: Mounting requested from % - can't implement on classic. follow after mount is %", from, MM.followAfterMount)
+      MM:PrintDefault("Mama: Mounting requested from % - can't implement on classic. follow after mount is %", from,
+                      MM.followAfterMount)
     else
       MM:PrintDefault("Mama: Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
       if IsMounted() then
