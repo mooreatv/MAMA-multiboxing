@@ -32,10 +32,22 @@ MM.emaSetMaster = false -- don't it by default as ema is mostly gone, turn on in
 MM.followAfterMount = true
 MM.ffa = true
 MM.autoQuest = true
+MM.autoFly = true
 
 MM.lead = nil
 
 MM.maxSlot = 16
+
+if not DB.isClassic then
+  -- put back basic global functions gone in 9.x
+  function SelectQuestLogEntry(id)
+    C_QuestLog.SetSelectedQuest(id)
+  end
+  function GetQuestLogPushable(id)
+    return C_QuestLog.IsPushableQuest(id)
+  end
+end
+
 
 function MM:SetLead(name)
   MM.lead = name
@@ -188,14 +200,16 @@ function MM:AcceptQuest()
   AcceptQuest()
 end
 
+-- TODO: maybe do it only once instead of keep attempting to share quests we just got shared
 function MM:ShareQuest(index)
   MM:Debug("Request to share quest (index=%)", index)
-  SelectQuestLogEntry(index);
-  if (GetQuestLogPushable()) then
-    MM:Debug("Attempting to share quest index=% with your group", index);
-    QuestLogPushQuest();
+  SelectQuestLogEntry(index)
+  -- classic api doesn't actually take a parameter for GetQuestLogPushable but 9.x does...
+  if (GetQuestLogPushable(index)) then
+    MM:Debug("Attempting to share quest index=% with your group", index)
+    QuestLogPushQuest()
   end
-  MM:Debug("Unable to share quest index=% with your group", index);
+  MM:Debug("Unable to share quest index=% with your group", index)
 end
 
 -- Handler for QUEST_ACCEPTED events
@@ -226,7 +240,7 @@ function MM:ProcessMessage(source, from, data)
     MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LFAM]) ([^ ]+)") -- or strplit(" ", data)
+  local cmd, fullName = msg:match("^([LFAM]) ([^ ]*)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
@@ -249,7 +263,7 @@ function MM:ProcessMessage(source, from, data)
   elseif cmd == "M" then
     MM:ExecuteMountCommand(fullName, from)
   else
-    MM:Warning("Unexpected command in % from %", msg, from)
+    MM:Warning("Unexpected command (%,%) in % (%) from %", cmd, fullName, msg, string.len(msg), from)
   end
 end
 
@@ -605,7 +619,7 @@ function MM:CreateOptionsPanel()
   p:addText(
     L["Remember to use the |cFF99E5FFDynamicBoxer|r (v3 or newer) options tab to configure many additional options\n"..
     "And do dbox one time setup and |cFF99E5FF/reload|r . See also keybindings and |cFF99E5FF/mama|r slash commands."])
-    :Place(0, 16)
+    :Place(0, 14)
 
   -- TODO add some option
 
@@ -615,23 +629,26 @@ function MM:CreateOptionsPanel()
 
   local slot = p:addSlider("This window's slot #", "This window's index in the team (must be unique)\n" ..
                                "or e.g |cFF99E5FF/mama slot 3|r for setting this to be window 3, 0 to revert to plain DynamicBoxer",
-                               0, MM.maxSlot, 1):Place(4,32)
+                               0, MM.maxSlot, 1):Place(4,22)
 
   local ffa = p:addCheckBox("Set loot to FFA after invite",
-              "Automatically set the loot to Free For All when inviting"):Place(4,20)
-
-  local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
-      "Sets the EMA master when setting the group leader"):Place(4,20)
-
-  local followAfterMount = p:addCheckBox("Follow after mount",
-      "Automatically follow in addition to mount up"):Place(4,20)
-
-  local showMinimapIcon = p:addCheckBox("Show minimap icon",
-      "Show/Hide the minimap button"):Place(4,20)
+              "Automatically set the loot to Free For All when inviting"):Place(4,16)
 
   local autoQuest = p:addCheckBox("Automatically accept and share quests",
-      "Enable/Disable automatically accepting and sharing quests"):Place(4,20)
+              "Enable/Disable automatically accepting and sharing quests"):Place(4,16)
 
+  local autoFly = p:addCheckBox("Automatically take same Flight as leader (Not yet implemented/coming soon)",
+              "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
+  autoFly:Disable() -- not implemented yet
+
+  local followAfterMount = p:addCheckBox("Follow after mount",
+      "Automatically follow in addition to mount up"):Place(4,16)
+
+  local showMinimapIcon = p:addCheckBox("Show minimap icon",
+      "Show/Hide the minimap button"):Place(4,16)
+
+  local emaSetMaster = p:addCheckBox("Set EMA master based on leader",
+      "Sets the EMA master when setting the group leader"):Place(4,16)
   p:addText(L["Use |cFF99E5FF/click MamaAssist|r in your macros for assisting the lead."]):Place(0,16)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 32)
@@ -641,7 +658,7 @@ function MM:CreateOptionsPanel()
   p:addButton(L["Reset minimap button"], L["Resets the minimap button to back to initial default location"], function()
     MM:SetSaved("buttonPos", nil)
     MM:SetupMenu()
-  end):Place(4, 20)
+  end):PlaceRight(20)
 
   local debugLevel = p:addSlider(L["Debug level"], L["Sets the debug level"] .. "\n|cFF99E5FF/mama debug X|r", 0, 9, 1,
                                  "Off"):Place(16, 30)
@@ -669,6 +686,7 @@ function MM:CreateOptionsPanel()
     showMinimapIcon:SetChecked(MM.showMinimapIcon)
     ffa:SetChecked(MM.ffa)
     autoQuest:SetChecked(MM.autoQuest)
+    autoFly:SetChecked(MM.autoFly)
   end
 
   function p:HandleOk()
@@ -695,10 +713,11 @@ function MM:CreateOptionsPanel()
     MM:SetSaved("emaSetMaster", emaSetMaster:GetChecked())
     MM:SetSaved("followAfterMount", followAfterMount:GetChecked())
     MM:SetSaved("ffa", ffa:GetChecked())
+    MM:SetSaved("autoQuest", autoQuest:GetChecked())
+    MM:SetSaved("autoFly", autoFly:GetChecked())
     if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
       MM:SetupMenu()
     end
-    MM:SetSaved("autoQuest", autoQuest:GetChecked())
   end
 
   function p:cancel()

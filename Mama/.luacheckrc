@@ -28,7 +28,8 @@ globals = {
     "SelectQuestLogEntry",
     "GetQuestLogPushable",
     "QuestLogPushQuest",
-    "LE_PARTY_CATEGORY_HOME"
+    "LE_PARTY_CATEGORY_HOME",
+    "C_QuestLog"
 }
 max_line_length = 132
 ignore = {
