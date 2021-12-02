@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.5.0 December 1st 2021
+- Added taking same Flight Path option
+
 v1.4.1 December 1st 2021
 - Fixed bug where `/mama m` with no argument would get a warning (#8)
 - Fixed bug with new auto quest that wasn't working on SL (#10)

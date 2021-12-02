@@ -29,7 +29,10 @@ globals = {
     "GetQuestLogPushable",
     "QuestLogPushQuest",
     "LE_PARTY_CATEGORY_HOME",
-    "C_QuestLog"
+    "C_QuestLog",
+    "TakeTaxiNode",
+    "TaxiNodeName",
+    "NumTaxiNodes"
 }
 max_line_length = 132
 ignore = {

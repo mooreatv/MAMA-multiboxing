@@ -48,6 +48,42 @@ if not DB.isClassic then
   end
 end
 
+local oTTN = TakeTaxiNode
+function TakeTaxiNode(id)
+  local name = TaxiNodeName(id)
+  MM:PrintDefault("Mama: detected flight to % : %, autoFly is %", id, name, MM.autoFly)
+  if MM.autoFly then
+    -- On SL the ids match always so we could just send that, halas not on classic
+    -- so send the name too so it can be matched
+    MM:SendSecureCommand(MM:TaxiCommand(id, name))
+  end
+  oTTN(id)
+end
+
+function MM:TaxiCommand(id, name)
+  local payload =  "T" .. " " .. id .. " " .. name
+  DB:Debug(3, "Created taxi payload for %: %", id, payload)
+  return payload
+end
+
+function MM:ExecuteTaxiCommand(rest, from)
+  local id, name = rest:match("^([0-9]+) (.+)")
+  MM:PrintDefault("Mama: Taxi command from %: % %", from, id, name)
+  -- good case where Ids match:
+  if TaxiNodeName(id) == name then
+    MM:Debug(1, "Taxi ids match on %", id)
+    oTTN(id)
+    return
+  end
+  for i = 1, NumTaxiNodes() do
+    if TaxiNodeName(i) == name then
+      MM:Debug(1, "Found % at % vs %", name, i, id)
+      oTTN(i)
+      return
+    end
+  end
+  MM:PrintDefault("Mama: couldn't find % in this character's flight map (is it open?)", name)
+end
 
 function MM:SetLead(name)
   MM.lead = name
@@ -176,13 +212,13 @@ end
 function MM:ExecuteMountCommand(onoff, from)
   if onoff == "true" or onoff == "mount" or onoff == "on" or onoff == "" or onoff == "up" then
     if DB.isClassic then
-      MM:PrintDefault("Mounting requested from % - can't implement on classic. follow after mount is %", from, MM.followAfterMount)
+      MM:PrintDefault("Mama: Mounting requested from % - can't implement on classic. follow after mount is %", from, MM.followAfterMount)
     else
-      MM:PrintDefault("Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
+      MM:PrintDefault("Mama: Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
       if IsMounted() then
-        MM:PrintDefault("Mounting requested from %, already mounted. Follow after mount is %", from, MM.followAfterMount)
+        MM:PrintDefault("Mama: Mounting requested from %, already mounted. Follow after mount is %", from, MM.followAfterMount)
       else
-        MM:PrintDefault("Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
+        MM:PrintDefault("Mama: Mounting requested from %, follow after mount is %", from, MM.followAfterMount)
         C_MountJournal.SummonByID(0)
       end
     end
@@ -190,7 +226,7 @@ function MM:ExecuteMountCommand(onoff, from)
       MM:ExecuteFollowCommand(from)
     end
   else
-    MM:PrintDefault("Dismount requested")
+    MM:PrintDefault("Mama: Dismount requested")
     Dismount()
   end
 end
@@ -240,7 +276,7 @@ function MM:ProcessMessage(source, from, data)
     MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LFAM]) ([^ ]*)") -- or strplit(" ", data)
+  local cmd, fullName = msg:match("^([LFAMT]) ([^ ]*)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
@@ -262,6 +298,8 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteLeadCommand(fullName, msg)
   elseif cmd == "M" then
     MM:ExecuteMountCommand(fullName, from)
+  elseif cmd == "T" then
+    MM:ExecuteTaxiCommand(string.sub(msg, 3), from)
   else
     MM:Warning("Unexpected command (%,%) in % (%) from %", cmd, fullName, msg, string.len(msg), from)
   end
@@ -369,11 +407,11 @@ local additionalEventHandlers = {
       MM:Debug("numInParty % expected % loot %", numInParty, DB.expectedCount, curLoot)
       if MM.ffa then
         if not MM.ffaIssued and numInParty == DB.expectedCount and curLoot ~= "freeforall" then
-          MM:PrintDefault("Setting loot to ffa as configured, was %. expected team size %", curLoot, DB.expectedCount)
+          MM:PrintDefault("Mama: Setting loot to ffa as configured, was %. expected team size %", curLoot, DB.expectedCount)
           SetLootMethod("freeforall")
           MM.ffaIssued = true
         elseif not MM.groupIssued and numInParty > DB.expectedCount and curLoot == "freeforall" then
-          MM:PrintDefault("Extra people in party/r  (% vs %), switching to group loot", numInParty, DB.expectedCount)
+          MM:PrintDefault("Mama: Extra people in party/r  (% vs %), switching to group loot", numInParty, DB.expectedCount)
           SetLootMethod("group")
           MM.groupIssued = true
         end
@@ -637,9 +675,8 @@ function MM:CreateOptionsPanel()
   local autoQuest = p:addCheckBox("Automatically accept and share quests",
               "Enable/Disable automatically accepting and sharing quests"):Place(4,16)
 
-  local autoFly = p:addCheckBox("Automatically take same Flight as leader (Not yet implemented/coming soon)",
+  local autoFly = p:addCheckBox("Automatically take same Flight as leader",
               "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
-  autoFly:Disable() -- not implemented yet
 
   local followAfterMount = p:addCheckBox("Follow after mount",
       "Automatically follow in addition to mount up"):Place(4,16)
