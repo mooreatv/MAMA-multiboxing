@@ -40,15 +40,13 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Share/accept quests on minions
 
-- and more coming quite often... see `/mama`
+- Take same flight path as your team
+
+- and more coming quite often... see `/mama` and `/mama config`
 
 _Input on feature prioritization is most welcome!_
 
-Mama might eventually also ensure your multiboxing or dual boxing team can:
-
-- Fly to the same place
-
-And some convenience like
+Mama might eventually also ensure your multiboxing or dual boxing team can do stuff like:
 
 - Auto vendor/repair
 
