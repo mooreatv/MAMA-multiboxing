@@ -38,7 +38,7 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Set loot to free for all (and back to group when inviting extra)
 
-- Share/accept quests on minions
+- Share/accept quests on minions, Abandon quests as a team.
 
 - Take same flight path as your team
 
