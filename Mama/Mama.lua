@@ -33,6 +33,7 @@ MM.followAfterMount = true
 MM.ffa = true
 MM.autoQuest = true
 MM.autoFly = true
+MM.autoAbandon = true
 
 MM.lead = nil
 
@@ -45,6 +46,17 @@ if not DB.isClassic then
   end
   function GetQuestLogPushable(id)
     return C_QuestLog.IsPushableQuest(id)
+  end
+  function AbandonQuest()
+    C_QuestLog.AbandonQuest()
+  end
+  function GetQuestLogTitle(id)
+    local info = C_QuestLog.GetInfo(id)
+    -- not really fully compatible but just what I need for MM:FindQuest
+    return info.title, nil, nil, nil, nil, nil, nil, info.questID
+  end
+  function GetNumQuestLogEntries()
+    return C_QuestLog.GetNumQuestLogEntries()
   end
 end
 
@@ -85,6 +97,35 @@ function MM:ExecuteTaxiCommand(rest, from)
   MM:PrintDefault("Mama: couldn't find % in this character's flight map (is it open?)", name)
 end
 
+function MM:FindQuest(qid)
+  for i = 1, GetNumQuestLogEntries() do
+    local title, _lvl, _grp, _hdr, _collapsed, _complete, _freq, id = GetQuestLogTitle(i)
+    MM:Debug("Q% % % %", i, title, id, MM:Dump(GetQuestLogTitle(i)))
+    if id == qid then
+      MM:Debug("Found % (%) at index %", qid, title, i)
+      return i, title
+    end
+  end
+  MM:Debug("% not found in questlog", qid)
+  return nil, nil
+end
+
+function MM:ResetLastReceived()
+  MM.receivedAbandon = nil
+end
+
+function MM:ExecuteAbandonQuestCommand(qid, from)
+  local i, title =  MM:FindQuest(qid)
+  if not i then
+    MM:PrintDefault("Mama: could not find quest to abandon % received from %", qid, from)
+    return
+  end
+  MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
+  SelectQuestLogEntry(i)
+  MM.receivedAbandon = qid
+  AbandonQuest()
+end
+
 function MM:SetLead(name)
   MM.lead = name
   MM:UpdateAssist()
@@ -110,6 +151,12 @@ function MM:SetEMAMaster(fullName)
   DB.EMA.CommandIAmMaster()
   --DB.EMA.db.master = fullName
   --DB.EMA:SendMessage(DB.EMA.MESSAGE_TEAM_ORDER_CHANGED) -- needed to refresh EMA ui if set
+end
+
+function MM:AbandonQuestCommand(id)
+  local payload =  "a" .. " " .. id
+  DB:Debug(3, "Created abandon quest payload for %: %", id, payload)
+  return payload
 end
 
 function MM:FollowCommand(fullName)
@@ -245,14 +292,9 @@ function MM:ShareQuest(index)
   if (GetQuestLogPushable(index)) then
     MM:Debug("Attempting to share quest index=% with your group", index)
     QuestLogPushQuest()
+    return
   end
   MM:Debug("Unable to share quest index=% with your group", index)
-end
-
--- Handler for QUEST_ACCEPTED events
-function MM:ProcessQuestAcceptedEvent(...)
-  local arg = {...}
-  MM:ShareQuest(arg[2])
 end
 
 function MM:ProcessMessage(source, from, data)
@@ -277,7 +319,8 @@ function MM:ProcessMessage(source, from, data)
     MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LFAMT]) ([^ ]*)") -- or strplit(" ", data)
+  MM:ResetLastReceived()
+  local cmd, fullName = msg:match("^([LFAMTa]) ([^ ]*)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
@@ -301,6 +344,8 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteMountCommand(fullName, from)
   elseif cmd == "T" then
     MM:ExecuteTaxiCommand(string.sub(msg, 3), from)
+  elseif cmd == "a" then
+    MM:ExecuteAbandonQuestCommand(tonumber(fullName, 10), from)
   else
     MM:Warning("Unexpected command (%,%) in % (%) from %", cmd, fullName, msg, string.len(msg), from)
   end
@@ -434,13 +479,20 @@ local additionalEventHandlers = {
     end
   end,
 
-  QUEST_ACCEPTED = function(_self, ...)
-    MM:DebugEvCall(1, ...)
+  QUEST_ACCEPTED = function(_self, ev, idx, id)
+    MM:Debug("% % %",ev, idx, id)
     if MM.autoQuest then
-      MM:ProcessQuestAcceptedEvent(...)
+      MM:ShareQuest(idx)
+    end
+    MM:ResetLastReceived()
+  end,
+
+  QUEST_REMOVED = function(_self, _ev, id)
+    MM:Debug("% % (rec %)", _ev, id, MM.receivedAbandon)
+    if MM.autoAbandon and id ~= MM.receivedAbandon then
+      MM:SendSecureCommand(MM:AbandonQuestCommand(id))
     end
   end
-
 }
 
 function MM:AssistButton()
@@ -676,6 +728,8 @@ function MM:CreateOptionsPanel()
   local autoQuest = p:addCheckBox("Automatically accept and share quests",
               "Enable/Disable automatically accepting and sharing quests"):Place(4,16)
 
+  local autoAbandon = p:addCheckBox("Abandon Quests with team", "Automatically abandon quests with the team"):PlaceRight(32)
+
   local autoFly = p:addCheckBox("Automatically take same Flight as leader",
               "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
 
@@ -725,6 +779,7 @@ function MM:CreateOptionsPanel()
     ffa:SetChecked(MM.ffa)
     autoQuest:SetChecked(MM.autoQuest)
     autoFly:SetChecked(MM.autoFly)
+    autoAbandon:SetChecked(MM.autoAbandon)
   end
 
   function p:HandleOk()
@@ -753,6 +808,7 @@ function MM:CreateOptionsPanel()
     MM:SetSaved("ffa", ffa:GetChecked())
     MM:SetSaved("autoQuest", autoQuest:GetChecked())
     MM:SetSaved("autoFly", autoFly:GetChecked())
+    MM:SetSaved("autoAbandon", autoAbandon:GetChecked())
     if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
       MM:SetupMenu()
     end

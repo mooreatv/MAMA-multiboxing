@@ -32,7 +32,10 @@ globals = {
     "C_QuestLog",
     "TakeTaxiNode",
     "TaxiNodeName",
-    "NumTaxiNodes"
+    "NumTaxiNodes",
+    "AbandonQuest",
+    "GetQuestLogTitle",
+    "GetNumQuestLogEntries"
 }
 max_line_length = 132
 ignore = {

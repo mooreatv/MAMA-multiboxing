@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.6.0 December 12th 2021
+- Added option to abandon quests as a team
+- Simplified quest sharing code
+
 v1.5.0 December 1st 2021
 - Added taking same Flight Path option
 
