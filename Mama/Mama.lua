@@ -50,6 +50,9 @@ if not DB.isClassic then
   function AbandonQuest()
     C_QuestLog.AbandonQuest()
   end
+  function SetAbandonQuest()
+    C_QuestLog.SetAbandonQuest()
+  end
   function GetQuestLogTitle(id)
     local info = C_QuestLog.GetInfo(id)
     -- not really fully compatible but just what I need for MM:FindQuest
@@ -123,6 +126,7 @@ function MM:ExecuteAbandonQuestCommand(qid, from)
   MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
   SelectQuestLogEntry(i)
   MM.receivedAbandon = qid
+  SetAbandonQuest()
   AbandonQuest()
 end
 

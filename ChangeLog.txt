@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.6.1 December 13th 2021
+- Fix Abandon quest with Team
+
 v1.6.0 December 12th 2021
 - Added option to abandon quests as a team
 - Simplified quest sharing code
