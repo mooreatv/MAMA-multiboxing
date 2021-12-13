@@ -132,7 +132,8 @@ function MM:ExecuteAbandonQuestCommand(qid, from)
     SetAbandonQuest()
     AbandonQuest()
   else
-    MM:PrintDefault("Mama: AbandonQuest % received from %: found % - Not abandoning (bugged for now - fix coming soon)", qid, from, title)
+    MM:PrintDefault("Mama: AbandonQuest % received from %: found % - Not abandoning (bugged for now - fix coming soon)",
+      qid, from, title)
   end
 end
 
