@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.6.2 December 13th 2021
+- Disable Abandon quest for now as it triggers on quest completion(!) my bad
+  will fix asap
+
 v1.6.1 December 13th 2021
 - Fix Abandon quest with Team
 

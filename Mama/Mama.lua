@@ -35,6 +35,8 @@ MM.autoQuest = true
 MM.autoFly = true
 MM.autoAbandon = true
 
+MM.abandon = false -- until bug is fixed
+
 MM.lead = nil
 
 MM.maxSlot = 16
@@ -123,11 +125,15 @@ function MM:ExecuteAbandonQuestCommand(qid, from)
     MM:PrintDefault("Mama: could not find quest to abandon % received from %", qid, from)
     return
   end
-  MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
   SelectQuestLogEntry(i)
   MM.receivedAbandon = qid
-  SetAbandonQuest()
-  AbandonQuest()
+  if MM.abandon then
+    MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
+    SetAbandonQuest()
+    AbandonQuest()
+  else
+    MM:PrintDefault("Mama: AbandonQuest % received from %: found % - Not abandoning (bugged for now - fix coming soon)", qid, from, title)
+  end
 end
 
 function MM:SetLead(name)
@@ -493,7 +499,7 @@ local additionalEventHandlers = {
 
   QUEST_REMOVED = function(_self, _ev, id)
     MM:Debug("% % (rec %)", _ev, id, MM.receivedAbandon)
-    if MM.autoAbandon and id ~= MM.receivedAbandon then
+    if MM.autoAbandon and id ~= MM.receivedAbandon and MM.abandon then
       MM:SendSecureCommand(MM:AbandonQuestCommand(id))
     end
   end
@@ -732,7 +738,8 @@ function MM:CreateOptionsPanel()
   local autoQuest = p:addCheckBox("Automatically accept and share quests",
               "Enable/Disable automatically accepting and sharing quests"):Place(4,16)
 
-  local autoAbandon = p:addCheckBox("Abandon Quests with team", "Automatically abandon quests with the team"):PlaceRight(32)
+  local autoAbandon = p:addCheckBox("Abandon Quests with team",
+              "Automatically abandon quests with the team\nDISABLED FEATURE PENDING FIX"):PlaceRight(32)
 
   local autoFly = p:addCheckBox("Automatically take same Flight as leader",
               "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
