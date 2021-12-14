@@ -108,7 +108,7 @@ function MM:ExecuteTaxiCommand(rest, from)
   -- good case where Ids match:
   if TaxiNodeName(id) == name then
     MM:Debug(1, "Taxi ids match on %", id)
-    GetNumRoutes(i)
+    GetNumRoutes(id)
     oTTN(id)
     return
   end
