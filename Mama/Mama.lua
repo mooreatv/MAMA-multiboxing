@@ -35,11 +35,30 @@ MM.autoQuest = true
 MM.autoFly = true
 MM.autoAbandon = true
 
-MM.abandon = false -- until bug is fixed
-
 MM.lead = nil
 
 MM.maxSlot = 16
+
+-- original AbandonQuest
+MM.oAQ = AbandonQuest
+
+function MM:GetSelectedQuest()
+  if DB.isClassic then
+    local idx = GetQuestLogSelection()
+    return select(8, GetQuestLogTitle(idx))
+  else
+    return C_QuestLog.GetSelectedQuest()
+  end
+end
+
+function MM.AbandonQuest()
+  if MM.autoAbandon then
+    local id = MM:GetSelectedQuest()
+    MM:SendSecureCommand(MM:AbandonQuestCommand(id))
+  end
+  MM.oAQ()
+end
+AbandonQuest = MM.AbandonQuest
 
 if not DB.isClassic then
   -- put back basic global functions gone in 9.x
@@ -49,16 +68,16 @@ if not DB.isClassic then
   function GetQuestLogPushable(id)
     return C_QuestLog.IsPushableQuest(id)
   end
-  function AbandonQuest()
-    C_QuestLog.AbandonQuest()
-  end
+  MM.oAQ = C_QuestLog.AbandonQuest
+  C_QuestLog.AbandonQuest = MM.AbandonQuest
   function SetAbandonQuest()
     C_QuestLog.SetAbandonQuest()
   end
   function GetQuestLogTitle(id)
     local info = C_QuestLog.GetInfo(id)
+    local isComplete = C_QuestLog.IsComplete(info.questID)
     -- not really fully compatible but just what I need for MM:FindQuest
-    return info.title, nil, nil, nil, nil, nil, nil, info.questID
+    return info.title, nil, nil, nil, nil, isComplete, nil, info.questID
   end
   function GetNumQuestLogEntries()
     return C_QuestLog.GetNumQuestLogEntries()
@@ -104,37 +123,31 @@ end
 
 function MM:FindQuest(qid)
   for i = 1, GetNumQuestLogEntries() do
-    local title, _lvl, _grp, _hdr, _collapsed, _complete, _freq, id = GetQuestLogTitle(i)
-    MM:Debug("Q% % % %", i, title, id, MM:Dump(GetQuestLogTitle(i)))
+    local title, _lvl, _grp, _hdr, _collapsed, complete, _freq, id = GetQuestLogTitle(i)
+    MM:Debug("Q% title % id % complete % (full %)", i, title, id, complete, MM:Dump(GetQuestLogTitle(i)))
     if id == qid then
       MM:Debug("Found % (%) at index %", qid, title, i)
-      return i, title
+      return i, title, complete
     end
   end
   MM:Debug("% not found in questlog", qid)
-  return nil, nil
-end
-
-function MM:ResetLastReceived()
-  MM.receivedAbandon = nil
+  return nil, nil, nil
 end
 
 function MM:ExecuteAbandonQuestCommand(qid, from)
-  local i, title =  MM:FindQuest(qid)
+  local i, title, isComplete =  MM:FindQuest(qid)
   if not i then
     MM:PrintDefault("Mama: could not find quest to abandon % received from %", qid, from)
     return
   end
-  SelectQuestLogEntry(i)
-  MM.receivedAbandon = qid
-  if MM.abandon then
-    MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
-    SetAbandonQuest()
-    AbandonQuest()
-  else
-    MM:PrintDefault("Mama: AbandonQuest % received from %: found % - Not abandoning (bugged for now - fix coming soon)",
-      qid, from, title)
+  if isComplete then
+    MM:PrintDefault("Mama: not abandoning completed quest % % despite request from %", qid, title, from)
+    return
   end
+  SelectQuestLogEntry(i)
+  MM:PrintDefault("Mama: AbandonQuest % received from %: found % at %", qid, from, title, i)
+  SetAbandonQuest()
+  MM.oAQ()
 end
 
 function MM:SetLead(name)
@@ -330,7 +343,6 @@ function MM:ProcessMessage(source, from, data)
     MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  MM:ResetLastReceived()
   local cmd, fullName = msg:match("^([LFAMTa]) ([^ ]*)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
@@ -491,18 +503,14 @@ local additionalEventHandlers = {
   end,
 
   QUEST_ACCEPTED = function(_self, ev, idx, id)
-    MM:Debug("% % %",ev, idx, id)
+    MM:Debug("Ev % % %",ev, idx, id)
     if MM.autoQuest then
       MM:ShareQuest(idx)
     end
-    MM:ResetLastReceived()
   end,
 
-  QUEST_REMOVED = function(_self, _ev, id)
-    MM:Debug("% % (rec %)", _ev, id, MM.receivedAbandon)
-    if MM.autoAbandon and id ~= MM.receivedAbandon and MM.abandon then
-      MM:SendSecureCommand(MM:AbandonQuestCommand(id))
-    end
+  QUEST_REMOVED = function(_self, ev, id)
+    MM:Debug("Ev % %", ev, id)
   end
 }
 
@@ -740,7 +748,7 @@ function MM:CreateOptionsPanel()
               "Enable/Disable automatically accepting and sharing quests"):Place(4,16)
 
   local autoAbandon = p:addCheckBox("Abandon Quests with team",
-              "Automatically abandon quests with the team\nDISABLED FEATURE PENDING FIX"):PlaceRight(32)
+              "Automatically abandon quests with the team"):PlaceRight(32)
 
   local autoFly = p:addCheckBox("Automatically take same Flight as leader",
               "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
