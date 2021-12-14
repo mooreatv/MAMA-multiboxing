@@ -38,7 +38,8 @@ globals = {
     "GetNumQuestLogEntries",
     "SetAbandonQuest",
     "GetQuestLogTitle",
-    "GetQuestLogSelection"
+    "GetQuestLogSelection",
+    "GetNumRoutes"
 }
 max_line_length = 132
 ignore = {

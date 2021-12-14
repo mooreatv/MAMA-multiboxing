@@ -114,6 +114,7 @@ function MM:ExecuteTaxiCommand(rest, from)
   for i = 1, NumTaxiNodes() do
     if TaxiNodeName(i) == name then
       MM:Debug(1, "Found % at % vs %", name, i, id)
+      GetNumRoutes(i)
       oTTN(i)
       return
     end
