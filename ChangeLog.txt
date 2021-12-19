@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.7.0 December 19th 2021
+- Added synchronization of npc dialog choices across team
+
 v1.6.5 December 14th 2021
 - Fix distant flight path when toons have exact same matching ids
   I swear it works now :-) Thx Sawyer for the help/reports

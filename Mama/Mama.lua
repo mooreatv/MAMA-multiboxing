@@ -34,6 +34,7 @@ MM.ffa = true
 MM.autoQuest = true
 MM.autoFly = true
 MM.autoAbandon = true
+MM.autoDialog = true
 
 MM.lead = nil
 
@@ -41,6 +42,10 @@ MM.maxSlot = 16
 
 -- original AbandonQuest
 MM.oAQ = AbandonQuest
+-- original SelectGossipOption
+MM.oSGO = SelectGossipOption
+-- original SelectAvailableQuest
+MM.oSAQ = SelectAvailableQuest
 
 function MM:GetSelectedQuest()
   if DB.isClassic then
@@ -60,6 +65,22 @@ function MM.AbandonQuest()
 end
 AbandonQuest = MM.AbandonQuest
 
+function MM.SelectGossipOption(n, ...)
+  if MM.autoDialog then
+    MM:SendSecureCommand(MM:GossipCommand(n))
+  end
+  MM.oSGO(n, ...)
+end
+SelectGossipOption = MM.SelectGossipOption
+
+function MM.SelectAvailableQuest(n)
+  if MM.autoDialog then
+    MM:SendSecureCommand(MM:SelectQuestCommand(n))
+  end
+  MM.oSAQ(n)
+end
+SelectAvailableQuest = MM.SelectAvailableQuest
+
 if not DB.isClassic then
   -- put back basic global functions gone in 9.x
   function SelectQuestLogEntry(id)
@@ -70,6 +91,10 @@ if not DB.isClassic then
   end
   MM.oAQ = C_QuestLog.AbandonQuest
   C_QuestLog.AbandonQuest = MM.AbandonQuest
+  MM.oSGO = C_GossipInfo.SelectOption
+  C_GossipInfo.SelectOption = MM.SelectGossipOption
+  MM.oSAQ = C_GossipInfo.SelectAvailableQuest
+  C_GossipInfo.SelectAvailableQuest = MM.SelectAvailableQuest
   function SetAbandonQuest()
     C_QuestLog.SetAbandonQuest()
   end
@@ -152,6 +177,16 @@ function MM:ExecuteAbandonQuestCommand(qid, from)
   MM.oAQ()
 end
 
+function MM:ExecuteGossipCommand(n, from)
+  MM:PrintDefault("Mama: Selecting Gossip Option % received from %", n, from)
+  MM.oSGO(n)
+end
+
+function MM:ExecuteQuestSelectCommand(n, from)
+  MM:PrintDefault("Mama: Selecting quest number % received from %", n, from)
+  MM.oSAQ(n)
+end
+
 function MM:SetLead(name)
   MM.lead = name
   MM:UpdateAssist()
@@ -182,6 +217,18 @@ end
 function MM:AbandonQuestCommand(id)
   local payload =  "a" .. " " .. id
   DB:Debug(3, "Created abandon quest payload for %: %", id, payload)
+  return payload
+end
+
+function MM:GossipCommand(id)
+  local payload =  "G" .. " " .. id
+  DB:Debug(3, "Created select gossip option payload for %: %", id, payload)
+  return payload
+end
+
+function MM:SelectQuestCommand(id)
+  local payload =  "Q" .. " " .. id
+  DB:Debug(3, "Created select quest payload for %: %", id, payload)
   return payload
 end
 
@@ -345,7 +392,8 @@ function MM:ProcessMessage(source, from, data)
     MM:Debug("Received invalid (" .. msg .. ") message % from %: %", source, from, data)
     return
   end
-  local cmd, fullName = msg:match("^([LFAMTa]) ([^ ]*)") -- or strplit(" ", data)
+  -- TODO: as the command list extends, use a table instead of if/else
+  local cmd, fullName = msg:match("^([LFAMTaGQ]) ([^ ]*)") -- or strplit(" ", data)
   MM:Debug("on % from %, got % -> cmd=% fullname=%", source, from, msg, cmd, fullName)
   if cmd == "F" then
     -- Follow cmd...
@@ -371,6 +419,10 @@ function MM:ProcessMessage(source, from, data)
     MM:ExecuteTaxiCommand(string.sub(msg, 3), from)
   elseif cmd == "a" then
     MM:ExecuteAbandonQuestCommand(tonumber(fullName, 10), from)
+  elseif cmd == "G" then
+    MM:ExecuteGossipCommand(tonumber(fullName, 10), from)
+  elseif cmd == "Q" then
+    MM:ExecuteQuestSelectCommand(tonumber(fullName, 10), from)
   else
     MM:Warning("Unexpected command (%,%) in % (%) from %", cmd, fullName, msg, string.len(msg), from)
   end
@@ -752,8 +804,12 @@ function MM:CreateOptionsPanel()
   local autoAbandon = p:addCheckBox("Abandon Quests with team",
               "Automatically abandon quests with the team"):PlaceRight(32)
 
+  local autoDialog = p:addCheckBox("Automatically select same dialog option",
+    "Enable/disable automatically selecting the same option in NPC (quest, vendor) dialogs as current window"):Place(4,16)
+
   local autoFly = p:addCheckBox("Automatically take same Flight as leader",
-              "Enable/Disable automatically taking the same flight path as leader"):Place(4,16)
+    "Enable/Disable automatically taking the same flight path as leader"):PlaceRight(22)
+
 
   local followAfterMount = p:addCheckBox("Follow after mount",
       "Automatically follow in addition to mount up"):Place(4,16)
@@ -802,6 +858,7 @@ function MM:CreateOptionsPanel()
     autoQuest:SetChecked(MM.autoQuest)
     autoFly:SetChecked(MM.autoFly)
     autoAbandon:SetChecked(MM.autoAbandon)
+    autoDialog:SetChecked(MM.autoDialog)
   end
 
   function p:HandleOk()
@@ -831,6 +888,7 @@ function MM:CreateOptionsPanel()
     MM:SetSaved("autoQuest", autoQuest:GetChecked())
     MM:SetSaved("autoFly", autoFly:GetChecked())
     MM:SetSaved("autoAbandon", autoAbandon:GetChecked())
+    MM:SetSaved("autoDialog", autoDialog:GetChecked())
     if MM:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
       MM:SetupMenu()
     end

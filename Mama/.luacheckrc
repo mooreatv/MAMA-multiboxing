@@ -39,7 +39,10 @@ globals = {
     "SetAbandonQuest",
     "GetQuestLogTitle",
     "GetQuestLogSelection",
-    "GetNumRoutes"
+    "GetNumRoutes",
+    "SelectGossipOption",
+    "C_GossipInfo",
+    "SelectAvailableQuest"
 }
 max_line_length = 132
 ignore = {
