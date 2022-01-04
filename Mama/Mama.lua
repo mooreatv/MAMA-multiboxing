@@ -40,48 +40,41 @@ MM.lead = nil
 
 MM.maxSlot = 16
 
--- original AbandonQuest
-MM.oAQ = AbandonQuest
--- original SelectGossipOption
-MM.oSGO = SelectGossipOption
--- original SelectAvailableQuest
-MM.oSAQ = SelectAvailableQuest
 
-function MM:GetSelectedQuest()
-  if DB.isClassic then
-    local idx = GetQuestLogSelection()
-    return select(8, GetQuestLogTitle(idx))
-  else
-    return C_QuestLog.GetSelectedQuest()
-  end
-end
-
-function MM.AbandonQuest()
+function MM.AbandonQuestHook()
+  MM:Debug("AbandonQuestHook called")
   if MM.autoAbandon then
     local id = MM:GetSelectedQuest()
     MM:SendSecureCommand(MM:AbandonQuestCommand(id))
   end
-  MM.oAQ()
 end
-AbandonQuest = MM.AbandonQuest
 
-function MM.SelectGossipOption(n, ...)
+function MM.SelectGossipOptionHook(n, ...)
+  MM:Debug("SelectGossipOptionHook called % %", n, MM:Dump(...))
   if MM.autoDialog then
     MM:SendSecureCommand(MM:GossipCommand(n))
   end
-  MM.oSGO(n, ...)
 end
-SelectGossipOption = MM.SelectGossipOption
 
-function MM.SelectAvailableQuest(n)
+function MM.SelectAvailableQuestHook(n, ...)
+  MM:Debug("SelectAvailableQuestHook called % %", n, MM:Dump(...))
   if MM.autoDialog then
     MM:SendSecureCommand(MM:SelectQuestCommand(n))
   end
-  MM.oSAQ(n)
 end
-SelectAvailableQuest = MM.SelectAvailableQuest
 
-if not DB.isClassic then
+if DB.isClassic then
+  -- original AbandonQuest
+  MM.oAQ = AbandonQuest
+  hooksecurefunc("AbandonQuest", MM.AbandonQuestHook)
+  -- original SelectGossipOption
+  MM.oSGO = SelectGossipOption
+  hooksecurefunc("SelectGossipOption", MM.SelectGossipOptionHook)
+  -- original SelectAvailableQuest
+  MM.oSAQ = SelectAvailableQuest
+  hooksecurefunc("SelectAvailableQuest", MM.SelectAvailableQuestHook)
+else
+  -- retail
   -- put back basic global functions gone in 9.x
   function SelectQuestLogEntry(id)
     C_QuestLog.SetSelectedQuest(id)
@@ -90,11 +83,11 @@ if not DB.isClassic then
     return C_QuestLog.IsPushableQuest(id)
   end
   MM.oAQ = C_QuestLog.AbandonQuest
-  C_QuestLog.AbandonQuest = MM.AbandonQuest
+  hooksecurefunc(C_QuestLog, "AbandonQuest", MM.AbandonQuestHook)
   MM.oSGO = C_GossipInfo.SelectOption
-  C_GossipInfo.SelectOption = MM.SelectGossipOption
+  hooksecurefunc(C_GossipInfo, "SelectOption", MM.SelectGossipOptionHook)
   MM.oSAQ = C_GossipInfo.SelectAvailableQuest
-  C_GossipInfo.SelectAvailableQuest = MM.SelectAvailableQuest
+  hooksecurefunc(C_GossipInfo, "SelectAvailableQuest", MM.SelectAvailableQuestHook)
   function SetAbandonQuest()
     C_QuestLog.SetAbandonQuest()
   end
@@ -109,8 +102,17 @@ if not DB.isClassic then
   end
 end
 
-local oTTN = TakeTaxiNode
-function TakeTaxiNode(id)
+function MM:GetSelectedQuest()
+  if DB.isClassic then
+    local idx = GetQuestLogSelection()
+    return select(8, GetQuestLogTitle(idx))
+  else
+    return C_QuestLog.GetSelectedQuest()
+  end
+end
+
+
+function MM.TakeTaxiNodeHook(id)
   local name = TaxiNodeName(id)
   MM:PrintDefault("Mama: detected flight to % : %, autoFly is %", id, name, MM.autoFly)
   if MM.autoFly then
@@ -118,8 +120,10 @@ function TakeTaxiNode(id)
     -- so send the name too so it can be matched
     MM:SendSecureCommand(MM:TaxiCommand(id, name))
   end
-  oTTN(id)
 end
+
+local oTTN = TakeTaxiNode
+hooksecurefunc("TakeTaxiNode", MM.TakeTaxiNodeHook)
 
 function MM:TaxiCommand(id, name)
   local payload =  "T" .. " " .. id .. " " .. name

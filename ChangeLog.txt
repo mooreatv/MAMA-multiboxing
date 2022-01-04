@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.7.1 Jan 3rd 2022
+- use hooksecurefunc() instead of replacing functions to improve retail compatibility
+
 v1.7.0 December 19th 2021
 - Added synchronization of npc dialog choices across team
 

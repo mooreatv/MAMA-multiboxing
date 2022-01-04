@@ -42,7 +42,8 @@ globals = {
     "GetNumRoutes",
     "SelectGossipOption",
     "C_GossipInfo",
-    "SelectAvailableQuest"
+    "SelectAvailableQuest",
+    "hooksecurefunc"
 }
 max_line_length = 132
 ignore = {
