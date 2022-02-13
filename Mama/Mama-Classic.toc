@@ -1,7 +1,7 @@
-## Interface: 11401
+## Interface: 11402
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
-## Notes: Classic (era and SoM) edition
+## Notes: Classic (Era and SoM) edition
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled
@@ -13,6 +13,7 @@
 ## X-OpenSource-License: LPGLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
 ## X-Curse-Project-ID: 334197
+## X-Wago-ID: 7nGvmDKx
 MoLib/MoLib.lua
 MoLib/MoLibUI.lua
 Mama.lua

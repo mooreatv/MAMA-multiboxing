@@ -13,6 +13,7 @@
 ## X-OpenSource-License: LPGLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
 ## X-Curse-Project-ID: 334197
+## X-Wago-ID: 7nGvmDKx
 MoLib/MoLib.lua
 MoLib/MoLibUI.lua
 Mama.lua
