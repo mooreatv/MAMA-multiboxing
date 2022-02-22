@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.8.1 Feb 22nd 2022
+- Eternity's End update (9.2.0), also updated packager again to latest community packager (v2)
+
 v1.8.0 Feb 12th 2022
 - Single zip build, toc updates and wago id
 
