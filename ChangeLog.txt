@@ -4,8 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
-v1.8.4 June 4th 2022
+v1.8.5 June 4th 2022
 - Updated for Classic Era 1.14.3 and ShadowLands 9.2.5
+- Added WowInterface id
 
 v1.8.3 March 26th 2022
 - Updated for Burning Crusade 2.5.4
