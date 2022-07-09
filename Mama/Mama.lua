@@ -63,7 +63,7 @@ function MM.SelectAvailableQuestHook(n, ...)
   end
 end
 
-if DB.isClassic then
+if DB.isClassic or DB.isLegacy then
   -- original AbandonQuest
   MM.oAQ = AbandonQuest
   hooksecurefunc("AbandonQuest", MM.AbandonQuestHook)
@@ -452,7 +452,7 @@ function MM:SetupMenu()
     return
   end
   MM.minimapButtonAngle = 137 -- not overlap with PPA/default angle
-  local b = MM:minimapButton(MM.buttonPos, nil, "Interface/Addons/Mama/mama.blp")
+  local b = MM:minimapButton(MM.buttonPos, nil, "Interface\\Addons\\Mama\\mama.blp")
   b:SetScript("OnClick", function(_w, button, _down)
     if button == "RightButton" then
       MM.Slash("config")

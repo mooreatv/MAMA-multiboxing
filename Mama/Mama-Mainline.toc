@@ -15,6 +15,6 @@
 ## X-Curse-Project-ID: 334197
 ## X-Wago-ID: 7nGvmDKx
 ## X-WoWI-ID: 26337
-MoLib/MoLib.lua
-MoLib/MoLibUI.lua
+MoLib\MoLib.lua
+MoLib\MoLibUI.lua
 Mama.lua
