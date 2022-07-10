@@ -283,9 +283,15 @@ function MM:SendSecureCommand(payload, partyOnly)
     MM:Debug("Guild msg for % ret %", payload, ret)
   end
   if DB.channelId and DB.channelId > 0 then
-    -- retail
-    local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "CHANNEL", DB.channelId)
-    MM:Debug("Retail channel msg for %: % (mid %)", payload, ret, messageId)
+    if DB.isLegacy then
+      -- legacy case
+      local ret = DB:SendChannelMessage(secureMessage)
+      MM:Debug("Legacy channel msg for %: % (mid %)", payload, ret, messageId)
+    else
+      -- retail
+      local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "CHANNEL", DB.channelId)
+      MM:Debug("Retail channel msg for %: % (mid %)", payload, ret, messageId)
+    end
   else
     -- classic
     local ret = C_ChatInfo.SendAddonMessage(MM.chatPrefix, secureMessage, "SAY")
