@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.9.0 July 17th 2022
+- Add Wrath Classic (beta) and Legacy 3.3.5a (wip/initial) support
+
 v1.8.5 June 4th 2022
 - Updated for Classic Era 1.14.3 and ShadowLands 9.2.5
 - Added WowInterface id

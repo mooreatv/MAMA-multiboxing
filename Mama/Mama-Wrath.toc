@@ -1,0 +1,19 @@
+## Interface: 30400
+## Title: M.A.M.A.
+## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
+## Notes: Wrath of the Lich King Classic Edition
+## Author: MooreaTV moorea@ymail.com
+## Version: @project-version@
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariables: MamaSaved
+## Dependencies: DynamicBoxer
+## Globe: check-classic
+## X-OpenSource-License: LPGLv3
+## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
+## X-Curse-Project-ID: 334197
+## X-Wago-ID: 7nGvmDKx
+## X-WoWI-ID: 26337
+MoLib\MoLib.lua
+MoLib\MoLibUI.lua
+Mama.lua
