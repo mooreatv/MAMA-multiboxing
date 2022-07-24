@@ -408,7 +408,7 @@ function MM:ProcessMessage(source, from, data)
   if cmd == "F" then
     -- Follow cmd...
     if fullName == "train" then
-      fullName = DB.watched[(DB.watched.slot%DB.expectedCount)+1]
+      fullName = DB.watched[((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1]
       MM:PrintDefault("Mama: follow train per request from %: following %", from, fullName)
     elseif fullName == "stop" then
       MM:PrintDefault("Mama: stopping follow per request from %", from)

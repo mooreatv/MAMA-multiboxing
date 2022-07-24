@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.9.4 July 24th 2022
+- Fixed train (`/mama follow train` or keybind) to be in exact order, ie follow person ahead in team order
+
 v1.9.3 July 17th-23rd 2022
 - Add Wrath Classic (beta) and Legacy 3.3.5a (wip/initial) support
 - Packager fixes
