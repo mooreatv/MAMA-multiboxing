@@ -301,6 +301,8 @@ end
 
 function MM:MakeMeLead()
   MM:SetLead("player")
+  -- always (try to) set MAMA master
+  MM:SendSecureCommand(MM:LeadCommand(DB.fullName), false)
   -- first check if we aren't already lead
   if UnitIsGroupLeader("Player") then
     MM:Debug("Already leader, skipping...")
@@ -311,7 +313,7 @@ function MM:MakeMeLead()
     return
   end
   MM:PrintDefault("Mama: Requesting to be made lead")
-  MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
+  -- MM:SendSecureCommand(MM:LeadCommand(DB.fullName), true) -- party only
   MM:SetEMAMaster(DB.fullName)
 end
 
@@ -578,25 +580,30 @@ local additionalEventHandlers = {
   end
 }
 
-function MM:AssistButton()
+function MM:MacroButtons()
   local b = CreateFrame("Button", "MamaAssist", UIParent, "SecureActionButtonTemplate")
   b:SetAttribute("type", "macro")
   b:SetAttribute("macrotext", "/assist " .. MM:GetLead())
+  b = CreateFrame("Button", "MamaFollow", UIParent, "SecureActionButtonTemplate")
+  b:SetAttribute("type", "macro")
+  b:SetAttribute("macrotext", "/follow " .. MM:GetLead())
 end
 
-MM:AssistButton()
+MM:MacroButtons()
 
 function MM:UpdateAssist()
   local l = MM:GetLead()
-  MM:Debug("Updating assist to %", l)
+  MM:Debug("Updating assist and follow to %", l)
   if InCombatLockdown() then
     MM:Debug("Can't update in combat")
     return
   end
   if l == "player" then
     _G["MamaAssist"]:SetAttribute("macrotext", "")
+    _G["MamaFollow"]:SetAttribute("macrotext", "")
   else
     _G["MamaAssist"]:SetAttribute("macrotext", "/assist " .. l)
+    _G["MamaFollow"]:SetAttribute("macrotext", "/assist " .. l.."\n/follow " .. l)
   end
 end
 
@@ -936,6 +943,7 @@ _G.BINDING_NAME_MM_FL_COMBO = L["Combo make me lead and follow me"] ..
 _G.BINDING_NAME_MM_MOUNT_UP = L["Mount up"] .. " |cFF99E5FF/mama mount up|r (or |cFF99E5FF/mama m|r for short)"
 _G.BINDING_NAME_MM_DISMOUNT = L["Dismount"] .. " |cFF99E5FF/mama mount dismount|r (or |cFF99E5FF/mama m d|r for short)"
 _G["BINDING_NAME_CLICK MamaAssist:LeftButton"] = L["Assist"] .. " |cFF99E5FF/click MamaAssist|r " .. L["in macros"]
+_G["BINDING_NAME_CLICK MamaFollow:LeftButton"] = L["Follow"] .. " |cFF99E5FF/click MamaFollow|r " .. L["in macros"]
 
 -- MM.debug = 2
 MM:Debug("mama main file loaded")

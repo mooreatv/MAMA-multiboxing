@@ -29,4 +29,6 @@
     </Binding>
     <Binding name="CLICK MamaAssist:LeftButton"  category="MAMA">
     </Binding>
+    <Binding name="CLICK MamaFollow:LeftButton"  category="MAMA">
+    </Binding>
 </Bindings>

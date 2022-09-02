@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.9.5 Sept 1st 2022
+- Deal with the hardware event protection of "FollowUnit()" by Blizzard
+  by adding a new `/click MamaFollow` (will also assist) and keybindings
+
 v1.9.4 July 24th 2022
 - Fixed train (`/mama follow train` or keybind) to be in exact order, ie follow person ahead in team order
 
