@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.9.6 Sept 4th 2022
+- Pickup MoLib fix for missing constant in ShadowLand client.
+
 v1.9.5 Sept 1st 2022
 - Deal with the hardware event protection of "FollowUnit()" by Blizzard
   by adding a new `/click MamaFollow` (will also assist) and keybindings
