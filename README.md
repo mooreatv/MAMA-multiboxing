@@ -44,6 +44,8 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - and more coming quite often... see `/mama` and `/mama config`
 
+- Note that on Wrath of the Lich King, where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key.
+
 _Input on feature prioritization is most welcome!_
 
 Mama might eventually also ensure your multiboxing or dual boxing team can do stuff like:
