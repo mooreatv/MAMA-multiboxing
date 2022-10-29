@@ -299,6 +299,13 @@ function MM:SendSecureCommand(payload, partyOnly)
   end
 end
 
+function MM:FollowUnit(param)
+  if MM.isLegacy or MM.isClassicEra then
+    FollowUnit(param)
+  else
+    MM:PrintDefault("Mama: Follow is protected in Retail and Wrath, use /click MamaFollow or its keybind instead")
+  end
+end
 function MM:MakeMeLead()
   MM:SetLead("player")
   -- always (try to) set MAMA master
@@ -338,7 +345,7 @@ end
 function MM:ExecuteFollowCommand(fullName)
   local shortName = DB:ShortName(fullName)
   MM:PrintDefault("Mama: Following % (%)", shortName, fullName)
-  FollowUnit(shortName)
+  MM:FollowUnit(shortName)
 end
 
 function MM:ExecuteMountCommand(onoff, from)
@@ -414,7 +421,7 @@ function MM:ProcessMessage(source, from, data)
       MM:PrintDefault("Mama: follow train per request from %: following %", from, fullName)
     elseif fullName == "stop" then
       MM:PrintDefault("Mama: stopping follow per request from %", from)
-      FollowUnit("player")
+      MM:FollowUnit("player")
       return
     end
     MM:ExecuteFollowCommand(fullName)
@@ -584,9 +591,11 @@ function MM:MacroButtons()
   local b = CreateFrame("Button", "MamaAssist", UIParent, "SecureActionButtonTemplate")
   b:SetAttribute("type", "macro")
   b:SetAttribute("macrotext", "/assist " .. MM:GetLead())
+  b:RegisterForClicks("AnyUp", "AnyDown")
   b = CreateFrame("Button", "MamaFollow", UIParent, "SecureActionButtonTemplate")
   b:SetAttribute("type", "macro")
   b:SetAttribute("macrotext", "/follow " .. MM:GetLead())
+  b:RegisterForClicks("AnyUp", "AnyDown")
 end
 
 MM:MacroButtons()
@@ -677,7 +686,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
     end
     if rest == "train" then
       MM:PrintDefault("Mama: Requesting follow train!", rest)
-      FollowUnit("player") -- implies stop follow for issuer
+      MM:FollowUnit("player") -- implies stop follow for issuer
     elseif rest ~= "" then
       MM:PrintDefault("Mama: Requesting follow %", rest)
       local shortName = DB:ShortName(rest)
@@ -685,7 +694,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
         shortName = "player"
       end
       DB:Debug("calling local FollowUnit(%)", shortName)
-      FollowUnit(shortName)
+      MM:FollowUnit(shortName)
     else
       MM:PrintDefault("Mama: Requesting to be followed")
       rest = DB.fullName

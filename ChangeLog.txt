@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.10.1 Oct 29th 2022
+- Dragonflight fixes (Click and inform about Follow protected; remaining: Options panel)
+
 v1.10.0 Oct 25th 2022
 - Initial update for Dragonflight
 
