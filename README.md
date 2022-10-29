@@ -22,9 +22,9 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 ## What does it do ?
 
-**Right now M.A.M.A relies on my DynamicBoxer for a lot of the functionality**
+**M.A.M.A relies on my DynamicBoxer for core team communication functionality**
 
-- Let's you use DynamicBoxer without requiring the now banned ISBoxer, including fast in order invite/disband, EMA sync, etc... just set your window slot # in the options panel or with `/mama s N`.
+- Let's you use DynamicBoxer without requiring ISBoxer (with WOB, but also works with ISBoxer as alternative to EMA), including fast in order invite/disband, EMA sync etc... just set your window slot # in the options panel or with `/mama s N`.
 
 - Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
 

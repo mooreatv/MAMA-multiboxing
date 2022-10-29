@@ -747,10 +747,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
       "MAMA slot % set. After exchange token (hit return on s1 after copy, before pasting): /reload to save/confirm all is setup",
       sn)
   elseif cmd == "c" then
-    -- Show config panel
-    -- InterfaceOptionsList_DisplayPanel(MM.optionsPanel)
-    InterfaceOptionsFrame:Show() -- onshow will clear the category if not already displayed
-    InterfaceOptionsFrame_OpenToCategory(MM.optionsPanel) -- gets our name selected
+    MM:ShowConfigPanel(MM.optionsPanel)
   elseif MM:StartsWith(arg, "q") then
     if rest == "on" then
       MM:SetSaved("autoQuest", 1)

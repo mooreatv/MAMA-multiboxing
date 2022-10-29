@@ -2,8 +2,6 @@ globals = {
     "MamaSaved",
     "CreateFrame",
     "InterfaceOptions_AddCategory",
-    "InterfaceOptionsFrame",
-    "InterfaceOptionsFrame_OpenToCategory",
     "SlashCmdList",
     "SLASH_Mama_Slash_Command1",
     "geterrorhandler",
