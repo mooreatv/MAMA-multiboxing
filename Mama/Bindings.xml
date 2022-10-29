@@ -6,18 +6,6 @@
    defaults don't work (https://github.com/Stanzilla/WoWUIBugs/issues/12) so removed them for now
 -->
 <Bindings>
-    <Binding name="MM_FL_COMBO" header="MM" category="MAMA">
-        Mama.Slash("altogether")
-    </Binding>
-    <Binding name="MM_FOLLOWME" category="MAMA">
-        Mama.Slash("followme")
-    </Binding>
-    <Binding name="MM_FOLLOW_TRAIN" category="MAMA">
-        Mama.Slash("follow train")
-    </Binding>
-    <Binding name="MM_FOLLOW_STOP" category="MAMA">
-        Mama.Slash("follow stop")
-    </Binding>
     <Binding name="MM_LEAD" category="MAMA">
         Mama.Slash("lead")
     </Binding>
@@ -30,5 +18,18 @@
     <Binding name="CLICK MamaAssist:LeftButton"  category="MAMA">
     </Binding>
     <Binding name="CLICK MamaFollow:LeftButton"  category="MAMA">
+    </Binding>
+    <!-- What's below only works on classic era since follow is protected api... -->
+    <Binding name="MM_FL_COMBO" header="MM" category="MAMA">
+        Mama.Slash("altogether")
+    </Binding>
+    <Binding name="MM_FOLLOWME" category="MAMA">
+        Mama.Slash("followme")
+    </Binding>
+    <Binding name="MM_FOLLOW_TRAIN" category="MAMA">
+        Mama.Slash("follow train")
+    </Binding>
+    <Binding name="MM_FOLLOW_STOP" category="MAMA">
+        Mama.Slash("follow stop")
     </Binding>
 </Bindings>
