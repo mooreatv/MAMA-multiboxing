@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.10.7 March 21st 2023
+- Dragonflight 10.0.7 toc update
+
 v1.10.6 Jan 27th 2023
 - Wrath toc update
 
