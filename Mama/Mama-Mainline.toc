@@ -1,4 +1,4 @@
-## Interface: 100007
+## Interface: 100100
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
 ## Notes: Dragonflight edition
@@ -15,6 +15,7 @@
 ## X-Curse-Project-ID: 334197
 ## X-Wago-ID: 7nGvmDKx
 ## X-WoWI-ID: 26337
+## IconTexture: Interface\AddOns\Mama\mama
 MoLib\MoLib.lua
 MoLib\MoLibUI.lua
 Mama.lua

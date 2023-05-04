@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.19.0 May 3rd 2023
+- DragongFlight 10.1.0 toc update + new addon icon
+
 v1.18.7 March 21st 2023
 - Dragonflight 10.0.7 toc update
 - bad eyes, I jumped from 1.10 to 1.18 previous build(!)
