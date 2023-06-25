@@ -1,4 +1,4 @@
-## Interface: 30401
+## Interface: 30402
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
 ## Notes: Wrath of the Lich King Classic Edition

@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.19.1 June 24th 2023
+- Wrath 3.4.2
+
 v1.19.0 May 3rd 2023
 - DragongFlight 10.1.0 toc update + new addon icon
 
