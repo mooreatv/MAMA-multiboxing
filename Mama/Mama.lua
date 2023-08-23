@@ -300,10 +300,10 @@ function MM:SendSecureCommand(payload, partyOnly)
 end
 
 function MM:FollowUnit(param)
-  if MM.isLegacy or MM.isClassicEra then
+  if MM.isLegacy then
     FollowUnit(param)
   else
-    MM:PrintDefault("Mama: Follow is protected in Retail and Wrath, use /click MamaFollow or its keybind instead")
+    MM:PrintDefault("Mama: Follow is now protected in all Blizzard servers, use /click MamaFollow or its keybind instead")
   end
 end
 function MM:MakeMeLead()

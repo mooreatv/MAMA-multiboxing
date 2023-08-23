@@ -26,7 +26,9 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Let's you use DynamicBoxer without requiring ISBoxer (with WOB, but also works with ISBoxer as alternative to EMA), including fast in order invite/disband, EMA sync etc... just set your window slot # in the options panel or with `/mama s N`.
 
-- Let's you keybind or slash command "followme" and "promoteme" (`/mama f` and `/mama l` respectively)
+- Let's you keybind or slash command "promoteme" (`/mama l` to make a new lead)
+
+- Used to let you keybind or slash command "followme" (`/mama f` this stopped working even on classic from 1.14.4)
 
 - `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
 
@@ -44,7 +46,7 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - and more coming quite often... see `/mama` and `/mama config`
 
-- **Note** that on Wrath of the Lich King, and now in Dragonflight where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key.
+- **Note** that on Wrath of the Lich King, and now in Dragonflight and now even on Classic (hardcore and era) where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key.
 
 _Input on feature prioritization is most welcome!_
 

@@ -4,6 +4,11 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.20.0 Aug 22nd 2023
+- Update for Classic 1.14.4 - in time for Classic Hardcore launch!
+- They broke follow here too now so use /click in each window
+- and also DF 10.1.5 toc
+
 v1.19.1 June 24th 2023
 - Wrath 3.4.2
 

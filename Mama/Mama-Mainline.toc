@@ -1,4 +1,4 @@
-## Interface: 100100
+## Interface: 100105
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
 ## Notes: Dragonflight edition
