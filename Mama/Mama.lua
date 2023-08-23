@@ -685,8 +685,14 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
       return
     end
     if rest == "train" then
-      MM:PrintDefault("Mama: Requesting follow train!", rest)
-      MM:FollowUnit("player") -- implies stop follow for issuer
+      if MM.isLegacy then
+        MM:PrintDefault("Mama: Requesting follow train!", rest)
+        MM:FollowUnit("player") -- implies stop follow for issuer
+      else
+        local fullName = DB:ShortName(DB.watched[((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1])
+        MM:PrintDefault("Mama: train requested, following % (assuming this is coming from hw)", fullName)
+        FollowUnit(fullName)
+      end
     elseif rest ~= "" then
       MM:PrintDefault("Mama: Requesting follow %", rest)
       local shortName = DB:ShortName(rest)

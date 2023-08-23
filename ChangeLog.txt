@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.20.1 Aug 22nd 2023
+ - Made the keybinding for train actually be useful on classic (as in make a train when comming for hardware event)
+
 v1.20.0 Aug 22nd 2023
 - Update for Classic 1.14.4 - in time for Classic Hardcore launch!
 - They broke follow here too now so use /click in each window

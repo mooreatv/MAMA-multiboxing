@@ -19,15 +19,15 @@
     </Binding>
     <Binding name="CLICK MamaFollow:LeftButton"  category="MAMA">
     </Binding>
-    <!-- What's below only works on classic era since follow is protected api... -->
+    <Binding name="MM_FOLLOW_TRAIN" category="MAMA">
+        Mama.Slash("follow train")
+    </Binding>
+    <!-- What's below only works on legacy era since follow is protected api... -->
     <Binding name="MM_FL_COMBO" header="MM" category="MAMA">
         Mama.Slash("altogether")
     </Binding>
     <Binding name="MM_FOLLOWME" category="MAMA">
         Mama.Slash("followme")
-    </Binding>
-    <Binding name="MM_FOLLOW_TRAIN" category="MAMA">
-        Mama.Slash("follow train")
     </Binding>
     <Binding name="MM_FOLLOW_STOP" category="MAMA">
         Mama.Slash("follow stop")
