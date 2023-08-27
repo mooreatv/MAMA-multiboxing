@@ -692,6 +692,7 @@ function MM.Slash(arg) -- can't be a : because used directly as slash command
         local fullName = DB:ShortName(DB.watched[((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1])
         MM:PrintDefault("Mama: train requested, following % (assuming this is coming from hw)", fullName)
         FollowUnit(fullName)
+        return
       end
     elseif rest ~= "" then
       MM:PrintDefault("Mama: Requesting follow %", rest)
