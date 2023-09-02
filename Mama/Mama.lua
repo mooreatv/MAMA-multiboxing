@@ -63,13 +63,22 @@ function MM.SelectAvailableQuestHook(n, ...)
   end
 end
 
+if C_GossipInfo then
+  MM:Debug("C_GossipInfo exists")
+  MM.oSGO = C_GossipInfo.SelectOptionByIndex
+  -- hooksecurefunc(C_GossipInfo, "SelectOption", MM.SelectGossipOptionHook)
+  hooksecurefunc(C_GossipInfo, "SelectOptionByIndex", MM.SelectGossipOptionHook)
+else
+  MM:Debug("No C_GossipInfo exists")
+  -- original SelectGossipOption
+  MM.oSGO = SelectGossipOption
+  hooksecurefunc("SelectGossipOption", MM.SelectGossipOptionHook)
+end
+
 if DB.isClassic or DB.isLegacy then
   -- original AbandonQuest
   MM.oAQ = AbandonQuest
   hooksecurefunc("AbandonQuest", MM.AbandonQuestHook)
-  -- original SelectGossipOption
-  MM.oSGO = SelectGossipOption
-  hooksecurefunc("SelectGossipOption", MM.SelectGossipOptionHook)
   -- original SelectAvailableQuest
   MM.oSAQ = SelectAvailableQuest
   hooksecurefunc("SelectAvailableQuest", MM.SelectAvailableQuestHook)
@@ -84,8 +93,6 @@ else
   end
   MM.oAQ = C_QuestLog.AbandonQuest
   hooksecurefunc(C_QuestLog, "AbandonQuest", MM.AbandonQuestHook)
-  MM.oSGO = C_GossipInfo.SelectOption
-  hooksecurefunc(C_GossipInfo, "SelectOption", MM.SelectGossipOptionHook)
   MM.oSAQ = C_GossipInfo.SelectAvailableQuest
   hooksecurefunc(C_GossipInfo, "SelectAvailableQuest", MM.SelectAvailableQuestHook)
   function SetAbandonQuest()

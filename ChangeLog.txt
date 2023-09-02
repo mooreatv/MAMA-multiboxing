@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.20.3 Sept 2nd 2023
+- Restore selection of gossip option with team, including initial flight path giver dialog for classic
+  (which now uses the same code as retail C_GossipInfo.SelectOptionByIndex)
+
 v1.20.2 Aug 26th 2023
 - Train further fixed to not spam non functional follow command.
 - Hope everyone is having fun in Classic Hardcore! I am!
