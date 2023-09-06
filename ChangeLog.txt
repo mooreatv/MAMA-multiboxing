@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.20.4 Sept 6th 2023
+- Dragonflight is now 10.1.7 (please report any issue as I am personally mostly Hardcore classic currently)
+
 v1.20.3 Sept 2nd 2023
 - Restore selection of gossip option with team, including initial flight path giver dialog for classic
   (which now uses the same code as retail C_GossipInfo.SelectOptionByIndex)
