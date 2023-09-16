@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.21.0 Sept 16th 2023
+- New `/click MamaTrain` and keybind (need to be redone from older /mama follow train in this release) that works from all characters including the leader (on the leader it stops follow) + assist
+
 v1.20.4 Sept 6th 2023
 - Dragonflight is now 10.1.7 (please report any issue as I am personally mostly Hardcore classic currently)
 

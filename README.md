@@ -28,11 +28,9 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Let's you keybind or slash command "promoteme" (`/mama l` to make a new lead)
 
-- Used to let you keybind or slash command "followme" (`/mama f` this stopped working even on classic from 1.14.4)
-
-- `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
-
 - add `/click MamaAssist` in front of your macro to assist whoever you are leading with. (you can `/mama lead othertoon` to assist another character like a tank when it's not your own/you joined another party)
+
+- or `/click MamaTrain` for a follow train + assist (keybindable too), `/click MamaFollow` for just follow and assist of the lead (keybindable too)
 
 - `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
 
@@ -44,9 +42,16 @@ Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the onl
 
 - Take same flight path as your team
 
-- and more coming quite often... see `/mama` and `/mama config`
+- and more coming quite often... see `/mama` and `/mama config` and keybindings.
 
-- **Note** that on Wrath of the Lich King, and now in Dragonflight and now even on Classic (hardcore and era) where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key.
+- **Note** that on Wrath of the Lich King, and now in Dragonflight and now even on Classic (hardcore and era) where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key. Ditto now with `MamaTrain`
+
+On legacy:
+
+- Used to let you keybind or slash command "followme" (`/mama f` this stopped working even on classic from 1.14.4)
+
+- `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
+
 
 _Input on feature prioritization is most welcome!_
 

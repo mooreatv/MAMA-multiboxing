@@ -19,8 +19,7 @@
     </Binding>
     <Binding name="CLICK MamaFollow:LeftButton"  category="MAMA">
     </Binding>
-    <Binding name="MM_FOLLOW_TRAIN" category="MAMA">
-        Mama.Slash("follow train")
+    <Binding name="CLICK MamaTrain:LeftButton" category="MAMA">
     </Binding>
     <!-- What's below only works on legacy era since follow is protected api... -->
     <Binding name="MM_FL_COMBO" header="MM" category="MAMA">
