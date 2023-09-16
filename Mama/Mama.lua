@@ -596,9 +596,15 @@ local additionalEventHandlers = {
 
 function MM:GetTrain()
   if MM:GetLead() == "player" then
-    return ""
+    return "player"
   end
-  return DB:ShortName(DB.watched[((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1])
+  local idx = ((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1
+  local fullName = DB.watched[idx]
+  if fullName then
+    return DB:ShortName(fullName)
+  else
+    return "player"
+  end
 end
 
 function MM:MacroButtons()

@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.21.1 Sept 16th 2023
+- Fix lua error when invited to group with team not complete
+
 v1.21.0 Sept 16th 2023
 - New `/click MamaTrain` and keybind (need to be redone from older /mama follow train in this release) that works from all characters including the leader (on the leader it stops follow) + assist
 
