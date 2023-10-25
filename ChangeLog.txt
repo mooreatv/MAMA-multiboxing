@@ -4,6 +4,9 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.21.2 Oct 24th 2023
+- Wrath is now 3.4.3
+
 v1.21.1 Sept 16th 2023
 - Fix lua error when invited to group with team not complete
 
