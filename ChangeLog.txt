@@ -4,6 +4,10 @@ Coming next:
 - Your input/suggestions welcome !
 - See open issues for ideas https://github.com/mooreatv/Mama/issues)
 
+v1.21.4 Feb 8th 2024
+- Classic / Season of Discovery is now 1.15.1
+- Dragonflight is 10.2.5
+
 v1.21.3 Nov 18th 2023
 - Classic is now 1.15.0
 - Dragonflight is 10.2.0
