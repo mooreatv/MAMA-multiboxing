@@ -598,6 +598,11 @@ function MM:GetTrain()
   if MM:GetLead() == "player" then
     return "player"
   end
+  -- TODO fix this but for now all I have is a stack trace from 1 user and I can't reproduce so:
+  if not DB.watched or not DB.watched.slot then
+    MM:Warning("Strange init order issue, will not setup train macro properly yet, try Mama Lead again later")
+    return "player"
+  end
   local idx = ((DB.watched.slot+DB.expectedCount-2)%DB.expectedCount)+1
   local fullName = DB.watched[idx]
   if fullName then
