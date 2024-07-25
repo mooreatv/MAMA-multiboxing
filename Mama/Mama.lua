@@ -970,7 +970,7 @@ function MM:CreateOptionsPanel()
     end
   end
   -- Add the panel to the Interface Options
-  InterfaceOptions_AddCategory(MM.optionsPanel)
+  MM:ConfigPanel(MM.optionsPanel)
 end
 
 -- bindings / localization
