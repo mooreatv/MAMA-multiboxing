@@ -1,7 +1,7 @@
-## Interface: 110002
+## Interface: 110005
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
-## Notes: Dragonflight edition
+## Notes: War Within edition
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled
