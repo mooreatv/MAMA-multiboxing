@@ -40,7 +40,8 @@ globals = {
     "SelectGossipOption",
     "C_GossipInfo",
     "SelectAvailableQuest",
-    "hooksecurefunc"
+    "hooksecurefunc",
+    "C_PartyInfo",
 }
 max_line_length = 132
 ignore = {

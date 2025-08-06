@@ -107,6 +107,14 @@ else
   function GetNumQuestLogEntries()
     return C_QuestLog.GetNumQuestLogEntries()
   end
+  -- and 11.2
+  function GetLootMethod()
+    return C_PartyInfo.GetLootMethod()
+  end
+  function SetLootMethod(method)
+    MM:PrintDefault("Mama: retail so not setting loot to %",method)
+    -- C_PartyInfo.SetLootMethod(method)
+  end
 end
 
 function MM:GetSelectedQuest()
