@@ -1,19 +1,22 @@
-## Interface: 30300
+## Interface: 16001
 ## Title: M.A.M.A.
 ## Notes: |cFF99E5FFM|rooreaTv's/minimal yet |cFF99E5FFA|rwesome |cFF99E5FFM|rultiboxing |cFF99E5FFA|rssistant (|cFF99E5FF/mama|r)
-## Notes: Legacy 3.3.5a edition
+## Notes: WoW Forever edition (no other edition/updates planned atm)
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
-## SavedVariables: MamaSaved
-## Dependencies: DynamicBoxer
-## Globe: check-classic
+## SavedVariables: MamaForeverSaved
 ## X-OpenSource-License: LPGLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
 ## X-Curse-Project-ID: 334197
 ## X-Wago-ID: 7nGvmDKx
 ## X-WoWI-ID: 26337
-MoLib\MoLib.lua
-MoLib\MoLibUI.lua
+## IconTexture: Interface\AddOns\Mama\mama
 Mama.lua
+Team.lua
+Comm.lua
+Actions.lua
+Status.lua
+Options.lua
+UI.lua
