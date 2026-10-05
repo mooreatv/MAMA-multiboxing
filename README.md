@@ -15,7 +15,7 @@ Names in Forever are `First Last` (with a space) and there is no realm part: Mam
 
 ## Install
 
-Copy the `MamaForever` folder to
+Copy the `Mama` folder to
 `World of Warcraft\_classic_beta_\Interface\AddOns\` (or run `install.bat` from a clone, adjust the path in it if
 needed), then **restart the game** (a `/reload` isn't enough the first time, key bindings are only read at startup).
 
@@ -92,7 +92,7 @@ mount, loot and follow-train sync from the old Mama are planned but not done yet
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
 
 ## More info
--
--Get the binary release using curse/twitch/overwolf/... clients
--https://www.curseforge.com/wow/addons/mama-multiboxing
--
+
+- Get the binary release using curse/twitch/overwolf/wowup/wago... clients https://www.curseforge.com/wow/addons/mama-multiboxing
+
+- Source code is https://github.com/mooreatv/MAMA-multiboxing

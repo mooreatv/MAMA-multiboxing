@@ -1,3 +1,16 @@
+--[[
+   Mama by MooreaTV moorea@ymail.com (c) 2019-2026 All rights reserved
+   Licensed under LGPLv3 - No Warranty
+   (contact the author if you need a different license)
+
+   Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba)
+
+   Get this addon binary release using curse/twitch client or on wowinterface
+   The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing
+
+   Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
+   ]] --
+
 -- Team: who is in the group, who is the lead, which characters are "ours".
 
 local _, MF = ...

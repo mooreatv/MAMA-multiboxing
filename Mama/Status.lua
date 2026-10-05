@@ -1,3 +1,16 @@
+--[[
+   Mama by MooreaTV moorea@ymail.com (c) 2019-2026 All rights reserved
+   Licensed under LGPLv3 - No Warranty
+   (contact the author if you need a different license)
+
+   Mama: MooreaTv's/minimal yet Awesome Multiboxing Assistant (name inspired by Jamba)
+
+   Get this addon binary release using curse/twitch client or on wowinterface
+   The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing
+
+   Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
+   ]] --
+
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
 -- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet.
 -- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
