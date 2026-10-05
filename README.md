@@ -1,88 +1,98 @@
 <img src="https://raw.githubusercontent.com/mooreatv/Mama/master/Mama_icon.png" height=64 width=64 align=right>
-
 ## About M.A.M.A. Multiboxing
 
-MAMA is an open-source MultiBoxing (dual-boxing) addon with the following design goals:
+MAMA is now Mama-forever: Multiboxing helper for **WoW Forever** (the new beta client, interface 16xxx). One standalone addon, no libraries and
+no other addon needed. It is the successor of MAMA + DynamicBoxer + MoLib, rewritten for Forever only.
+
+It lets all your windows of the same team:
+
+- find each other and form a group automatically (one-time setup per window),
+- **follow and assist** whoever is the lead, with one key or one macro,
+- share, accept and abandon **quests** together,
+- be managed from a small **team status window** (invite, disband, party/raid, target, ...).
+
+Names in Forever are `First Last` (with a space) and there is no realm part: Mama-forever treats them as opaque names.
+
+## Install
+
+Copy the `MamaForever` folder to
+`World of Warcraft\_classic_beta_\Interface\AddOns\` (or run `install.bat` from a clone, adjust the path in it if
+needed), then **restart the game** (a `/reload` isn't enough the first time, key bindings are only read at startup).
+
+## One-time setup
+
+Do this once per window/character:
+
+1. In the first window: `/mama s 1`. A dialog shows the team **token**: press Ctrl-C, then Enter.
+2. In the second window: `/mama s 2`, press Ctrl-V in the dialog and Enter ("token accepted").
+3. Same for the third window with `/mama s 3`, and so on (up to 40).
+4. `/reload` (or just keep playing): the windows announce themselves to each other, the status window appears,
+   and slot 1 invites everybody (switching to a raid above 5 characters).
+
+The token is saved, so you don't redo this at the next login. Every message between your windows is signed with the
+token's secret, so strangers can't give your characters orders. Characters that exchange the token are the only ones
+whose group invites are auto accepted. `/mama token` shows it again, `/mama token new` (slot 1) makes a new one.
+
+## Using it
+
+### Follow and assist
+
+The "lead" is the group leader by default. `/mama lead` on a window makes **that** window the lead for the whole team
+(and the group leader promotes it), `/mama lead auto` goes back to following the group leader.
+
+Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
+
+- **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
+  *Make me lead*, *Invite team*, *Disband team*, *Identify slot*.
+- **The MAMA macro**: Mama-forever creates an account wide macro called `MAMA` and keeps its text pointed at the
+  current lead. Open the macro window (`/macro`), drag `MAMA` to an action bar once and use it. You can change its
+  icon, and add lines after the ones Mama writes (they are kept). Turn this off with `/mama macro off`.
+
+### Quests
+
+- Quests you accept are shared with the group, and shared quests are accepted automatically on the other windows.
+- Abandoning a quest on one window abandons it on the others (never a completed quest).
+
+### Status window
+
+One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
+`*` marks the lead. Hover the title for all the shortcuts:
+
+| Click | Action |
+|---|---|
+| Left | invite the team |
+| Middle | disband (leader uninvites the team, others leave) |
+| Right | options |
+| Shift+Left / Shift+Right | toggle party/raid / toggle compact view |
+| Shift+Middle | show the big slot number, class and name |
+| Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
+| Alt+Left | resend our info to the team |
+| Mouse wheel / drag title | resize / move |
+
+On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu.
+
+## Commands and options
+
+`/mama help` lists everything: `s`, `token`, `lead`, `invite`, `disband`, `raid`, `autoinvite`, `status`, `macro`,
+`quest`, `ui`, `identify`, `options`, `debug`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+(`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
+MAMA macro, status window, slot display at login, debug.
+
+## Not included (compared to the old addons)
+
+No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight path,
+mount, loot and follow-train sync from the old Mama are planned but not done yet.
+
+## Development
+
+- Releases are built by the GitHub action in `.github/workflows` using
+  [BigWigsMods/packager](https://github.com/BigWigsMods/packager) and `.pkgmeta` when a tag is pushed.
+
 
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
 
-- High quality code
-
-- Minimal dependencies
-
-- Low footprint (both memory and cpu and addon chatter)
-
-- Works with a single code base on both Wow Classic and regular (SL as of this writing)
-
-- Let's you have dynamic teams with or without ISBoxer
-
-**M.A.M.A.** stands for **M**ooreaTv's/minimal yet **A**wesome **M**ultiboxing **A**ssistant in reverence to grandfather of all (good) multi-boxing addons: _Jamba_ (Jafula's Awesome MultiBoxing Assistant), which also inspired the _EMA_ name.
-
-Optionally: have a look at [WowOpenBox.org](https://WowOpenBox.org/) for the only open-source windows multiboxing software verifiably compliant with Blizzard's new rules.
-
-## What does it do ?
-
-**M.A.M.A relies on my DynamicBoxer for core team communication functionality**
-
-- Let's you use DynamicBoxer without requiring ISBoxer (with WOB, but also works with ISBoxer as alternative to EMA), including fast in order invite/disband, EMA sync etc... just set your window slot # in the options panel or with `/mama s N`.
-
-- Let's you keybind or slash command "promoteme" (`/mama l` to make a new lead)
-
-- add `/click MamaAssist` in front of your macro to assist whoever you are leading with. (you can `/mama lead othertoon` to assist another character like a tank when it's not your own/you joined another party)
-
-- or `/click MamaTrain` for a follow train + assist (keybindable too), `/click MamaFollow` for just follow and assist of the lead (keybindable too)
-
-- `/mama mount` and `/mama mount dismount` and keybindings for mounting/dismounting as a team. Note that only dismount works in classic.
-
-- Set EMA master when setting group lead (if EMA is installed and config checkbox is on, but `/click MamaAssist` is faster and more reliable)
-
-- Set loot to free for all (and back to group when inviting extra)
-
-- Share/accept quests on minions, Abandon quests as a team.
-
-- Take same flight path as your team
-
-- and more coming quite often... see `/mama` and `/mama config` and keybindings.
-
-- **Note** that on Wrath of the Lich King, and now in Dragonflight and now even on Classic (hardcore and era) where FollowUnit() has been hardware protected by Blizzard; `followme` and `alltogether` keybinds won't work. Please instead use `/mama lead` (once/when changing lead) and `/click MamaFollow` or the keybind for it on all. `/click MamaFollow` will also do the `MamaAssist` in addition to following so you can do both in 1 key. Ditto now with `MamaTrain`
-
-On legacy:
-
-- Used to let you keybind or slash command "followme" (`/mama f` this stopped working even on classic from 1.14.4)
-
-- `/mama altogether` and keybinding to do both "follow me" and "make me lead" in one efficient command. (1 addon message).
-
-
-_Input on feature prioritization is most welcome!_
-
-Mama might eventually also ensure your multiboxing or dual boxing team can do stuff like:
-
-- Auto vendor/repair
-
-- And more features per your request(s) !
-
-Mama works well in conjunction with ISBoxer and DynamicBoxer but also with other multiboxing software or hardware
-
-## Setup
-
-As mentioned above there is a one time setup/pairing with DynamicBoxer:
-
-`/mama s 1` in window 1, `/mama s 2` in window 2, `/mama s 3` in window 3 etc... then copy the token from dynamicboxer window 1 and paste in the other windows. Type return after `Ctrl-C` (copy) from window1 then paste `Ctrl-V` in all other windows as prompted. It may take a `/reload` the first time to complete the one time setup.
-
-Set in game keybind for "mama alltogether" so you can trigger both follow me and make leader in 1 key/addon message. (and the other commands too)
-
-Add `/click MamaAssist` in front of your macro to assist whoever you are leading with.
-
-If you see anything red in the dbox-mama blue status window: something is wrong! try `/reload` and read the messages in the chat window if it persists. Repeat the setup carefully (`/dbox show` if you closed the dialog) and if that still doesn't work come to discord.
-
 ## More info
-
-Get the binary release using curse/twitch/overwolf/... clients
-https://www.curseforge.com/wow/addons/mama-multiboxing
-
-You will also need https://www.curseforge.com/wow/addons/dynamicboxer
-
-The source of the addon resides on https://github.com/mooreatv/MAMA-multiboxing
-(and the MoLib library at https://github.com/mooreatv/MoLib)
-
-Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
+-
+-Get the binary release using curse/twitch/overwolf/... clients
+-https://www.curseforge.com/wow/addons/mama-multiboxing
+-
