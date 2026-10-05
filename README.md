@@ -96,3 +96,5 @@ mount, loot and follow-train sync from the old Mama are planned but not done yet
 - Get the binary release using curse/twitch/overwolf/wowup/wago... clients https://www.curseforge.com/wow/addons/mama-multiboxing
 
 - Source code is https://github.com/mooreatv/MAMA-multiboxing
+
+- The older version, pre WoW forever rewrite, that used MoLib and DynamicBoxer can be found at https://github.com/mooreatv/MAMA-multiboxing/tree/v1.24.0
