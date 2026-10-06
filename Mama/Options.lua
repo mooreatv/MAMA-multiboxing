@@ -25,6 +25,8 @@ local OPTIONS = {
    "Slot 1 automatically invites team members as they come online."},
   {"autoRaid", "Auto convert to raid",
    "Convert the group to a raid when inviting more than 5 characters."},
+  {"autoFFA", "Free for all loot",
+   "When you lead a full team group, set loot to free for all (back to group loot if outsiders join)."},
   {"macro", "Maintain the MAMA macro", "Keep the account-wide MAMA follow + assist macro pointing at the current lead."},
   {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."},
   {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."},

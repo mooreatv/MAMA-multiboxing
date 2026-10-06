@@ -19,7 +19,7 @@ _G.MamaForever = MF
 
 MF.prefix = "|cFF99E5FFMama:|r "
 MF.defaults = {debug = false, macro = true, autoQuest = true, autoAccept = true, lead = false, slot = 0, token = false, showStatus = true,
-                autoShare = true, autoAbandon = true, autoInvite = true, autoRaid = true, compact = false, identifyOnLogin = true,
+                autoShare = true, autoAbandon = true, autoInvite = true, autoRaid = true, autoFFA = true, compact = false, identifyOnLogin = true,
                 statusScale = 1}
 
 function MF:Print(msg, ...)
@@ -74,6 +74,26 @@ end)
 
 MF:On("PLAYER_LOGIN", function(self)
   self.myName = self:FullName("player")
+  -- Team slots and the history of who held which slot are remembered per faction (the saved variables are account wide).
+  self.faction = UnitFactionGroup("player") or "Neutral"
+  local s = self.db
+  s.slotsBy = s.slotsBy or {}
+  s.slotsBy[self.faction] = s.slotsBy[self.faction] or {}
+  s.slots = s.slotsBy[self.faction]
+  s.history = s.history or {}
+  s.history[self.faction] = s.history[self.faction] or {}
+  if s.tokens then -- undo the short-lived per faction tokens: keep a single account wide one
+    for f, t in pairs(s.tokens) do
+      if not s.token then s.token, s.tokenFaction = t, f end
+    end
+    s.tokens = nil
+  end
+  if s.token and not s.tokenFaction then
+    local tok = self:ParseToken(s.token)
+    for _, n in pairs(s.slots) do
+      if tok and n == tok.master then s.tokenFaction = self.faction end
+    end
+  end
   self:Fire("LOGIN")
 end)
 

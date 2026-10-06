@@ -44,6 +44,32 @@ for _, ev in ipairs({"GROUP_ROSTER_UPDATE", "PARTY_LEADER_CHANGED", "UNIT_NAME_U
 end
 MF:Listen("LOGIN", function(self) self:RefreshRoster() end)
 
+-- Leader: free for all loot once the whole team is grouped; back to group loot if extra people join.
+local ffaIssued, groupIssued
+MF:On("GROUP_ROSTER_UPDATE", function(self)
+  if not self.db.autoFFA or not IsInGroup() or not UnitIsGroupLeader("player") then return end
+  local n = GetNumGroupMembers()
+  if n <= 1 then
+    ffaIssued, groupIssued = false, false
+    return
+  end
+  local expected = 0
+  for s in pairs(self.db.slots) do
+    if s > expected then expected = s end
+  end
+  if expected < 2 then return end
+  local cur = C_PartyInfo.GetLootMethod()
+  if not ffaIssued and n == expected and cur ~= 0 and cur ~= "freeforall" then
+    self:Print("setting loot to free for all (team of %d)", expected)
+    C_PartyInfo.SetLootMethod("freeforall")
+    ffaIssued = true
+  elseif not groupIssued and n > expected and (cur == 0 or cur == "freeforall") then
+    self:Print("extra people in the group (%d vs %d), switching to group loot", n, expected)
+    C_PartyInfo.SetLootMethod("group")
+    groupIssued = true
+  end
+end)
+
 -- Auto-accept invites only from characters we were told are on our team.
 MF:On("PARTY_INVITE_REQUEST", function(self, from)
   if self.db.autoAccept and self.db.team[from] then

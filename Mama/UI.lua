@@ -56,7 +56,7 @@ function MamaForever:ShowTokenDialog(mode)
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
     f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")
-    local token = self.db.token or ""
+    local token = self:TokenText()
     e:SetScript("OnTextChanged", function(box, user)
       if user then box:SetText(token) box:HighlightText() end -- read only
     end)
