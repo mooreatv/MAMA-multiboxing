@@ -1,4 +1,4 @@
--- Actions: follow/assist secure buttons (for keybinds), the account-wide "MAMA" macro, quest auto-accept.
+-- Actions: follow/assist/train secure buttons (for keybinds), the account-wide "MAMA" macro, quest auto-accept.
 -- Findings on Forever: /click MamaFollow from a macro does nothing, but the same button works from a keybind
 -- and an action-bar macro with the plain text "/assist Name" + "/follow Name" works too.
 
@@ -48,14 +48,31 @@ function MF:RefreshActions()
     assist = "/assist " .. target
     follow = assist .. "\n/follow " .. target
   end
+  local train = "/follow player"
+  if target and self.db.slot > 0 then
+    local count = 0
+    for slot in pairs(self.db.slots) do
+      if slot > count then count = slot end
+    end
+    if count > 0 then
+      local previousSlot = ((self.db.slot + count - 2) % count) + 1
+      local previous = self.db.slots[previousSlot]
+      train = assist .. "\n/follow " .. (previous or "player")
+    end
+  end
   self.buttons.MamaFollow:SetAttribute("macrotext", follow)
   self.buttons.MamaAssist:SetAttribute("macrotext", assist)
+  self.buttons.MamaTrain:SetAttribute("macrotext", train)
   self:UpdateMacro(lead)
   self:Debug("actions refreshed, lead=%s target=%s", tostring(lead), tostring(target))
 end
 
 MF:Listen("LOGIN", function(self)
-  self.buttons = {MamaFollow = makeButton("MamaFollow"), MamaAssist = makeButton("MamaAssist")}
+  self.buttons = {
+    MamaFollow = makeButton("MamaFollow"),
+    MamaAssist = makeButton("MamaAssist"),
+    MamaTrain = makeButton("MamaTrain"),
+  }
   self:RefreshActions()
 end)
 MF:Listen("TEAM_CHANGED", function(self)

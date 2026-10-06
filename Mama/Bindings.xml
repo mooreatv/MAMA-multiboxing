@@ -10,6 +10,8 @@
     </Binding>
     <Binding name="CLICK MamaAssist:LeftButton" category="MAMAFOREVER">
     </Binding>
+    <Binding name="CLICK MamaTrain:LeftButton" category="MAMAFOREVER">
+    </Binding>
     <Binding name="MAMA_LEAD" category="MAMAFOREVER">
         MamaForever:MakeMeLead()
     </Binding>

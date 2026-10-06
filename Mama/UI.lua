@@ -18,6 +18,7 @@ BINDING_HEADER_MAMAFOREVER = "Mama-forever"
 BINDING_NAME_MAMA_LEAD = "Make me lead |cFF99E5FF(/mama lead)|r"
 _G["BINDING_NAME_CLICK MamaFollow:LeftButton"] = "Follow + assist lead"
 _G["BINDING_NAME_CLICK MamaAssist:LeftButton"] = "Assist lead (no follow)"
+_G["BINDING_NAME_CLICK MamaTrain:LeftButton"] = "Follow train + assist lead"
 
 -- One small dialog used both to copy the token (slot 1) and to paste it (other slots).
 local dialog
