@@ -6,7 +6,7 @@ ignore:
     - OldChangeLog.txt
     - luaformat.cfg
     - Probe
-    - PLAN.md
+    - STATUS.md
     - README.md
     - .github
 
