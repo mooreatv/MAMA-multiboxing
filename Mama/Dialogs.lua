@@ -46,6 +46,11 @@ local function hookButtons()
   end
 end
 
+local function shown(frameName)
+  local f = _G[frameName]
+  return f and f:IsShown() or false
+end
+
 -- Last resort: Blizzard's own selection, polled while the reward panel is open.
 local poll = CreateFrame("Frame")
 poll:SetScript("OnUpdate", function()
@@ -58,11 +63,6 @@ end)
 local function clean(s)
   s = tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("[;:|]", ""):gsub("^%s+", ""):gsub("%s+$", "")
   return s:sub(1, MAX_TEXT)
-end
-
-local function shown(frameName)
-  local f = _G[frameName]
-  return f and f:IsShown() or false
 end
 
 -- Creature id from the GUID of the NPC we're talking to ("Creature-0-server-instance-zone-ID-spawn"); nil: no dialog.
