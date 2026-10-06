@@ -18,7 +18,8 @@ local pending = {}
 local lastSent = {}
 local lastNpc = 0 -- the "npc" unit is already gone when some hooks run, so remember the last one seen
 local taxiNames = {} -- node index -> name, cached when the map opens
-local reward = {questID = 0, items = {}} -- reward choices of the quest complete dialog we have open
+local hooked = {} -- reward buttons whose clicks we already track
+local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the quest complete dialog we have open
 
 local function clean(s)
   s = tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("[;:|]", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -96,7 +97,11 @@ end
 local function questReward(self, id, text)
   if not shown("QuestFrameRewardPanel") or GetQuestID() ~= id then return false end
   local want, choice = tonumber(text) or 0, 0
-  if #reward.items == 1 then
+  local picked = reward.picked or 0
+  if picked == 0 and QuestInfoFrame and (QuestInfoFrame.itemChoice or 0) > 0 then picked = QuestInfoFrame.itemChoice end
+  if #reward.items > 1 and picked > 0 and picked <= #reward.items then
+    choice = picked -- selected by hand in this window: keep it rather than following the lead
+  elseif #reward.items == 1 then
     choice = 1
   elseif #reward.items > 1 then
     for i, item in ipairs(reward.items) do
@@ -195,6 +200,18 @@ MF:On("QUEST_COMPLETE", function(self)
   reward.questID = GetQuestID()
   reward.items = {}
   for i = 1, GetNumQuestChoices() do reward.items[i] = tonumber((GetQuestItemLink("choice", i) or ""):match("item:(%d+)")) or 0 end
+  reward.picked = 0
+  local function hookButtons()
+    for i = 1, #reward.items do
+      local b = _G["QuestInfoRewardsFrameQuestInfoItem" .. i]
+      if b and not hooked[b] then
+        hooked[b] = true
+        b:HookScript("OnClick", function() reward.picked = i end)
+      end
+    end
+  end
+  hookButtons()
+  C_Timer.After(0, hookButtons) -- the buttons may only be created after this event
   self:Debug("dialog: quest %d offers %d reward choices", reward.questID, #reward.items)
   retry(self)
 end)
