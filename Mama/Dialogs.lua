@@ -18,7 +18,42 @@ local pending = {}
 local lastSent = {}
 local lastNpc = 0 -- the "npc" unit is already gone when some hooks run, so remember the last one seen
 local taxiNames = {} -- node index -> name, cached when the map opens
-local reward = {questID = 0, items = {}} -- reward choices of the quest complete dialog we have open
+local hooked = {} -- reward buttons whose clicks we already track
+local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the quest complete dialog we have open
+
+local function setPicked(index, source)
+  if not index or index < 1 or index > #reward.items or reward.picked == index then return end
+  reward.picked = index
+  MF:Debug("dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's", index, tostring(reward.items[index]), source)
+end
+
+-- Every clickable reward choice under the quest frame, whatever it is named in this client.
+local function hookButtons()
+  local function scan(f, depth)
+    if depth > 6 then return end
+    for _, c in ipairs({f:GetChildren()}) do
+      local name = c.GetName and c:GetName() or ""
+      if not hooked[c] and c.HookScript and c.HasScript and c:HasScript("OnClick")
+        and (c.type == "choice" or name:find("QuestInfoItem") or name:find("QuestInfoReward")) and (c:GetID() or 0) > 0 then
+        hooked[c] = true
+        c:HookScript("OnClick", function(b) setPicked(b:GetID(), "button " .. (b:GetName() or "?")) end)
+      end
+      scan(c, depth + 1)
+    end
+  end
+  for _, name in ipairs({"QuestFrame", "QuestInfoFrame"}) do
+    if _G[name] then scan(_G[name], 0) end
+  end
+end
+
+-- Last resort: Blizzard's own selection, polled while the reward panel is open.
+local poll = CreateFrame("Frame")
+poll:SetScript("OnUpdate", function()
+  if reward.questID ~= 0 and #reward.items > 1 and shown("QuestFrameRewardPanel") then
+    local c = QuestInfoFrame and QuestInfoFrame.itemChoice or 0
+    if c > 0 then setPicked(c, "QuestInfoFrame.itemChoice") end
+  end
+end)
 
 local function clean(s)
   s = tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("[;:|]", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -96,7 +131,11 @@ end
 local function questReward(self, id, text)
   if not shown("QuestFrameRewardPanel") or GetQuestID() ~= id then return false end
   local want, choice = tonumber(text) or 0, 0
-  if #reward.items == 1 then
+  local picked = reward.picked or 0
+  if picked == 0 and QuestInfoFrame and (QuestInfoFrame.itemChoice or 0) > 0 then picked = QuestInfoFrame.itemChoice end
+  if #reward.items > 1 and picked > 0 and picked <= #reward.items then
+    choice = picked -- selected by hand in this window: keep it rather than following the lead
+  elseif #reward.items == 1 then
     choice = 1
   elseif #reward.items > 1 then
     for i, item in ipairs(reward.items) do
@@ -107,7 +146,8 @@ local function questReward(self, id, text)
       return true
     end
   end
-  self:Debug("dialog: turning in quest %d with reward choice %d", id, choice)
+  self:Debug("dialog: turning in quest %d with reward %d: %s (hand-picked %d, lead's item %d)", id, choice,
+    picked > 0 and choice == picked and "YOUR selection" or "following the lead", picked, want)
   GetQuestReward(choice)
   return true
 end
@@ -192,9 +232,13 @@ MF:On("QUEST_PROGRESS", function(self)
 end)
 MF:On("QUEST_COMPLETE", function(self)
   currentNpc()
+  if reward.questID ~= GetQuestID() then reward.picked = 0 end
   reward.questID = GetQuestID()
   reward.items = {}
   for i = 1, GetNumQuestChoices() do reward.items[i] = tonumber((GetQuestItemLink("choice", i) or ""):match("item:(%d+)")) or 0 end
+  hookButtons()
+  C_Timer.After(0, hookButtons) -- the buttons may only be created after this event
+  C_Timer.After(0.5, hookButtons)
   self:Debug("dialog: quest %d offers %d reward choices", reward.questID, #reward.items)
   retry(self)
 end)
@@ -219,6 +263,11 @@ MF:Listen("LOGIN", function(self)
   hooksecurefunc("CompleteQuest", function()
     if shown("QuestFrameProgressPanel") then send(self, "qp", GetQuestID(), "") end
   end)
+  if _G.QuestInfoItem_OnClick then
+    hooksecurefunc("QuestInfoItem_OnClick", function(b)
+      if b and b.type == "choice" then setPicked(b:GetID(), "QuestInfoItem_OnClick") end
+    end)
+  end
   hooksecurefunc("GetQuestReward", function(choice)
     if reward.questID == 0 then return end
     send(self, "qr", reward.questID, tostring(choice and choice > 0 and reward.items[choice] or 0))
