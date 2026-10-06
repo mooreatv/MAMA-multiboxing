@@ -2,8 +2,8 @@ package-as: Mama
 
 ignore:
     - install.bat
-    - classictag.sh
     - Mama_icon.png
+    - OldChangeLog.txt
     - luaformat.cfg
     - Probe
     - PLAN.md

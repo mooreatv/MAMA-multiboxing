@@ -7,7 +7,7 @@
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 ## SavedVariables: MamaForeverSaved
-## X-OpenSource-License: LPGLv3
+## X-OpenSource-License: LGPLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/MAMA-multiboxing/releases
 ## X-Curse-Project-ID: 334197
 ## X-Wago-ID: 7nGvmDKx
@@ -21,4 +21,3 @@ Dialogs.lua
 Status.lua
 Options.lua
 UI.lua
-DialogProbe.lua

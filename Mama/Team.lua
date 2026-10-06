@@ -238,11 +238,10 @@ end
 function MF:Disband()
   if not IsInGroup() then return end
   if UnitIsGroupLeader("player") then
-    local uninvite = C_PartyInfo.UninviteUnit or UninviteUnit
     for name in pairs(self.roster) do
       if self:SlotOf(name) then
         self:Print("uninviting %s", name)
-        uninvite(name)
+        C_PartyInfo.UninviteUnit(name)
       end
     end
   else
