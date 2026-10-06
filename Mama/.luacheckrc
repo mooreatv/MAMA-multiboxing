@@ -52,6 +52,7 @@ read_globals = {
   "IsInRaid",
   "IsQuestCompletable",
   "IsShiftKeyDown",
+  "GetNumRoutes",
   "NumTaxiNodes",
   "PromoteToLeader",
   "QuestLogPushQuest",
