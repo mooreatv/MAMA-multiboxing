@@ -17,7 +17,12 @@ local _, MF = ...
 
 MF.roster = {} -- full name -> unit token, for the other group members
 
+local wasGrouped
 function MF:RefreshRoster()
+  -- An explicit lead belongs to one group: forget it once we leave (or start out of) a group.
+  local grouped = IsInGroup()
+  if not grouped and wasGrouped ~= false and self.db.lead then self.db.lead = false end
+  wasGrouped = grouped
   wipe(self.roster)
   for _, u in ipairs(self:GroupUnits()) do
     local n = self:FullName(u)
@@ -28,7 +33,9 @@ end
 
 -- Explicit lead if set, otherwise whoever else leads the group. nil when we lead or are alone.
 function MF:GetLead()
-  if self.db.lead then return self.db.lead end
+  -- An explicit lead only counts while it is us or in our current group (it may be left over from a previous team).
+  local lead = self.db.lead
+  if lead and (lead == self.myName or self.roster[lead]) then return lead end
   for _, u in ipairs(self:GroupUnits()) do
     if UnitIsGroupLeader(u) then return self:FullName(u) end
   end

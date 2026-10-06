@@ -9,6 +9,7 @@ It lets all your windows of the same team:
 
 - find each other and form a group automatically (one-time setup per window),
 - **follow and assist** whoever is the lead, with one key or one macro,
+- **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
 - be managed from a small **team status window** (invite, disband, party/raid, target, ...).
 
@@ -44,6 +45,7 @@ The "lead" is the group leader by default. `/mama lead` on a window makes **that
 Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
+  *Follow train + assist lead* (each slot follows the previous slot; the lead stops following),
   *Make me lead*, *Invite team*, *Disband team*, *Identify slot*.
 - **The MAMA macro**: Mama-forever creates an account wide macro called `MAMA` and keeps its text pointed at the
   current lead. Open the macro window (`/macro`), drag `MAMA` to an action bar once and use it. You can change its
@@ -81,8 +83,8 @@ MAMA macro, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 
-No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight path,
-mount, loot and follow-train sync from the old Mama are planned but not done yet.
+No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight path
+and mount sync from the old Mama are planned but not done yet.
 
 ## Development
 

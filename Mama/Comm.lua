@@ -427,6 +427,13 @@ MF:AddCommand("token", function(self, rest)
     local ok, err = self:AcceptToken(rest)
     if not ok then self:Print("%s", err) end
   elseif self.db.slot == 1 and self:Token() then
+    local tok = self:Token()
+    if tok.master ~= self.myName then
+      -- keep team id and secret, just point the master at this character
+      local body = ("%s:%s:%s:"):format(tok.team, tok.secret, self.myName)
+      self:SetToken(body .. checkChar(body))
+      self:Print("token refreshed: team master is now %s", self.myName)
+    end
     self:ShowTokenDialog("copy")
   else
     self:ShowTokenDialog("paste")
