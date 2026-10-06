@@ -33,6 +33,7 @@ local TIP = table.concat({
   "|cFF99E5FFCtrl left|r toggle auto invite",
   "|cFF99E5FFCtrl right|r show/paste the team token",
   "|cFF99E5FFAlt left|r resend our info to the team",
+  "|cFF99E5FFAlt right|r team is complete (forget slots that aren't here)",
   "|cFF99E5FFMousewheel|r resize, |cFF99E5FFdrag|r the header to move",
   "On a row: left click targets (or invites if not in group), right click unit menu.",
 }, "\n")
@@ -118,6 +119,7 @@ local function WindowClick(button)
     elseif shift then
       MF.db.compact = not MF.db.compact
       MF:RefreshStatus()
+    elseif alt then MF:TeamComplete()
     else MF.commands.options.fn(MF) end
   elseif button == "MiddleButton" then
     if shift then MF:Identify() else MF:Disband() end

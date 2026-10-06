@@ -80,3 +80,4 @@ end
 BINDING_NAME_MAMA_INVITE = "Invite team |cFF99E5FF(/mama invite)|r"
 BINDING_NAME_MAMA_DISBAND = "Disband team |cFF99E5FF(/mama disband)|r"
 BINDING_NAME_MAMA_IDENTIFY = "Identify slot |cFF99E5FF(/mama identify)|r"
+BINDING_NAME_MAMA_COMPLETE = "Team is complete |cFF99E5FF(/mama complete)|r"

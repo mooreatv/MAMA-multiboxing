@@ -18,6 +18,9 @@
     <Binding name="MAMA_INVITE" category="MAMAFOREVER">
         MamaForever:InviteMissing()
     </Binding>
+    <Binding name="MAMA_COMPLETE" category="MAMAFOREVER">
+        MamaForever:TeamComplete()
+    </Binding>
     <Binding name="MAMA_DISBAND" category="MAMAFOREVER">
         MamaForever:Disband()
     </Binding>

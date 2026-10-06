@@ -151,6 +151,48 @@ MF:AddCommand("team", function(self, rest)
   self:Print("team (%d): %s", #names, table.concat(names, ", "))
 end, "team [list|add [name]|remove name|clear] - characters we auto-accept invites from")
 
+-- Drop the slots above `n` (nil: above the highest slot that is actually present) so a team that is complete stops waiting.
+function MF:TrimTeam(n)
+  if not n then
+    n = 0
+    for s, name in pairs(self.db.slots) do
+      if s > n and (name == self.myName or self.online[name] or self.roster[name]) then n = s end
+    end
+    n = math.max(n, self.db.slot)
+  end
+  local changed = false
+  for s in pairs(self.db.slots) do
+    if s > n then
+      self.db.slots[s] = nil
+      changed = true
+    end
+  end
+  if changed then self:Fire("TEAM_CHANGED") end
+  return n
+end
+
+function MF:TeamComplete(n)
+  n = self:TrimTeam(n)
+  self:SendTeam("Z;" .. n)
+  self:Print("team is complete with %d characters", n)
+end
+
+MF.messageHandlers.Z = function(self, sender, rest)
+  local n = tonumber(rest)
+  if not n then return end
+  self:TrimTeam(n)
+  self:Print("%s says the team is %d characters", sender, n)
+end
+
+MF:AddCommand("complete", function(self, rest)
+  local n = tonumber(rest)
+  if rest ~= "" and (not n or n < 1 or n ~= math.floor(n)) then
+    self:Print("usage: /mama complete [number of characters]")
+    return
+  end
+  self:TeamComplete(n)
+end, "complete [N] - team is complete: forget slots above N (default: above the last one that's here), on all windows")
+
 MF:AddCommand("invite", function(self)
   self:InviteMissing()
 end, "invite - invite the team members that aren't in the group yet (converts to raid above 5)")
