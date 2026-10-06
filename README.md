@@ -76,20 +76,20 @@ On a row: left click targets the character (or invites it when not grouped), rig
 
 ## Commands and options
 
-`/mama help` lists everything: `s`, `token`, `lead`, `invite`, `disband`, `raid`, `autoinvite`, `status`, `macro`,
-`quest`, `ui`, `identify`, `options`, `debug`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
+`macro`, `quest`, `dialog`, `ui`, `identify`, `options`, `debug`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
 MAMA macro, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 
-No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight path
-and mount sync from the old Mama are planned but not done yet.
+No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight-path
+choices are mirrored with dialog syncing; mount sync from the old Mama is not included yet.
 
 ## Development
 
 - Releases are built by the GitHub action in `.github/workflows` using
-  [BigWigsMods/packager](https://github.com/BigWigsMods/packager) and `.pkgmeta` when a tag is pushed.
+  [BigWigsMods/packager](https://github.com/BigWigsMods/packager) and `pkgmeta.yaml` when a tag is pushed.
 
 
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
