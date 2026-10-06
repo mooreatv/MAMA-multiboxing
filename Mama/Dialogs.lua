@@ -24,7 +24,10 @@ local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the qu
 local function setPicked(index, source)
   if not index or index < 1 or index > #reward.items or reward.picked == index then return end
   reward.picked = index
-  MF:Debug("dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's", index, tostring(reward.items[index]), source)
+  MF:Debug(
+    "dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's",
+    index, tostring(reward.items[index]), source
+  )
 end
 
 -- Every clickable reward choice under the quest frame, whatever it is named in this client.
@@ -55,7 +58,7 @@ end
 local poll = CreateFrame("Frame")
 poll:SetScript("OnUpdate", function()
   if reward.questID ~= 0 and #reward.items > 1 and shown("QuestFrameRewardPanel") then
-    local c = QuestInfoFrame and QuestInfoFrame.itemChoice or 0
+    local c = _G.QuestInfoFrame and _G.QuestInfoFrame.itemChoice or 0
     if c > 0 then setPicked(c, "QuestInfoFrame.itemChoice") end
   end
 end)
@@ -132,7 +135,9 @@ local function questReward(self, id, text)
   if not shown("QuestFrameRewardPanel") or GetQuestID() ~= id then return false end
   local want, choice = tonumber(text) or 0, 0
   local picked = reward.picked or 0
-  if picked == 0 and QuestInfoFrame and (QuestInfoFrame.itemChoice or 0) > 0 then picked = QuestInfoFrame.itemChoice end
+  if picked == 0 and _G.QuestInfoFrame and (_G.QuestInfoFrame.itemChoice or 0) > 0 then
+    picked = _G.QuestInfoFrame.itemChoice
+  end
   if #reward.items > 1 and picked > 0 and picked <= #reward.items then
     choice = picked -- selected by hand in this window: keep it rather than following the lead
   elseif #reward.items == 1 then
