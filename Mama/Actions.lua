@@ -12,6 +12,10 @@ local function makeButton(name)
   b:SetAttribute("type", "macro")
   b:SetAttribute("useOnKeyDown", false)
   b:RegisterForClicks("AnyUp", "AnyDown")
+  b:HookScript("PreClick", function(btn, button, down)
+    MF:Debug("%s pressed (%s, down=%s): %s", name, tostring(button), tostring(down),
+             tostring(btn:GetAttribute("macrotext")):gsub("\n", " | "))
+  end)
   return b
 end
 
@@ -20,13 +24,18 @@ local function stripTrailing(s)
 end
 
 function MF:UpdateMacro(lead)
-  if not self.db.macro then return end
+  if not self.db.macro then
+    self:Debug("macro maintenance is off")
+    return
+  end
   local body = "/mama status"
   if lead and lead ~= self.myName then body = "/assist " .. lead .. "\n/follow " .. lead end
   local idx = GetMacroIndexByName(MACRO_NAME)
-  if idx == 0 then
+  self:Debug("macro index for %s: %s", MACRO_NAME, tostring(idx))
+  if not idx or idx == 0 then
     local ok, err = pcall(CreateMacro, MACRO_NAME, MACRO_ICON, body, false) -- false: account-wide
-    if not ok then self:Print("couldn't create the %s macro: %s", MACRO_NAME, tostring(err)) end
+    self:Debug("CreateMacro -> %s, %s", tostring(ok), tostring(err))
+    if not ok or not err then self:Print("couldn't create the %s macro: %s", MACRO_NAME, tostring(err)) end
     return
   end
   local _, _, current = GetMacroInfo(idx)
@@ -74,6 +83,11 @@ MF:Listen("LOGIN", function(self)
     MamaTrain = makeButton("MamaTrain"),
   }
   self:RefreshActions()
+  -- the macro list may not be ready yet at login, so check again once the world is loaded
+  C_Timer.After(3, function() self:RefreshActions() end)
+end)
+MF:On("PLAYER_ENTERING_WORLD", function(self)
+  if self.buttons then self:RefreshActions() end
 end)
 MF:Listen("TEAM_CHANGED", function(self)
   if self.buttons then self:RefreshActions() end
@@ -142,10 +156,10 @@ MF.messageHandlers.A = function(self, sender, rest)
 end
 
 MF:AddCommand("macro", function(self, rest)
-  self.db.macro = self:ParseOnOff(rest, self.db.macro)
+  if rest:lower() == "on" or rest:lower() == "off" then self.db.macro = rest:lower() == "on" end
   self:Print("keeping the account macro \"%s\" up to date is now %s", MACRO_NAME, tostring(self.db.macro))
   self:RefreshActions()
-end, "macro [on|off] - maintain the account-wide MAMA macro (drag it to a bar once)")
+end, "macro [on|off] - show or set whether to maintain the account-wide MAMA macro (drag it to a bar once)")
 
 MF:AddCommand("quest", function(self, rest)
   self.db.autoQuest = self:ParseOnOff(rest, self.db.autoQuest)
