@@ -28,8 +28,13 @@ function MF:UpdateMacro(lead)
     self:Debug("macro maintenance is off")
     return
   end
-  local body = "/mama status"
-  if lead and lead ~= self.myName then body = "/assist " .. lead .. "\n/follow " .. lead end
+  local body
+  if lead and lead ~= self.myName then
+    body = "/assist " .. lead .. "\n/follow " .. lead
+  else
+    -- Lead window: follow self (harmless, no chat output) so the macro is a no-op button for the lead.
+    body = "/follow player"
+  end
   local idx = GetMacroIndexByName(MACRO_NAME)
   self:Debug("macro index for %s: %s", MACRO_NAME, tostring(idx))
   if not idx or idx == 0 then
