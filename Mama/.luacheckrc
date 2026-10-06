@@ -29,6 +29,7 @@ read_globals = {
   "CLASS_ICON_TCOORDS",
   "CompleteQuest",
   "CreateFrame",
+  "date",
   "CreateMacro",
   "EditMacro",
   "GameTooltip",

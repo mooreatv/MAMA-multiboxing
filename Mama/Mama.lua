@@ -24,15 +24,38 @@ MF.defaults = {
   autoFFA = true, compact = false, identifyOnLogin = true, statusScale = 1,
 }
 
+-- Everything we print (debug included, shown or not) is also kept: last MAX_LOG lines, saved across reloads (see Bug.lua).
+local MAX_LOG = 100
+local log = {}
+MF.log = log
+
+local function record(msg)
+  msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+  log[#log + 1] = date("%H:%M:%S") .. " " .. msg
+  if #log > MAX_LOG then table.remove(log, 1) end
+end
+
 function MF:Print(msg, ...)
   if select("#", ...) > 0 then msg = msg:format(...) end
+  record(msg)
   print(self.prefix .. msg)
 end
 
 function MF:Debug(msg, ...)
-  if not (self.db and self.db.debug) then return end
   if select("#", ...) > 0 then msg = msg:format(...) end
+  record("[debug] " .. msg)
+  if not (self.db and self.db.debug) then return end
   print("|cFF808080Mama debug:|r " .. msg)
+end
+
+-- Once the saved variables are loaded, continue the log of the previous session with what was recorded so far.
+function MF:LoadLog()
+  local saved = MamaForeverSaved.log or {}
+  for _, line in ipairs(log) do saved[#saved + 1] = line end
+  while #saved > MAX_LOG do table.remove(saved, 1) end
+  MamaForeverSaved.log = saved
+  MF.log = saved
+  log = saved
 end
 
 -- Internal (non-Blizzard) callbacks between modules.
@@ -72,6 +95,7 @@ MF:On("ADDON_LOADED", function(self, name)
   s.team = s.team or {} -- set of full names ("First Last") allowed to auto-invite us
   s.slots = s.slots or {} -- slot number -> character full name ("First Last"), learned from the team handshake
   self.db = s
+  self:LoadLog()
 end)
 
 MF:On("PLAYER_LOGIN", function(self)

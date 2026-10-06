@@ -19,4 +19,5 @@ Actions.lua
 Dialogs.lua
 Status.lua
 Options.lua
+Bug.lua
 UI.lua
