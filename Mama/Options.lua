@@ -18,6 +18,8 @@ local _, MF = ...
 local OPTIONS = {
   {"autoQuest", "Auto accept quests", "Accept quests shared by your other windows (and quest dialogs) while grouped."},
   {"autoShare", "Auto share quests", "Share every quest you accept with the group so your other windows get it too."},
+  {"autoDialog", "Mirror the lead's dialog choices",
+   "When the lead picks a gossip option, quest or flight path, pick the same one if your dialog offers it."},
   {"autoAbandon", "Abandon quests everywhere",
    "When you abandon a quest on one window, abandon it on the other windows (never completed quests)."},
   {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},

@@ -52,8 +52,8 @@ local function GetDialog()
 end
 
 function MamaForever:ShowTokenDialog(mode)
-  local f, e = GetDialog(), nil
-  e = f.edit
+  local f = GetDialog()
+  local e = f.edit
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
     f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")

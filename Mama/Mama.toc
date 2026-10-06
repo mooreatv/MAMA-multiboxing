@@ -17,6 +17,8 @@ Mama.lua
 Team.lua
 Comm.lua
 Actions.lua
+Dialogs.lua
 Status.lua
 Options.lua
 UI.lua
+DialogProbe.lua
