@@ -76,6 +76,8 @@ local function currentNpc()
   return lastNpc
 end
 
+local gossipCache = {} -- options of the last gossip dialog shown
+
 local function iAmLead(self)
   if not IsInGroup() then return false end
   local lead = self:GetLead()
@@ -83,7 +85,11 @@ local function iAmLead(self)
 end
 
 local function send(self, verb, id, text)
-  if mirroring or not self.db.autoDialog or not iAmLead(self) then return end
+  if mirroring or not self.db.autoDialog or not iAmLead(self) then
+    self:Debug("dialog: not sending %s %s (mirroring=%s autoDialog=%s lead=%s grouped=%s)", verb, tostring(id),
+      tostring(mirroring), tostring(self.db.autoDialog), tostring(self:GetLead()), tostring(IsInGroup()))
+    return
+  end
   local t = GetTime()
   local key = verb .. tostring(id) .. tostring(text)
   if lastSent[key] and t - lastSent[key] < DEDUP_SECONDS then return end
@@ -91,6 +97,15 @@ local function send(self, verb, id, text)
   local payload = ("D;%s;%d;%d;%s"):format(verb, currentNpc() or lastNpc, tonumber(id) or 0, clean(text))
   self:Debug("dialog: mirroring %s", payload)
   self:SendTeam(payload)
+end
+
+local function sendGossipIndex(self, index)
+  local o
+  for i, c in ipairs(gossipCache) do -- the client's index is 0-based (orderIndex)
+    if (c.orderIndex or i - 1) == index then o = c end
+  end
+  if not o then self:Debug("dialog: no cached gossip option at index %s", tostring(index)) end
+  if o then send(self, "go", o.gossipOptionID or 0, o.name) end
 end
 
 -- Receivers: return true once handled, false when our dialog doesn't offer that choice (yet).
@@ -160,11 +175,13 @@ end
 local function taxi(self, _, text)
   for i = 1, NumTaxiNodes() do
     if clean(TaxiNodeName(i)) == text then
-      if TaxiNodeGetType(i) ~= "REACHABLE" then
+      local kind = TaxiNodeGetType(i)
+      if kind ~= "REACHABLE" and kind ~= "DISTANT" then
         self:Print("not flying to %s: the node is %s for us", text, tostring(TaxiNodeGetType(i)))
         return true
       end
-      self:Debug("dialog: taking taxi node %d (%s)", i, text)
+      self:Debug("dialog: taking taxi node %d (%s, %s)", i, text, tostring(kind))
+      GetNumRoutes(i) -- needed before taking a node that isn't directly connected
       TakeTaxiNode(i)
       return true
     end
@@ -229,6 +246,10 @@ end
 
 MF:On("GOSSIP_SHOW", function(self)
   currentNpc()
+  gossipCache = C_GossipInfo.GetOptions() or {}
+  for i, o in ipairs(gossipCache) do
+    self:Debug("dialog: gossip option %d: id=%s name=%s", i, tostring(o.gossipOptionID), clean(o.name))
+  end
   retry(self)
 end)
 MF:On("QUEST_PROGRESS", function(self)
@@ -256,13 +277,24 @@ end)
 
 -- The lead's choices, noticed with secure hooks right after the Blizzard UI made them.
 MF:Listen("LOGIN", function(self)
+  -- The options are read from the cache: the dialog may already be closed (flight master) when the hook runs.
   hooksecurefunc(C_GossipInfo, "SelectOption", function(id)
+    self:Debug("dialog: hook SelectOption(%s)", tostring(id))
     local text
+    for _, o in ipairs(gossipCache) do
+      if o.gossipOptionID == id then text = o.name end
+    end
     for _, o in ipairs(C_GossipInfo.GetOptions() or {}) do
       if o.gossipOptionID == id then text = o.name end
     end
     send(self, "go", id, text)
   end)
+  if C_GossipInfo.SelectOptionByIndex then
+    hooksecurefunc(C_GossipInfo, "SelectOptionByIndex", function(index)
+      self:Debug("dialog: hook SelectOptionByIndex(%s)", tostring(index))
+      sendGossipIndex(self, index)
+    end)
+  end
   hooksecurefunc(C_GossipInfo, "SelectAvailableQuest", function(id) send(self, "qa", id, "") end)
   hooksecurefunc(C_GossipInfo, "SelectActiveQuest", function(id) send(self, "qc", id, "") end)
   hooksecurefunc("CompleteQuest", function()
@@ -278,6 +310,7 @@ MF:Listen("LOGIN", function(self)
     send(self, "qr", reward.questID, tostring(choice and choice > 0 and reward.items[choice] or 0))
   end)
   hooksecurefunc("TakeTaxiNode", function(index)
+    self:Debug("dialog: hook TakeTaxiNode(%s) %s", tostring(index), tostring(taxiNames[index] or TaxiNodeName(index)))
     send(self, "tx", 0, taxiNames[index] or TaxiNodeName(index))
   end)
 end)
