@@ -1,7 +1,6 @@
 -- Actions: follow/assist/train secure buttons (for keybinds), the account-wide "MAMA" macro, quest auto-accept.
 -- Findings on Forever: /click MamaFollow from a macro does nothing, but the same button works from a keybind
 -- and an action-bar macro with the plain text "/assist Name" + "/follow Name" works too.
-
 local _, MF = ...
 
 local MACRO_NAME = "MAMA"
@@ -19,9 +18,7 @@ local function makeButton(name)
   return b
 end
 
-local function stripTrailing(s)
-  return (s or ""):gsub("%s+$", "")
-end
+local function stripTrailing(s) return (s or ""):gsub("%s+$", "") end
 
 function MF:UpdateMacro(lead)
   if not self.db.macro then
@@ -65,9 +62,7 @@ function MF:RefreshActions()
   local train = "/follow player"
   if target and self.db.slot > 0 then
     local count = 0
-    for slot in pairs(self.db.slots) do
-      if slot > count then count = slot end
-    end
+    for slot in pairs(self.db.slots) do if slot > count then count = slot end end
     if count > 0 then
       local previousSlot = ((self.db.slot + count - 2) % count) + 1
       local previous = self.db.slots[previousSlot]
@@ -85,21 +80,15 @@ MF:Listen("LOGIN", function(self)
   self.buttons = {
     MamaFollow = makeButton("MamaFollow"),
     MamaAssist = makeButton("MamaAssist"),
-    MamaTrain = makeButton("MamaTrain"),
+    MamaTrain = makeButton("MamaTrain")
   }
   self:RefreshActions()
   -- the macro list may not be ready yet at login, so check again once the world is loaded
   C_Timer.After(3, function() self:RefreshActions() end)
 end)
-MF:On("PLAYER_ENTERING_WORLD", function(self)
-  if self.buttons then self:RefreshActions() end
-end)
-MF:Listen("TEAM_CHANGED", function(self)
-  if self.buttons then self:RefreshActions() end
-end)
-MF:On("PLAYER_REGEN_ENABLED", function(self)
-  if self.pendingRefresh then self:RefreshActions() end
-end)
+MF:On("PLAYER_ENTERING_WORLD", function(self) if self.buttons then self:RefreshActions() end end)
+MF:Listen("TEAM_CHANGED", function(self) if self.buttons then self:RefreshActions() end end)
+MF:On("PLAYER_REGEN_ENABLED", function(self) if self.pendingRefresh then self:RefreshActions() end end)
 
 -- Quests we got shared by a team member: don't share them back out when they get accepted.
 local receivedQuests = {}

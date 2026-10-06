@@ -10,36 +10,33 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
-
 -- Options panel (Game Menu > Options > AddOns > Mama-forever), also reachable with /mama options.
-
 local _, MF = ...
 
 local OPTIONS = {
   {"autoQuest", "Auto accept quests", "Accept quests shared by your other windows (and quest dialogs) while grouped."},
   {"autoShare", "Auto share quests", "Share every quest you accept with the group so your other windows get it too."},
-  {"autoDialog", "Mirror the lead's dialog choices",
-   "When the lead picks a gossip option, quest or flight path, pick the same one if your dialog offers it."},
-  {"autoAbandon", "Abandon quests everywhere",
-   "When you abandon a quest on one window, abandon it on the other windows (never completed quests)."},
-  {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
-  {"autoInvite", "Auto invite team (slot 1)",
-   "Slot 1 automatically invites team members as they come online."},
-  {"autoRaid", "Auto convert to raid",
-   "Convert the group to a raid when inviting more than 5 characters."},
-  {"autoFFA", "Free for all loot",
-   "When you lead a full team group, set loot to free for all (back to group loot if outsiders join)."},
+  {
+    "autoDialog", "Mirror the lead's dialog choices",
+    "When the lead picks a gossip option, quest or flight path, pick the same one if your dialog offers it."
+  }, {
+    "autoAbandon", "Abandon quests everywhere",
+    "When you abandon a quest on one window, abandon it on the other windows (never completed quests)."
+  }, {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
+  {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."},
+  {"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}, {
+    "autoFFA", "Free for all loot",
+    "When you lead a full team group, set loot to free for all (back to group loot if outsiders join)."
+  },
   {"macro", "Maintain the MAMA macro", "Keep the account-wide MAMA follow + assist macro pointing at the current lead."},
   {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."},
   {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."},
-  {"debug", "Debug output", "Print detailed messages to the chat window."},
+  {"debug", "Debug output", "Print detailed messages to the chat window."}
 }
 
 local checkboxes = {}
 
-local function Refresh()
-  for key, cb in pairs(checkboxes) do cb:SetChecked(MF.db[key]) end
-end
+local function Refresh() for key, cb in pairs(checkboxes) do cb:SetChecked(MF.db[key]) end end
 
 MF:Listen("LOGIN", function(self)
   local panel = CreateFrame("Frame")
@@ -54,7 +51,11 @@ MF:Listen("LOGIN", function(self)
   for _, o in ipairs(OPTIONS) do
     local key, label, tip = o[1], o[2], o[3]
     local cb = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    if prev then cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -2) else cb:SetPoint("TOPLEFT", sub, "BOTTOMLEFT", 0, -16) end
+    if prev then
+      cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -2)
+    else
+      cb:SetPoint("TOPLEFT", sub, "BOTTOMLEFT", 0, -16)
+    end
     cb.Text:SetText(label)
     cb:SetScript("OnClick", function(b)
       self.db[key] = b:GetChecked() and true or false
@@ -82,6 +83,5 @@ MF:Listen("OPTION_CHANGED", function(self, key)
   end
 end)
 
-MF:AddCommand("options", function(self)
-  Settings.OpenToCategory(self.category:GetID())
-end, "options - open the options panel")
+MF:AddCommand("options", function(self) Settings.OpenToCategory(self.category:GetID()) end,
+              "options - open the options panel")

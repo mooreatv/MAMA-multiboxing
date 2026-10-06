@@ -6,7 +6,6 @@
 -- and carries a timestamp so strangers can't spoof us and old messages can't be replayed.
 -- Messages are whispered to the master (slot 1) by full name (works ungrouped and across home realms)
 -- and sent on the party/raid channel once grouped. The master relays who is on the team.
-
 local _, MF = ...
 
 local PREFIX = "MAMAFOREVER"
@@ -18,9 +17,7 @@ local HEX = "0123456789ABCDEF"
 local MOD = 4294967296
 local FUTURE_LIMIT, PAST_LIMIT = -5, 120 -- seconds a message may be from the future / past
 
-local function now()
-  return GetServerTime()
-end
+local function now() return GetServerTime() end
 
 local function randomId(n)
   local t = {}
@@ -79,9 +76,7 @@ function MF:ParseToken(text)
   return {team = team, secret = secret, master = master}
 end
 
-function MF:Token()
-  return self.db.token and self:ParseToken(self.db.token) or nil
-end
+function MF:Token() return self.db.token and self:ParseToken(self.db.token) or nil end
 
 -- One account wide token; the per faction part is the slot map and candidate history (no cross faction grouping).
 -- tokenFaction remembers which faction the token's master character belongs to.
@@ -90,14 +85,10 @@ function MF:SetToken(text)
   self.db.tokenFaction = text and self.faction or nil
 end
 
-function MF:TokenText()
-  return self.db.token or ""
-end
+function MF:TokenText() return self.db.token or "" end
 
 -- Slot 1 of each faction is that faction's master: it is the one invited by / inviting the other slots.
-function MF:IsMaster()
-  return self:Token() ~= nil and self.db.slot == 1
-end
+function MF:IsMaster() return self:Token() ~= nil and self.db.slot == 1 end
 
 -- Full name to whisper as our master: the slot 1 we know in this faction, else the token's master if same faction.
 function MF:MasterTarget()
@@ -130,7 +121,11 @@ local function schedule(fn)
   local t = GetTime()
   local at = math.max(t, nextSend)
   nextSend = at + 0.25
-  if at <= t then fn() else C_Timer.After(at - t, fn) end
+  if at <= t then
+    fn()
+  else
+    C_Timer.After(at - t, fn)
+  end
 end
 
 function MF:SendWhisper(to, payload)
@@ -153,14 +148,10 @@ function MF:SendGroup(payload)
   end)
 end
 
-local function infoPayload(slot, name, flag)
-  return ("I;%d;%s;%d"):format(slot, name, flag)
-end
+local function infoPayload(slot, name, flag) return ("I;%d;%s;%d"):format(slot, name, flag) end
 
 -- flag 1 means "please tell me about yourself too", flag 0 is a plain information message.
-function MF:SendInfo(to, flag)
-  self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag))
-end
+function MF:SendInfo(to, flag) self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag)) end
 
 local MAX_PER_SLOT = 3 -- most recent characters of this faction to try per slot
 
@@ -173,13 +164,9 @@ function MF:Candidates()
       list[#list + 1] = name
     end
   end
-  for s, name in pairs(self.db.slots) do
-    if s ~= self.db.slot then add(name) end
-  end
+  for s, name in pairs(self.db.slots) do if s ~= self.db.slot then add(name) end end
   for s, names in pairs(self.db.history[self.faction] or {}) do
-    if s ~= self.db.slot then
-      for i = 1, math.min(#names, MAX_PER_SLOT) do add(names[i]) end
-    end
+    if s ~= self.db.slot then for i = 1, math.min(#names, MAX_PER_SLOT) do add(names[i]) end end
   end
   return list
 end
@@ -241,17 +228,11 @@ function MF:KeepAnnouncing()
   tick()
 end
 
-function MF:SlotOf(name)
-  for s, n in pairs(self.db.slots) do
-    if n == name then return s end
-  end
-end
+function MF:SlotOf(name) for s, n in pairs(self.db.slots) do if n == name then return s end end end
 
 function MF:SetOwnSlot()
   local slots = self.db.slots
-  for s, n in pairs(slots) do
-    if n == self.myName or s == self.db.slot then slots[s] = nil end
-  end
+  for s, n in pairs(slots) do if n == self.myName or s == self.db.slot then slots[s] = nil end end
   if self.db.slot > 0 then slots[self.db.slot] = self.myName end
 end
 
@@ -274,9 +255,7 @@ function MF:RecordMember(slot, name)
   self.db.team[name] = true -- verified team member: auto-accept their invites
   local hist = self.db.history[self.faction]
   hist[slot] = hist[slot] or {}
-  for i = #hist[slot], 1, -1 do
-    if hist[slot][i] == name then table.remove(hist[slot], i) end
-  end
+  for i = #hist[slot], 1, -1 do if hist[slot][i] == name then table.remove(hist[slot], i) end end
   table.insert(hist[slot], 1, name)
   while #hist[slot] > 5 do table.remove(hist[slot]) end
   if changed then
@@ -297,9 +276,7 @@ function MF:HandleInfo(sender, slot, name, flag)
     self:Debug("invite check for %s: autoInvite=%s master=%s grouped=%s", name, tostring(self.db.autoInvite),
                tostring(self:IsMaster()), tostring(self.roster[name] ~= nil))
   end
-  if direct and self.db.autoInvite and self:IsMaster() and not self.roster[name] then
-    self:ScheduleInvites()
-  end
+  if direct and self.db.autoInvite and self:IsMaster() and not self.roster[name] then self:ScheduleInvites() end
   if direct and self:IsMaster() then
     for s, n in pairs(self.db.slots) do
       if n ~= name and n ~= self.myName then
@@ -341,7 +318,11 @@ function MF:SendTeam(payload)
   local anyGrouped = false
   for _, name in pairs(self.db.slots) do
     if name ~= self.myName then
-      if self.roster[name] then anyGrouped = true else self:SendWhisper(name, payload) end
+      if self.roster[name] then
+        anyGrouped = true
+      else
+        self:SendWhisper(name, payload)
+      end
     end
   end
   if anyGrouped then self:SendGroup(payload) end
@@ -385,11 +366,10 @@ function MF:SetSlot(n)
   self:SetOwnSlot()
   self:Fire("TEAM_CHANGED")
   if n == 1 then
-    if not tok then
-      self:SetToken(self:MakeToken(self.myName))
-    end
+    if not tok then self:SetToken(self:MakeToken(self.myName)) end
     self:SetOwnSlot()
-    self:Print("this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
+    self:Print(
+      "this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
     self:ShowTokenDialog("copy")
     self:Announce()
   else
