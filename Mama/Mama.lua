@@ -84,18 +84,6 @@ MF:On("PLAYER_LOGIN", function(self)
   s.slots = s.slotsBy[self.faction]
   s.history = s.history or {}
   s.history[self.faction] = s.history[self.faction] or {}
-  if s.tokens then -- undo the short-lived per faction tokens: keep a single account wide one
-    for f, t in pairs(s.tokens) do
-      if not s.token then s.token, s.tokenFaction = t, f end
-    end
-    s.tokens = nil
-  end
-  if s.token and not s.tokenFaction then
-    local tok = self:ParseToken(s.token)
-    for _, n in pairs(s.slots) do
-      if tok and n == tok.master then s.tokenFaction = self.faction end
-    end
-  end
   self:Fire("LOGIN")
 end)
 
@@ -106,15 +94,17 @@ end
 
 -- Unit tokens of the other group members (not including the player).
 function MF:GroupUnits()
-  local t = {}
-  if IsInRaid() then
-    for i = 1, GetNumGroupMembers() do t[#t + 1] = "raid" .. i end
-  elseif IsInGroup() then
-    for i = 1, GetNumGroupMembers() - 1 do t[#t + 1] = "party" .. i end
-  end
   local others = {}
-  for _, u in ipairs(t) do
-    if UnitExists(u) and not UnitIsUnit(u, "player") then others[#others + 1] = u end
+  if IsInRaid() then
+    for i = 1, GetNumGroupMembers() do
+      local unit = "raid" .. i
+      if UnitExists(unit) and not UnitIsUnit(unit, "player") then others[#others + 1] = unit end
+    end
+  elseif IsInGroup() then
+    for i = 1, GetNumGroupMembers() - 1 do
+      local unit = "party" .. i
+      if UnitExists(unit) and not UnitIsUnit(unit, "player") then others[#others + 1] = unit end
+    end
   end
   return others
 end

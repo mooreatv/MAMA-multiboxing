@@ -110,9 +110,8 @@ MF:On("QUEST_DETAIL", acceptQuest)
 MF:On("QUEST_ACCEPT_CONFIRM", acceptQuest)
 
 -- Share every quest we accept with the group, so the other windows pick it up (their QUEST_DETAIL auto-accepts).
-MF:On("QUEST_ACCEPTED", function(self, a, b)
-  local id = b or a -- Forever sends the quest id; be lenient in case a log index comes first
-  self:Debug("QUEST_ACCEPTED %s %s", tostring(a), tostring(b))
+MF:On("QUEST_ACCEPTED", function(self, id)
+  self:Debug("QUEST_ACCEPTED %s", tostring(id))
   if not self.db.autoShare or not IsInGroup() then return end
   if receivedQuests[id] then
     receivedQuests[id] = nil
@@ -156,7 +155,8 @@ MF.messageHandlers.A = function(self, sender, rest)
 end
 
 MF:AddCommand("macro", function(self, rest)
-  if rest:lower() == "on" or rest:lower() == "off" then self.db.macro = rest:lower() == "on" end
+  local setting = rest:lower()
+  if setting == "on" or setting == "off" then self.db.macro = setting == "on" end
   self:Print("keeping the account macro \"%s\" up to date is now %s", MACRO_NAME, tostring(self.db.macro))
   self:RefreshActions()
 end, "macro [on|off] - show or set whether to maintain the account-wide MAMA macro (drag it to a bar once)")

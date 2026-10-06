@@ -19,7 +19,7 @@ local MOD = 4294967296
 local FUTURE_LIMIT, PAST_LIMIT = -5, 120 -- seconds a message may be from the future / past
 
 local function now()
-  return GetServerTime and GetServerTime() or time()
+  return GetServerTime()
 end
 
 local function randomId(n)
@@ -415,7 +415,6 @@ MF:AddCommand("s", function(self, rest)
   end
   self:SetSlot(n)
 end, "s N - set this window's slot (once per window: 1 = master window shows the token, others paste it)")
-MF.commands.slot = MF.commands.s
 
 MF:AddCommand("token", function(self, rest)
   if rest == "new" and self.db.slot == 1 then

@@ -13,7 +13,6 @@
 
 -- Key binding labels (the bindings themselves are in Bindings.xml, which the client loads automatically).
 
-_G.MAMAFOREVER = "Mama-forever" -- the category name shown above the bindings
 BINDING_HEADER_MAMAFOREVER = "Mama-forever"
 BINDING_NAME_MAMA_LEAD = "Make me lead |cFF99E5FF(/mama lead)|r"
 _G["BINDING_NAME_CLICK MamaFollow:LeftButton"] = "Follow + assist lead"
