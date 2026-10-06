@@ -1,6 +1,6 @@
 # Mama-forever status (the `forever` edition of M.A.M.A.) — last updated 2026-10-06
 
-Goal: merge MoLib + DynamicBoxer + MAMA-multiboxing (sibling dirs in `moorea\`) into one standalone addon
+Goal was: merge MoLib + DynamicBoxer + MAMA-multiboxing (sibling dirs in `moorea\`) into one standalone addon
 for WoW Forever (beta, believed mostly retail-API based). No library, no DBox dependency, no other WoW version support.
 
 ## Decisions
@@ -14,11 +14,11 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 - Character names may contain spaces ("first last"): treat names as opaque strings, never split on whitespace
   or assume single token; one `MF:FullName(unit)` helper; use delimiters in addon messages that can't be in names.
 - Single namespace `MF`, SavedVariables `MamaForeverSaved` (merge DBox + Mama settings). `/mama` only (no `/dbox` alias).
-- License: sources are LGPLv3; verify repo LICENSE matches.
+- License: unchanged (LGPLv3).
 - This IS the original MAMA-multiboxing repo (kept for stars, CurseForge/Wago/WoWI ids and secrets). The Forever
   rewrite replaced the old addon on `master` (PR #21); old classic/retail/MoP code is only in git history.
 
-## Phase 0 - Probe addon (needs 2+ beta clients, one char with spaced name)
+## Phase 0 - Probe addon (needs 2+ beta clients, one char with spaced name) - DONE
 `/mf probe` dumps to chat + SavedVariables:
 1. Interface number (`select(4, GetBuildInfo())`), existing `C_*` namespaces.
 2. `UnitName`, `UnitFullName`, `GetUnitName(unit,true)`, `GetRealmName`, `GetNormalizedRealmName`, `Ambiguate`
@@ -61,20 +61,20 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 - Retry/announce loop for offline characters until someone responds.
 - Cross-home-realm whisper support (different realm IDs confirmed working).
 
-## Phase 3 - Test (IN PROGRESS)
+## Phase 3 - Test (DONE)
 - luacheck config in `Mama/.luacheckrc` (globals, read_globals for modern C_* APIs).
 - luaformat config in `Mama-forever/luaformat.cfg` (indent 2, column limit 120).
-- No pure-Lua test suite yet (MoLib `tests/` not ported; would need a Lua runner with WoW API stubs).
 - In-game testing done on 2-3 clients: team sync, invite, raid convert, lead/assist/follow, quest share,
-  options UI, layer behavior. Still unverified: taxi, mount sync, `C_PartyInfo.UninviteUnit` edge cases.
+  options UI, layer behavior, taxi. Still unverified: mount sync, `C_PartyInfo.UninviteUnit` edge cases.
 
-## Phase 4 - Release (IN PROGRESS)
+## Phase 4 - Release (DONE)
 - README.md (Forever-only scope + credits to MoLib/DynamicBoxer).
 - Packaging: BigWigsMods/packager@v2 via `.github/workflows/packaging.yaml` on annotated tag push.
 - `pkgmeta.yaml` (`package-as: Mama`, `move-folders: Mama/Mama: Mama`, ignores Probe/PLAN/README/install.bat).
 - `Mama.toc` carries Curse 334197, Wago 7nGvmDKx, WoWI 26337; secrets CF_API_KEY/WAGO_API_TOKEN/WOWI_API_TOKEN on repo.
 - `install.bat` copies `Mama\` to the beta AddOns folder (`_classic_beta_`).
-- First tagged release through the packager not yet done (check `move-folders` result and CurseForge Forever upload).
+- Github action for tag -> release worked fine.
+- Addon shows up on curseforge and wowup/github.
 - Localization not yet done (English only).
 
 ## Phase 0 findings (client 1.60.1 build 70205, Interface 16001, WOW_PROJECT_ID=18; beta realm "Classic Beta PvE 2")
@@ -122,7 +122,7 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 ## Status update (supersedes the layout/naming in the original plan above)
 Decision: instead of a separate Mama-forever repo, this IS the original MAMA-multiboxing repo (kept for stars, CurseForge/Wago/WoWI
 ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21); old classic/retail/MoP code is only in git history
-(last classic-era commit: fe02004). The addon keeps its original identity:
+(last classic-era commit: fe02004 or v1.24.0 tag as mentioned in README.md). The addon keeps its original identity:
 - Folder/addon name `Mama` (`Mama\Mama.toc`, Interface 16001, title M.A.M.A., IconTexture `Interface\AddOns\Mama\mama`), SavedVariables `MamaForeverSaved`.
 - Files: Mama.lua (namespace `MF`, events, saved vars, commands, `messageHandlers`), Team.lua, Comm.lua, Actions.lua, Status.lua,
   Options.lua, UI.lua, Bindings.xml, Dialogs.lua, Bug.lua. No libs, no DBox dependency, no ISBoxer discovery, no EMA, no other WoW versions.
@@ -169,8 +169,5 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Body "/assist Name\n/follow Name" (unquoted; client appends trailing newline, kept for user additions).
 
 ## Still to do
-- Port from old Mama: mount/dismount sync and "altogether".
+- Port from old Mama maybe: mount/dismount sync.
 - Unverified on Forever: `C_PartyInfo.UninviteUnit`, raid conversion with >5 characters, taxi, mount.
-- First tagged release through the packager (untested; check the `move-folders` result and the CurseForge Forever game-version upload).
-- luacheck config cleanup (`.luacheckrc`), localization, tests, README polish, credits to MoLib/DynamicBoxer.
-- Open: keep a `/dbox`-style alias? (currently only `/mama`).
