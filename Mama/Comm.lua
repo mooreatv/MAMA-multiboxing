@@ -83,9 +83,28 @@ function MF:Token()
   return self.db.token and self:ParseToken(self.db.token) or nil
 end
 
+-- One account wide token; the per faction part is the slot map and candidate history (no cross faction grouping).
+-- tokenFaction remembers which faction the token's master character belongs to.
+function MF:SetToken(text)
+  self.db.token = text
+  self.db.tokenFaction = text and self.faction or nil
+end
+
+function MF:TokenText()
+  return self.db.token or ""
+end
+
+-- Slot 1 of each faction is that faction's master: it is the one invited by / inviting the other slots.
 function MF:IsMaster()
+  return self:Token() ~= nil and self.db.slot == 1
+end
+
+-- Full name to whisper as our master: the slot 1 we know in this faction, else the token's master if same faction.
+function MF:MasterTarget()
+  local m = self.db.slots[1]
+  if m and m ~= self.myName then return m end
   local tok = self:Token()
-  return tok ~= nil and self.db.slot == 1 and tok.master == self.myName
+  if tok and tok.master ~= self.myName and self.db.tokenFaction == self.faction then return tok.master end
 end
 
 function MF:SecureMessage(payload, tok)
@@ -143,11 +162,83 @@ function MF:SendInfo(to, flag)
   self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag))
 end
 
+local MAX_PER_SLOT = 3 -- most recent characters of this faction to try per slot
+
+-- Everyone who might be our teammate: current slot owners plus the recent holders of each slot (newest first).
+function MF:Candidates()
+  local seen, list = {}, {}
+  local function add(name)
+    if name and name ~= self.myName and not seen[name] then
+      seen[name] = true
+      list[#list + 1] = name
+    end
+  end
+  for s, name in pairs(self.db.slots) do
+    if s ~= self.db.slot then add(name) end
+  end
+  for s, names in pairs(self.db.history[self.faction] or {}) do
+    if s ~= self.db.slot then
+      for i = 1, math.min(#names, MAX_PER_SLOT) do add(names[i]) end
+    end
+  end
+  return list
+end
+
+-- Guild addon messages are the only broadcast channel left (say/yell addon messages don't exist in Forever).
+function MF:Broadcast(payload)
+  local tok = self:Token()
+  if not tok or not IsInGuild() then return end
+  local msg = self:SecureMessage(payload, tok)
+  schedule(function()
+    self:Debug("broadcast on GUILD: %s", payload)
+    pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "GUILD")
+  end)
+end
+
+function MF:AnnounceDirect()
+  local tok = self:Token()
+  if not tok then return end
+  local sent = {}
+  local master = self:MasterTarget()
+  if master then
+    self:SendInfo(master, 1)
+    sent[master] = true
+  end
+  for _, name in ipairs(self:Candidates()) do
+    if not sent[name] and not self.roster[name] then self:SendInfo(name, 1) end
+  end
+  self:Broadcast(infoPayload(self.db.slot, self.myName, 1))
+end
+
 function MF:Announce()
   local tok = self:Token()
   if self.db.slot == 0 or not tok then return end
-  if tok.master ~= self.myName then self:SendInfo(tok.master, 1) end
+  self:AnnounceDirect()
   self:SendGroup(infoPayload(self.db.slot, self.myName, 1))
+  self:KeepAnnouncing()
+end
+
+-- Whispers to offline characters are silently lost, so keep announcing until we hear from someone directly.
+local retryRunning
+function MF:KeepAnnouncing()
+  if retryRunning then return end
+  retryRunning = true
+  local function tick()
+    if next(self.online) or self.db.slot == 0 or not self:Token() then
+      retryRunning = false
+      return
+    end
+    C_Timer.After(20, function()
+      if next(self.online) or self.db.slot == 0 or not self:Token() then
+        retryRunning = false
+        return
+      end
+      self:Debug("nobody heard from yet, announcing again")
+      self:AnnounceDirect()
+      tick()
+    end)
+  end
+  tick()
 end
 
 function MF:SlotOf(name)
@@ -181,6 +272,13 @@ function MF:RecordMember(slot, name)
   end
   slots[slot] = name
   self.db.team[name] = true -- verified team member: auto-accept their invites
+  local hist = self.db.history[self.faction]
+  hist[slot] = hist[slot] or {}
+  for i = #hist[slot], 1, -1 do
+    if hist[slot][i] == name then table.remove(hist[slot], i) end
+  end
+  table.insert(hist[slot], 1, name)
+  while #hist[slot] > 5 do table.remove(hist[slot]) end
   if changed then
     self:Print("slot %d is %s", slot, name)
     self:Fire("TEAM_CHANGED")
@@ -195,6 +293,10 @@ function MF:HandleInfo(sender, slot, name, flag)
     self:Fire('TEAM_CHANGED')
   end
   if flag == 1 and direct then self:SendInfo(name, 0) end
+  if direct then
+    self:Debug("invite check for %s: autoInvite=%s master=%s grouped=%s", name, tostring(self.db.autoInvite),
+               tostring(self:IsMaster()), tostring(self.roster[name] ~= nil))
+  end
   if direct and self.db.autoInvite and self:IsMaster() and not self.roster[name] then
     self:ScheduleInvites()
   end
@@ -208,15 +310,21 @@ function MF:HandleInfo(sender, slot, name, flag)
   end
 end
 
-MF:On("CHAT_MSG_ADDON", function(self, prefix, text, _channel, sender)
-  if prefix ~= PREFIX or sender == self.myName then return end
+MF:On("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
+  if prefix ~= PREFIX then return end
+  self:Debug("received addon msg on %s from %s", tostring(channel), tostring(sender))
+  if sender == self.myName then return end
   local tok = self:Token()
-  if not tok then return end
+  if not tok then
+    self:Debug("ignoring message from %s: we have no token", tostring(sender))
+    return
+  end
   local ok, payload = self:VerifyMessage(text, tok)
   if not ok then
     self:Debug("ignoring message from %s: %s", tostring(sender), payload)
     return
   end
+  self:Debug("valid message from %s: %s", tostring(sender), payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end
@@ -260,7 +368,7 @@ function MF:AcceptToken(text)
   if tok.master == self.myName and self.db.slot ~= 1 then
     return false, "this token was created by this very character; copy it from slot 1 into the other windows"
   end
-  self.db.token = text:match("^%s*(.-)%s*$")
+  self:SetToken(text:match("^%s*(.-)%s*$"))
   self:Print("token accepted, team master is %s", tok.master)
   self:Announce()
   return true
@@ -277,16 +385,16 @@ function MF:SetSlot(n)
   self:SetOwnSlot()
   self:Fire("TEAM_CHANGED")
   if n == 1 then
-    if not tok or tok.master ~= self.myName then
-      self.db.token = self:MakeToken(self.myName)
-      wipe(self.db.slots)
-      self:SetOwnSlot()
+    if not tok then
+      self:SetToken(self:MakeToken(self.myName))
     end
+    self:SetOwnSlot()
     self:Print("this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
     self:ShowTokenDialog("copy")
+    self:Announce()
   else
     if tok and tok.master == self.myName then
-      self.db.token = false -- we were the master before; need the new master's token
+      self:SetToken(nil) -- we were the master before; need the new master's token
       tok = nil
     end
     self:Print("this window is slot %d", n)
@@ -311,7 +419,9 @@ MF.commands.slot = MF.commands.s
 
 MF:AddCommand("token", function(self, rest)
   if rest == "new" and self.db.slot == 1 then
-    self.db.token = self:MakeToken(self.myName)
+    self:SetToken(self:MakeToken(self.myName))
+    wipe(self.db.slots)
+    self:SetOwnSlot()
     self:ShowTokenDialog("copy")
   elseif rest ~= "" then
     local ok, err = self:AcceptToken(rest)

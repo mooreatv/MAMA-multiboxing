@@ -65,15 +65,24 @@ function MF:Identify(seconds)
     f.num:SetScale(4)
     f.icon = f:CreateTexture(nil, "OVERLAY")
     f.icon:SetSize(64, 64)
-    f.icon:SetPoint("TOP", 0, -200)
+    f.icon:SetPoint("LEFT", f.num, "RIGHT", 15, 0) -- class icon right of the number, faction crest left of it
+    f.faction = f:CreateTexture(nil, "ARTWORK")
+    f.faction:SetPoint("RIGHT", f.num, "LEFT", -15, 0)
     f.name = f:CreateFontString(nil, "OVERLAY", "GameFont_Gigantic")
-    f.name:SetPoint("TOP", f.icon, "BOTTOM", 0, -10)
+    f.name:SetPoint("TOP", f.num, "BOTTOM", 0, -10)
     f.name:SetScale(1.5)
     f.name:SetTextColor(0.6, 0.9, 1)
     self.identifyFrame = f
   end
   f.num:SetText(self.db.slot > 0 and tostring(self.db.slot) or "?")
   f.name:SetText(self.myName or "")
+  local faction = UnitFactionGroup("player")
+  local baseId, size = 516953, 90
+  if faction == "Alliance" then
+    baseId, size = 516949, 100 -- horde crest is a bit taller
+  end
+  f.faction:SetTexture(baseId)
+  f.faction:SetSize(size, size)
   local _, class = UnitClass("player")
   local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
   if coords then
