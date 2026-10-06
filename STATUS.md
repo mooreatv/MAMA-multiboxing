@@ -164,6 +164,10 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama ui [on|off]`, `/mama identify`, `/mama options`,
   `/mama bug`, `/mama status`.
 - Debug (`/mama debug on`) logs every received addon message, rejection reasons and the auto-invite decision.
+- Message signing: HMAC-like construction using `hashes(base .. secret)` (djb2/sdbm style, non-cryptographic but
+  keyed with a 12-char random secret). Team isolation via random `teamId` in token; replay protection via 120s
+  timestamp window. Guild broadcast visible to all guild members but isolated by team ID + signature.
+  Sufficient for the threat model (other players in same guild/raid cannot spoof team commands).
 - Account-wide macro "MAMA" (CreateMacro with numeric fileID icon 132171 at first creation; EditMacro preserves user-chosen icon).
   Body "/assist Name\n/follow Name" for minions; lead window gets "/follow player" (harmless no-op, no chat output).
   Body "/assist Name\n/follow Name" (unquoted; client appends trailing newline, kept for user additions).
