@@ -18,9 +18,11 @@ local addonName, MF = ...
 _G.MamaForever = MF
 
 MF.prefix = "|cFF99E5FFMama:|r "
-MF.defaults = {debug = false, macro = true, autoQuest = true, autoDialog = true, autoAccept = true, lead = false, slot = 0, token = false, showStatus = true,
-                autoShare = true, autoAbandon = true, autoInvite = true, autoRaid = true, autoFFA = true, compact = false, identifyOnLogin = true,
-                statusScale = 1}
+MF.defaults = {
+  debug = false, macro = true, autoQuest = true, autoDialog = true, autoAccept = true, lead = false, slot = 0,
+  token = false, showStatus = true, autoShare = true, autoAbandon = true, autoInvite = true, autoRaid = true,
+  autoFFA = true, compact = false, identifyOnLogin = true, statusScale = 1,
+}
 
 function MF:Print(msg, ...)
   if select("#", ...) > 0 then msg = msg:format(...) end

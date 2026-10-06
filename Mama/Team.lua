@@ -194,7 +194,7 @@ function MF:InviteMissing()
   if inviteQueue then return end -- already running
   inviteQueue = {}
   local slots = {}
-  for s, n in pairs(self.db.slots) do slots[#slots + 1] = s end
+  for s in pairs(self.db.slots) do slots[#slots + 1] = s end
   table.sort(slots)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
