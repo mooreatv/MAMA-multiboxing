@@ -115,6 +115,8 @@ function MF:HashSelfTest()
     self:Print("|cFFFF0000error:|r SHA-256 self test failed, team messages won't verify (/mama bug)")
     return false
   end
+  -- only run timing loop if debug is on:
+  if not (self.db and self.db.debug) then return end
   local start = debugprofilestop()
   for i = 1, 100 do self:Hmac("abcdefghijkl", "abcdef:I;12;Firstname Lastname;1:Ab3d:" .. (1759780000 + i) .. ":", 2) end
   self:Debug("message signing: HMAC-SHA256 self test ok, %.3f ms per message", (debugprofilestop() - start) / 100)

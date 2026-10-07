@@ -219,6 +219,8 @@ local function GetRow(i)
   b:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:AddLine(("Slot %d: %s"):format(self.slot, self.fullName or "(not seen yet)"))
+    local profs = self.fullName and MF:ProfessionsText(self.fullName)
+    if profs then GameTooltip:AddLine(profs, 0.8, 0.8, 0.8, true) end
     if self.unit then
       GameTooltip:AddLine("|cFF99E5FFLeft click|r target, |cFF99E5FFright click|r unit menu", 1, 1, 1)
     elseif self.fullName then

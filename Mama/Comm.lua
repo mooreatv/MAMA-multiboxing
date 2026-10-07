@@ -299,6 +299,7 @@ function MF:HandleInfo(sender, slot, name, flag)
   if isNew then
     self.online[name] = true
     self:Fire('TEAM_CHANGED')
+    self:Fire("MEMBER_SEEN", name)
   end
   if flag == 1 then self:SendInfo(name, 0, "answering their announce") end
   if self.db.autoInvite and self:IsMaster() and not self.roster[name] then

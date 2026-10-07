@@ -17,6 +17,8 @@ Hash.lua
 Team.lua
 Comm.lua
 Actions.lua
+Professions.lua
+Trade.lua
 Dialogs.lua
 Status.lua
 Options.lua

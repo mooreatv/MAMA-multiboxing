@@ -62,6 +62,30 @@ Follow and assist are protected actions that must come from a key press or your 
 - Quests you accept are shared with the group, and shared quests are accepted automatically on the other windows.
 - Abandoning a quest on one window abandons it on the others (never a completed quest).
 
+### Professions and trading mats
+
+Each window tells the team its professions (`/mama profs` lists them, `/mama profs sync` asks everyone again; also in
+the status window row tooltips). Opening a trade with a team member puts the mats they use in the trade window (6
+stacks per trade, trade again for more); you still click Trade. Mats you could use yourself stay with you (a tailor
+keeps their cloth, unless the other tailor is better); the "Mama: give mats" button above the trade window gives them
+anyway (e.g. a blacksmith's spare bars to an engineer):
+
+| Mats | Go to |
+|---|---|
+| cloth | tailor |
+| leather and hides | leatherworker |
+| ore | miner (to smelt) |
+| bars and stones | blacksmith or engineer |
+| herbs | alchemist |
+| enchanting mats, BoE greens | enchanter (to disenchant) |
+| engineering parts | engineer |
+| recipes and patterns | whoever has that profession |
+| raw meat and fish | cook (off by default) |
+
+Pick the kinds in Options > AddOns > Mama-forever > Trade (or `/mama trade list`, `/mama trade greens off`);
+`/mama trade off` turns the auto fill off (the button still works). "Send settings to team" (on both options pages)
+copies this window's options and trade kinds to the rest of the group.
+
 ### Status window
 
 One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
@@ -83,9 +107,9 @@ On a row: left click targets the character (or invites it when not grouped), rig
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `ui`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `quest`, `dialog`, `profs`, `trade`, `ui`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-MAMA macro, status window, slot display at login, debug.
+auto fill trades, MAMA macro, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 
