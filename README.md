@@ -92,7 +92,8 @@ copies this window's options and trade kinds to the rest of the group.
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
   then gets out of follow range (stuck behind a tree or a wall), the lead's window gets a raid warning and a sound.
 - **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
-  name to answer).
+  name to answer). GM whispers are tagged `<GM>` with a raid warning and the GM sound. If the whisper can't be read
+  (chat lockdown), the lead is still told to look at that window.
 
 Both are on by default (Options > Alerts to the lead).
 
