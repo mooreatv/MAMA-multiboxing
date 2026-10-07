@@ -3,7 +3,6 @@ name: Package and release
 
 # we need to let GitHub know _when_ we want to release.
 # this is typically only when we create a new tag.
-# make sure your tags are annotated!
 on:
   push:
     tags:

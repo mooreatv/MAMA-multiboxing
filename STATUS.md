@@ -71,7 +71,7 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 
 ## Phase 4 - Release (DONE)
 - README.md (Forever-only scope + credits to MoLib/DynamicBoxer).
-- Packaging: BigWigsMods/packager@v2 via `.github/workflows/packaging.yaml` on annotated tag push.
+- Packaging: BigWigsMods/packager@v2 via `.github/workflows/packaging.yaml` on tag push.
 - `pkgmeta.yaml` (`package-as: Mama`, `move-folders: Mama/Mama: Mama`, ignores Probe/PLAN/README/install.bat).
 - `Mama.toc` carries Curse 334197, Wago 7nGvmDKx, WoWI 26337; secrets CF_API_KEY/WAGO_API_TOKEN/WOWI_API_TOKEN on repo.
 - `install.bat` copies `Mama\` to the beta AddOns folder (`_classic_beta_`).
@@ -128,7 +128,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Folder/addon name `Mama` (`Mama\Mama.toc`, Interface 16001, title M.A.M.A., IconTexture `Interface\AddOns\Mama\mama`), SavedVariables `MamaForeverSaved`.
 - Files: Mama.lua (namespace `MF`, events, saved vars, commands, `messageHandlers`), Team.lua, Comm.lua, Actions.lua, Status.lua,
   Options.lua, UI.lua, Bindings.xml, Dialogs.lua, Bug.lua. No libs, no DBox dependency, no ISBoxer discovery, no EMA, no other WoW versions.
-- Packaging: original BigWigsMods/packager@v2 via `.github\workflows\packaging.yaml` on annotated tag push; `pkgmeta.yaml`
+- Packaging: original BigWigsMods/packager@v2 via `.github\workflows\packaging.yaml` on tag push; `pkgmeta.yaml`
   (`package-as: Mama`, `move-folders: Mama/Mama: Mama`, ignores Probe/PLAN/README/install.bat); toc carries Curse 334197, Wago 7nGvmDKx,
   WoWI 26337; secrets CF_API_KEY/WAGO_API_TOKEN/WOWI_API_TOKEN live on this repo.
 - `install.bat` copies `Mama\` to the beta AddOns folder (`_classic_beta_`). The dev probe lives in `Probe\MamaForeverProbe\` (not installed, not packaged).
