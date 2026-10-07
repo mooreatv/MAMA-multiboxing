@@ -187,7 +187,7 @@ local function tradeSections()
 end
 
 MF:Listen("LOGIN", function(self)
-  local panel, sub = newPanel("Mama-forever", "Mama-forever",
+  local panel, sub = newPanel("Mama-forever", "Mama-forever (" .. self.version .. ")",
                               "Team setup: |cFF99E5FF/mama s N|r in each window. All commands: |cFF99E5FF/mama help|r")
   sendButton(panel, layout(panel, sub, optionSections()))
   self.category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)

@@ -16,6 +16,10 @@ local addonName, MF = ...
 _G.MamaForever = MF
 
 MF.prefix = "|cFF99E5FFMama:|r "
+-- the packager substitutes the toc's version with the release tag; a source checkout still has the placeholder
+local GetMeta = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+MF.version = GetMeta(addonName, "Version") or "?"
+if MF.version:find("^@") then MF.version = "dev" end
 MF.defaults = {
   debug = false,
   macro = true,
@@ -108,7 +112,7 @@ end)
 MF:On("PLAYER_LOGIN", function(self)
   self.myName = self:FullName("player")
   -- each login or /reload starts with a marker, so it's easy to see where to start copying in /mama bug
-  record(("---reload--- %s %s"):format(date("%Y-%m-%d"), tostring(self.myName)))
+  record(("---reload--- %s %s - Mama %s"):format(date("%Y-%m-%d"), tostring(self.myName), self.version))
   -- Team slots and the history of who held which slot are remembered per faction (the saved variables are account wide).
   self.faction = UnitFactionGroup("player") or "Neutral"
   local s = self.db
