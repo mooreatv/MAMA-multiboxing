@@ -35,6 +35,12 @@ The token is saved, so you don't redo this at the next login. Every message betw
 token's secret, so strangers can't give your characters orders. Characters that exchange the token are the only ones
 whose group invites are auto accepted. `/mama token` shows it again, `/mama token new` (slot 1) makes a new one.
 
+**New characters may need one manual invite.** Windows find each other by whispering names they already know (slot 1
+from the token, characters recorded in earlier sessions). Addon messages only work by whisper, party/raid or guild (not
+say/yell), so a character never seen before, or the first team on another faction, can't be found: invite it once by
+hand (or have both in the same guild). Once grouped they record each other and it's automatic from then on.
+
+
 ## Using it
 
 ### Follow and assist
@@ -77,7 +83,7 @@ On a row: left click targets the character (or invites it when not grouped), rig
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `ui`, `identify`, `options`, `debug`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `quest`, `dialog`, `ui`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
 MAMA macro, status window, slot display at login, debug.
 
@@ -93,6 +99,12 @@ choices are mirrored with dialog syncing; mount sync from the old Mama is not in
 
 
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
+
+- Formatting (for ref on my pc; lua-format.exe needs the msys64 ucrt64 DLLs on PATH)
+```powershell
+$env:PATH = "C:\msys64\ucrt64\bin;" + $env:PATH
+Get-ChildItem -Filter *.lua -Recurse | ForEach-Object {  C:\Users\l\AppData\Roaming\luarocks\bin\lua-format.exe -c  .\luaformat.cfg -i $_.FullName }
+```
 
 ## More info
 
