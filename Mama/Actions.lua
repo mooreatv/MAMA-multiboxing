@@ -118,10 +118,10 @@ local function acceptQuest(self)
     AcceptQuest()
   end
 end
-MF:On("QUEST_DETAIL", acceptQuest)
+MF:OnTeam("QUEST_DETAIL", acceptQuest)
 
 -- Someone in the group started an escort/event quest: that's a confirmation popup, answered with ConfirmAcceptQuest.
-MF:On("QUEST_ACCEPT_CONFIRM", function(self, who, title)
+MF:OnTeam("QUEST_ACCEPT_CONFIRM", function(self, who, title)
   if not (self.db.autoQuest and IsInGroup()) then return end
   self:Debug("confirming quest %s started by %s", tostring(title), tostring(who))
   escortConfirmed = true
@@ -135,7 +135,7 @@ MF:On("QUEST_ACCEPTED", function(self, id)
   self:Debug("QUEST_ACCEPTED %s", tostring(id))
   local skip = self.noShare[id] or escortConfirmed
   self.noShare[id], escortConfirmed = nil, false
-  if not self.db.autoShare or not IsInGroup() then return end
+  if not self.db.autoShare or not IsInGroup() or self:Disabled() then return end
   if skip then
     self:Debug("not sharing quest %s: we got it from the team", tostring(id))
     return

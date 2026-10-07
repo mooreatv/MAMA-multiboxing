@@ -191,6 +191,27 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (positional, same addon version assumed; length mismatch is reported and ignored).
   Unverified in game: subcategory page, settings sync.
 
+## Team stats, alerts and off switch (2026-10-07, verified in game)
+- `MEMBER_SEEN` now also fires when a member asks (`I` flag 1, i.e. it logged in/reloaded), so it gets our `P`/`G`
+  again even if we already knew it.
+- `Stats.lua`: `G;copper;free;slots` (general bags only), whispered on `MEMBER_SEEN`, sent to the team 5s after
+  `PLAYER_MONEY`/`BAG_UPDATE_DELAYED` when changed (`SendTeam(payload, true)`: group + online whispers only). Saved in
+  `db.stats[faction][name]` with a timestamp. Status window: free slots right of each name, team gold footer (current
+  slot holders), footer tooltip lists every known character of the faction (alts, with age) and the total.
+- `Alerts.lua` (options `followWarn`, `forwardWhispers`): on `AUTOFOLLOW_END` out of combat (us and the lead), watch
+  10s; if not following again and `CheckInteractDistance(lead, 4)` fails, whisper `F;subzone` to the lead (raid
+  warning + sound, 15s per sender). `CHAT_MSG_WHISPER` from non team senders -> `W;i/n;sender;text` to the lead
+  (150 byte UTF-8 safe parts), printed with a player link.
+
+- Per character off switch `db.disabled[name]` (`MF:Disabled/SetDisabled/ToggleDisabled`, `/mama disable`,
+  `/mama enable [off]`, binding `MAMA_TOGGLE`, Ctrl+Middle on the status window, red "disabled" in its title): all
+  sends dropped in `schedule`, incoming addon messages ignored, no announce loop; `MF:OnTeam(event, fn)` registers
+  handlers skipped while disabled (invite/quest auto accept); loot, auto invite, quest share, trade fill check it too.
+
+## Possible improvements
+- `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
+- Global inventory: per character bags/bank contents saved and shared across the team.
+
 ## Still to do
 - Port from old Mama maybe: mount/dismount sync.
 - Unverified on Forever: `C_PartyInfo.UninviteUnit`, raid conversion with >5 characters, taxi, mount.

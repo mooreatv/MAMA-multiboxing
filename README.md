@@ -87,10 +87,21 @@ Pick the kinds in Options > AddOns > Mama-forever > Trade (or `/mama trade list`
 `/mama trade off` turns the auto fill off (the button still works). "Send settings to team" (on both options pages)
 copies this window's options and trade kinds to the rest of the group.
 
+### Alerts to the lead
+
+- **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
+  then gets out of follow range (stuck behind a tree or a wall), the lead's window gets a raid warning and a sound.
+- **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
+  name to answer).
+
+Both are on by default (Options > Alerts to the lead).
+
 ### Status window
 
 One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
-`*` marks the lead. Hover the title for all the shortcuts:
+`*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
+line is the team's gold; hover it for the gold and bag slots of every character of this faction you've played with
+Mama, alts included (last known values). Hover the title for all the shortcuts:
 
 | Click | Action |
 |---|---|
@@ -101,16 +112,22 @@ One row per slot. White is this window, green is in the group, yellow is online 
 | Shift+Middle | show the big slot number, class and name |
 | Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
 | Alt+Left | resend our info to the team |
+| Ctrl+Middle | turn Mama off/on for this character (see below) |
 | Mouse wheel / drag title | resize / move |
 
 On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu.
 
+**Turning Mama off for one character** (e.g. one that is sometimes part of another team): `/mama disable`, the
+*Turn Mama off/on* key binding or Ctrl+Middle click on the status window. That character then sends and reads no
+team messages and does no team automation (auto accept invites/quests, quest sharing, loot, trade fill, alerts); the
+status window title shows "disabled" in red. It is remembered for that character until `/mama enable`.
+
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `profs`, `trade`, `ui`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `quest`, `dialog`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-auto fill trades, MAMA macro, status window, slot display at login, debug.
+auto fill trades, MAMA macro, follow broken warning, whisper forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 

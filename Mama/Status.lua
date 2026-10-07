@@ -12,11 +12,13 @@
    ]] --
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
 -- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet.
+-- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's).
 -- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
--- token dialog, options, compact view, identify. Plain click on a row targets it (or invites it if not grouped).
+-- token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the title).
+-- Plain click on a row targets it (or invites it if not grouped).
 local _, MF = ...
 
-local ROW_H, WIDTH = 18, 190
+local ROW_H, WIDTH = 18, 210
 local rows = {}
 local frame
 local pendingRefresh
@@ -25,7 +27,8 @@ local TIP = table.concat({
   "|cFF99E5FFLeft click|r invite the team",
   "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)", "|cFF99E5FFRight click|r options",
   "|cFF99E5FFShift left|r toggle party/raid", "|cFF99E5FFShift right|r toggle compact view",
-  "|cFF99E5FFShift middle|r identify this window (big slot number)", "|cFF99E5FFCtrl left|r toggle auto invite",
+  "|cFF99E5FFShift middle|r identify this window (big slot number)",
+  "|cFF99E5FFCtrl middle|r turn Mama off/on for this character", "|cFF99E5FFCtrl left|r toggle auto invite",
   "|cFF99E5FFCtrl right|r show/paste the team token", "|cFF99E5FFAlt left|r resend our info to the team",
   "|cFF99E5FFAlt right|r team is complete (forget slots that aren't here)",
   "|cFF99E5FFMousewheel|r resize, |cFF99E5FFdrag|r the header to move",
@@ -121,7 +124,9 @@ local function WindowClick(button)
       MF.commands.options.fn(MF)
     end
   elseif button == "MiddleButton" then
-    if shift then
+    if ctrl then
+      MF:ToggleDisabled()
+    elseif shift then
       MF:Identify()
     else
       MF:Disband()
@@ -180,7 +185,53 @@ local function MakeFrame()
   end)
   header:SetScript("OnLeave", GameTooltip_Hide)
   f.header = header
+
+  local footer = CreateFrame("Frame", nil, f)
+  footer:SetHeight(ROW_H)
+  footer:EnableMouse(true)
+  footer.text = footer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  footer.text:SetPoint("LEFT", 6, 0)
+  footer:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    MF:StatsTooltip()
+    GameTooltip:Show()
+  end)
+  footer:SetScript("OnLeave", GameTooltip_Hide)
+  f.footer = footer
   return f
+end
+
+-- Every character of this faction we know the gold of (alts included), richest first.
+function MF:StatsTooltip()
+  GameTooltip:AddLine("Gold and free bag slots")
+  local names, total = {}, 0
+  for name, s in pairs(self:TeamStats()) do
+    names[#names + 1] = name
+    total = total + s.money
+  end
+  table.sort(names, function(a, b) return self:StatsOf(a).money > self:StatsOf(b).money end)
+  for _, name in ipairs(names) do
+    local s = self:StatsOf(name)
+    local live = name == self.myName or self.online[name] or self.roster[name]
+    local slot = self:SlotOf(name)
+    GameTooltip:AddDoubleLine(("%s%s  |cFF999999%d/%d%s|r"):format(slot and (slot .. " ") or "", name, s.free, s.slots,
+                                                                   live and "" or (", " .. self:AgeText(s.t) .. " ago")),
+                              self:MoneyText(s.money), 1, 1, 1, 1, 1, 1)
+  end
+  GameTooltip:AddDoubleLine("All characters", self:MoneyText(total), 1, 0.82, 0, 1, 1, 1)
+end
+
+local function bagsText(s)
+  if not s then return "" end
+  local color = s.free == 0 and "FF3333" or s.free < 5 and "FF9933" or "AAAAAA"
+  return ("|cFF%s%d|r"):format(color, s.free)
+end
+
+-- Gold and bag slots only: plain font strings, fine to update in combat.
+function MF:RefreshStats()
+  if not frame then return end
+  for i, row in ipairs(rows) do row.bags:SetText(bagsText(self:StatsOf(self.db.slots[i]))) end
+  frame.footer.text:SetText("Team gold: " .. self:MoneyText(self:TeamMoney()))
 end
 
 local function GetRow(i)
@@ -198,9 +249,11 @@ local function GetRow(i)
   b.mark:SetPoint("LEFT", 3, 0)
   b.slotText = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   b.slotText:SetPoint("LEFT", 12, 0)
+  b.bags = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  b.bags:SetPoint("RIGHT", -6, 0)
   b.name = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   b.name:SetPoint("LEFT", 28, 0)
-  b.name:SetPoint("RIGHT", -4, 0)
+  b.name:SetPoint("RIGHT", b.bags, "LEFT", -4, 0)
   b.name:SetJustifyH("LEFT")
   b.hl = b:CreateTexture(nil, "HIGHLIGHT")
   b.hl:SetAllPoints()
@@ -221,6 +274,10 @@ local function GetRow(i)
     GameTooltip:AddLine(("Slot %d: %s"):format(self.slot, self.fullName or "(not seen yet)"))
     local profs = self.fullName and MF:ProfessionsText(self.fullName)
     if profs then GameTooltip:AddLine(profs, 0.8, 0.8, 0.8, true) end
+    local s = MF:StatsOf(self.fullName)
+    if s then
+      GameTooltip:AddLine(("%s, %d/%d bag slots free"):format(MF:MoneyText(s.money), s.free, s.slots), 0.8, 0.8, 0.8)
+    end
     if self.unit then
       GameTooltip:AddLine("|cFF99E5FFLeft click|r target, |cFF99E5FFright click|r unit menu", 1, 1, 1)
     elseif self.fullName then
@@ -265,13 +322,19 @@ function MF:RefreshStatus()
   end
   for i = n + 1, #rows do rows[i]:Hide() end
   local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, n)
+  if self:Disabled() then count = count .. " |cFFFF3333disabled|r" end
   if self.db.compact then
     frame.header.text:SetText(table.concat(compact, " ") .. " " .. count)
     frame:SetSize(math.max(60, frame.header.text:GetStringWidth() + 14), ROW_H + 2)
   else
     frame.header.text:SetText("Mama team  " .. count)
-    frame:SetSize(WIDTH, ROW_H * (n + 1) + 2)
+    frame:SetSize(WIDTH, ROW_H * (n + 2) + 2)
   end
+  frame.footer:ClearAllPoints()
+  frame.footer:SetPoint("TOPLEFT", 0, -ROW_H * (n + 1))
+  frame.footer:SetPoint("TOPRIGHT", 0, -ROW_H * (n + 1))
+  frame.footer:SetShown(not self.db.compact)
+  self:RefreshStats()
   frame:SetShown(self.db.slot > 0 and self.db.showStatus and n > 0)
 end
 
@@ -282,6 +345,7 @@ MF:Listen("LOGIN", function(self)
   self:RefreshStatus()
 end)
 MF:Listen("TEAM_CHANGED", Refresh)
+MF:Listen("STATS", function(self) self:RefreshStats() end)
 MF:On("GROUP_ROSTER_UPDATE", Refresh)
 MF:On("PLAYER_REGEN_ENABLED", function(self)
   if pendingRefresh then

@@ -201,7 +201,7 @@ MF:On("TRADE_SHOW", function(self)
   waitingFor = nil
   self:Debug("trade with %s", tostring(partner))
   -- let the trade window settle before putting items in
-  if self.db.autoTrade then C_Timer.After(0.3, function() self:FillTrade(false) end) end
+  if self.db.autoTrade and not self:Disabled() then C_Timer.After(0.3, function() self:FillTrade(false) end) end
 end)
 
 MF:On("TRADE_CLOSED", function()
