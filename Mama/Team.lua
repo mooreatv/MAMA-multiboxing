@@ -47,30 +47,66 @@ for _, ev in ipairs({"GROUP_ROSTER_UPDATE", "PARTY_LEADER_CHANGED", "UNIT_NAME_U
 end
 MF:Listen("LOGIN", function(self) self:RefreshRoster() end)
 
--- Leader: free for all loot once the whole team is grouped; back to group loot if extra people join.
--- Each switch is issued once per change of situation, so a loot method picked by hand afterwards sticks.
+-- Leader: free for all loot when the whole team first gets grouped, group loot when strangers (characters without a
+-- slot) join, free for all again once they're gone. Only those changes of group make up act, so a loot method picked
+-- by hand sticks. Every window tracks them (a reload or a new leader doesn't count as a change).
 local FFA = Enum.LootMethod.Freeforall -- what C_PartyInfo.GetLootMethod() returns for free for all
-local lootIssued -- "ffa" or "group": what we last set for the current group
-MF:On("GROUP_ROSTER_UPDATE", function(self)
-  local n = GetNumGroupMembers()
-  if not IsInGroup() or n <= 1 then
-    lootIssued = nil
-    return
+local lootState -- nil (unknown yet), "solo", "partial" (team members only, not all here), "team" or "strangers"
+local formed, hadStrangers -- the whole team was grouped / strangers were in the group, since we joined it
+
+-- nil while some member's name isn't known yet (cross realm joins show up as Unknown for a moment).
+local function groupState(self)
+  if not IsInGroup() then return "solo" end
+  local n, mates, strangers = GetNumGroupMembers(), 1, false
+  for name in pairs(self.roster) do
+    if self:SlotOf(name) then
+      mates = mates + 1
+    else
+      strangers = true
+    end
   end
-  if not self.db.autoFFA or not UnitIsGroupLeader("player") then return end
+  if strangers then return "strangers" end
+  if mates < n then return nil end
   local expected = 0
   for s in pairs(self.db.slots) do if s > expected then expected = s end end
-  if expected < 2 then return end
-  local cur = C_PartyInfo.GetLootMethod()
-  if n == expected and lootIssued ~= "ffa" and cur ~= FFA then
-    self:Print("setting loot to free for all (team of %d)", expected)
-    C_PartyInfo.SetLootMethod("freeforall")
-    lootIssued = "ffa"
-  elseif n > expected and lootIssued ~= "group" and cur == FFA then
-    self:Print("extra people in the group (%d vs %d), switching to group loot", n, expected)
-    C_PartyInfo.SetLootMethod("group")
-    lootIssued = "group"
+  return (expected >= 2 and mates >= expected) and "team" or "partial"
+end
+
+function MF:UpdateLoot()
+  local state = groupState(self)
+  if not state or state == lootState then return end
+  local known = lootState ~= nil
+  lootState = state
+  if state == "solo" then
+    formed, hadStrangers = false, false
+    return
   end
+  local act = known and self.db.autoFFA and UnitIsGroupLeader("player")
+  local cur = C_PartyInfo.GetLootMethod()
+  if state == "strangers" then
+    hadStrangers = true
+    if act and cur == FFA then
+      self:Print("strangers in the group, switching to group loot")
+      C_PartyInfo.SetLootMethod("group")
+    end
+  elseif state == "team" then
+    if act and (not formed or hadStrangers) and cur ~= FFA then
+      self:Print("setting loot to free for all (%s)", formed and "strangers gone" or "team complete")
+      C_PartyInfo.SetLootMethod("freeforall")
+    end
+    formed, hadStrangers = true, false
+  end
+end
+
+-- Debounced: rosters change several times in a row, and a new member only gets its slot once its info arrives.
+local lootPending
+MF:Listen("TEAM_CHANGED", function(self)
+  if lootPending then return end
+  lootPending = true
+  C_Timer.After(1, function()
+    lootPending = false
+    self:UpdateLoot()
+  end)
 end)
 
 -- Auto-accept invites only from characters we were told are on our team.

@@ -159,8 +159,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Quests: auto-accept, auto-share on accept (guard against re-sharing received quests), abandon sync (not for completed quests),
   all options on by default. Quest share CONFIRMED: sender QuestLogPushQuest -> receiver QUEST_DETAIL -> AcceptQuest() -> QUEST_ACCEPTED.
 - Options panel in Settings (Game Menu > Options > AddOns).
-- Loot: group leader sets free-for-all once group size == highest known slot (option `autoFFA`, default on);
-  back to group loot if extra people join. Uses `C_PartyInfo.GetLootMethod/SetLootMethod`.
+- Loot (option `autoFFA`, default on): group leader sets free-for-all when the whole team (up to the highest known slot)
+  is first grouped, group loot when strangers (no slot) join, free-for-all again once they leave. Nothing else
+  (reload, leader change, manual change) triggers a switch. Uses `C_PartyInfo.GetLootMethod/SetLootMethod`.
 - Commands: `/mama help`, `/mama debug [on|off]`, `/mama s N`, `/mama token [new|<token>]`, `/mama lead [name|auto]`,
   `/mama team [list|add|remove|clear]`, `/mama invite`, `/mama disband`, `/mama raid`, `/mama complete [N]`,
   `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama ui [on|off]`, `/mama identify`, `/mama options`,

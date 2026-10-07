@@ -218,17 +218,26 @@ function MF:AnnounceDirect(force)
   self:Broadcast(infoPayload(self.db.slot, self.myName, 1))
 end
 
--- Someone in our group we haven't heard from yet (a new member, or one that hasn't announced itself).
-function MF:GroupHasUnknown()
-  for name in pairs(self.roster) do if not self.online[name] then return true end end
-  return false
+-- Someone in our group we haven't heard from yet (a new member, or one that hasn't announced itself), asked fewer
+-- than MAX_PINGS times: a stranger without our token never answers, so stop asking them after a few tries.
+local MAX_PINGS = 3
+local pings = {} -- name -> group info messages sent while they hadn't answered
+function MF:ShouldPingGroup()
+  local any = false
+  for name in pairs(self.roster) do
+    if not self.online[name] and (pings[name] or 0) < MAX_PINGS then
+      pings[name] = (pings[name] or 0) + 1
+      any = true
+    end
+  end
+  return any
 end
 
 function MF:Announce(force)
   local tok = self:Token()
   if self.db.slot == 0 or not tok then return end
   self:AnnounceDirect(force)
-  if force or self:GroupHasUnknown() then self:SendGroup(infoPayload(self.db.slot, self.myName, 1)) end
+  if force or self:ShouldPingGroup() then self:SendGroup(infoPayload(self.db.slot, self.myName, 1)) end
   self:KeepAnnouncing()
 end
 
@@ -371,7 +380,7 @@ MF:On("GROUP_ROSTER_UPDATE", function(self)
   C_Timer.After(2, function() -- debounce: rosters change several times in a row when inviting
     self.announcePending = nil
     -- only when someone in the group hasn't heard from us yet (rosters also "change" on leader or loot changes)
-    if IsInGroup() and self:Token() and self:GroupHasUnknown() then
+    if IsInGroup() and self:Token() and self:ShouldPingGroup() then
       self:SendGroup(infoPayload(self.db.slot, self.myName, 1))
     end
   end)
