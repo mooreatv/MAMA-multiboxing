@@ -104,7 +104,7 @@ local function WindowClick(button)
     elseif shift then
       MF:PartyToggle()
     elseif alt then
-      MF:Announce();
+      MF:Announce(true)
       MF:Print("resent our info to the team")
     else
       MF:InviteMissing()

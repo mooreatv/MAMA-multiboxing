@@ -117,12 +117,14 @@ local function gossipOption(self, id, text)
   return false
 end
 
-local function questPick(listFn, selectFn)
+-- noShare: the quest gets accepted here too because we mirror the lead, so it must not be shared again (Actions.lua).
+local function questPick(listFn, selectFn, noShare)
   return function(self, id)
     if not shown("GossipFrame") then return false end
     for _, q in ipairs(C_GossipInfo[listFn]() or {}) do
       if q.questID == id then
         self:Debug("dialog: %s(%d) '%s'", selectFn, id, clean(q.title))
+        if noShare then self.noShare[id] = true end
         C_GossipInfo[selectFn](id)
         return true
       end
@@ -185,7 +187,7 @@ end
 
 local receivers = {
   go = gossipOption,
-  qa = questPick("GetAvailableQuests", "SelectAvailableQuest"),
+  qa = questPick("GetAvailableQuests", "SelectAvailableQuest", true),
   qc = questPick("GetActiveQuests", "SelectActiveQuest"),
   qp = questContinue,
   qr = questReward,

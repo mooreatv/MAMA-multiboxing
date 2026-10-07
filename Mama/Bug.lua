@@ -55,3 +55,7 @@ end
 
 MF:AddCommand("bug", function(self) self:ShowBug() end,
               "bug - show the last 100 Mama messages (with time) in a copyable window")
+MF:AddCommand("clearlog", function(self)
+  wipe(self.log) -- same table as the saved one, so it stays cleared across reloads
+  self:Print("log cleared")
+end, "clearlog - empty the log shown by /mama bug (e.g. before reproducing a problem)")

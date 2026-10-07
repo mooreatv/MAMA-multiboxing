@@ -3,7 +3,8 @@
 -- Setup, once per window:  /mama s 1  (first window: shows a token to copy)
 --                          /mama s 2  (second window: paste the token, Enter), etc.
 -- The token is "teamId:secret:MasterName" + 1 checksum character. Every message is signed with the secret
--- and carries a timestamp so strangers can't spoof us and old messages can't be replayed.
+-- (HMAC-SHA256, see Hash.lua) and carries a timestamp and a nonce so strangers can't spoof us and messages can't be
+-- replayed.
 -- Messages are whispered to the master (slot 1) by full name (works ungrouped and across home realms)
 -- and sent on the party/raid channel once grouped. The master relays who is on the team.
 local _, MF = ...
@@ -13,7 +14,6 @@ MF.maxSlot = 40
 MF.online = {} -- names we've heard from directly this session
 
 local ALNUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-local HEX = "0123456789ABCDEF"
 local MOD = 4294967296
 local FUTURE_LIMIT, PAST_LIMIT = -5, 120 -- seconds a message may be from the future / past
 
@@ -28,7 +28,7 @@ local function randomId(n)
   return table.concat(t)
 end
 
--- Two 32 bit non cryptographic hashes (djb2 and sdbm style) in plain arithmetic, so no bit library is needed.
+-- Two 32 bit non cryptographic hashes (djb2 and sdbm style), only used for the token's typo checksum.
 local function hashes(str)
   local h1, h2 = 5381, 0
   for i = 1, #str do
@@ -39,26 +39,14 @@ local function hashes(str)
   return h1, h2
 end
 
-local function toHex(n)
-  local r = {}
-  for i = 8, 1, -1 do
-    local v = n % 16
-    n = (n - v) / 16
-    r[i] = HEX:sub(v + 1, v + 1)
-  end
-  return table.concat(r)
-end
-
 local function checkChar(str)
   local a, b = hashes(str)
   local k = (a + b) % #ALNUM
   return ALNUM:sub(k + 1, k + 1)
 end
 
-function MF:Sign(str, secret)
-  local a, b = hashes(str .. secret)
-  return toHex(a) .. toHex(b)
-end
+-- 64 bits of HMAC-SHA256 (16 hex characters).
+function MF:Sign(str, secret) return self:Hmac(secret, str, 2) end
 
 function MF:MakeToken(master)
   local body = randomId(6) .. ":" .. randomId(12) .. ":" .. master .. ":"
@@ -103,6 +91,13 @@ function MF:SecureMessage(payload, tok)
   return base .. self:Sign(base, tok.secret)
 end
 
+-- Signatures of the messages accepted within the timestamp window: each message is only accepted once.
+local accepted = {}
+C_Timer.NewTicker(PAST_LIMIT, function()
+  local t = now()
+  for sig, at in pairs(accepted) do if t - at > PAST_LIMIT - FUTURE_LIMIT then accepted[sig] = nil end end
+end)
+
 -- Returns true, payload for a valid message of our team; false, reason otherwise.
 function MF:VerifyMessage(msg, tok)
   local base, team, payload, ts, sig = msg:match("^(([^:]+):(.-):%w%w%w%w:(%d+):)(%x+)$")
@@ -112,6 +107,8 @@ function MF:VerifyMessage(msg, tok)
   local delta = now() - tonumber(ts)
   if delta < FUTURE_LIMIT then return false, "from the future" end
   if delta > PAST_LIMIT then return false, "too old" end
+  if accepted[sig] then return false, "replayed" end
+  accepted[sig] = now()
   return true, payload
 end
 
@@ -128,12 +125,13 @@ local function schedule(fn)
   end
 end
 
-function MF:SendWhisper(to, payload)
+-- why: optional reason, shown in the debug log
+function MF:SendWhisper(to, payload, why)
   local tok = self:Token()
   if not tok or to == self.myName then return end
-  local msg = self:SecureMessage(payload, tok)
   schedule(function()
-    self:Debug("whisper to %s: %s", to, payload)
+    local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
+    self:Debug("whisper to %s: %s%s", to, payload, why and (" (" .. why .. ")") or "")
     C_ChatInfo.SendAddonMessage(PREFIX, msg, "WHISPER", to)
   end)
 end
@@ -141,8 +139,8 @@ end
 function MF:SendGroup(payload)
   local tok = self:Token()
   if not tok or not IsInGroup() then return end
-  local msg = self:SecureMessage(payload, tok)
   schedule(function()
+    local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("group msg: %s", payload)
     C_ChatInfo.SendAddonMessage(PREFIX, msg, IsInRaid() and "RAID" or "PARTY")
   end)
@@ -151,22 +149,39 @@ end
 local function infoPayload(slot, name, flag) return ("I;%d;%s;%d"):format(slot, name, flag) end
 
 -- flag 1 means "please tell me about yourself too", flag 0 is a plain information message.
-function MF:SendInfo(to, flag) self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag)) end
+function MF:SendInfo(to, flag, why) self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag), why) end
 
 local MAX_PER_SLOT = 3 -- most recent characters of this faction to try per slot
+local HISTORY_DELAY = 3 -- seconds the current slot owners get to answer before we try older characters
 
--- Everyone who might be our teammate: current slot owners plus the recent holders of each slot (newest first).
-function MF:Candidates()
-  local seen, list = {}, {}
-  local function add(name)
-    if name and name ~= self.myName and not seen[name] then
-      seen[name] = true
-      list[#list + 1] = name
-    end
+local function here(self, name) return name == self.myName or self.online[name] or self.roster[name] end
+
+-- The master and the current owner of each slot, as {name, reason} (reason only for the debug log).
+function MF:SlotCandidates()
+  local list = {}
+  local master = self:MasterTarget()
+  if master then list[1] = {master, "master"} end
+  for s, name in pairs(self.db.slots) do
+    if s ~= self.db.slot and name ~= master then list[#list + 1] = {name, "slot " .. s} end
   end
-  for s, name in pairs(self.db.slots) do if s ~= self.db.slot then add(name) end end
+  return list
+end
+
+-- Recent holders (newest first) of the slots whose current owner we haven't heard from: that slot may be played
+-- with another character today. Slots that are no longer part of the team (/mama complete, token new) are skipped.
+function MF:HistoryCandidates()
+  local seen, list = {}, {}
   for s, names in pairs(self.db.history[self.faction] or {}) do
-    if s ~= self.db.slot then for i = 1, math.min(#names, MAX_PER_SLOT) do add(names[i]) end end
+    local owner = self.db.slots[s]
+    if s ~= self.db.slot and owner and not here(self, owner) then
+      for i = 1, math.min(#names, MAX_PER_SLOT) do
+        local n = names[i]
+        if n ~= owner and n ~= self.myName and not seen[n] then
+          seen[n] = true
+          list[#list + 1] = {n, ("held slot %d before %s, who hasn't answered"):format(s, owner)}
+        end
+      end
+    end
   end
   return list
 end
@@ -175,33 +190,45 @@ end
 function MF:Broadcast(payload)
   local tok = self:Token()
   if not tok or not IsInGuild() then return end
-  local msg = self:SecureMessage(payload, tok)
   schedule(function()
+    local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("broadcast on GUILD: %s", payload)
     pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "GUILD")
   end)
 end
 
-function MF:AnnounceDirect()
+-- Once we heard from someone directly, we both have each other's info (either they asked and we answered, or they
+-- answered our ask), so routine announces skip them. force: tell everyone again (slot/token change, manual resend).
+function MF:AnnounceDirect(force)
   local tok = self:Token()
   if not tok then return end
   local sent = {}
-  local master = self:MasterTarget()
-  if master then
-    self:SendInfo(master, 1)
-    sent[master] = true
+  local function sendTo(list) -- grouped ones get the group message instead
+    for _, c in ipairs(list) do
+      local name, why = c[1], c[2]
+      if not sent[name] and not self.roster[name] and (force or not self.online[name]) then
+        sent[name] = true
+        self:SendInfo(name, 1, why)
+      end
+    end
   end
-  for _, name in ipairs(self:Candidates()) do
-    if not sent[name] and not self.roster[name] then self:SendInfo(name, 1) end
-  end
+  sendTo(self:SlotCandidates())
+  C_Timer.After(HISTORY_DELAY,
+                function() if self.db.slot > 0 and self:Token() then sendTo(self:HistoryCandidates()) end end)
   self:Broadcast(infoPayload(self.db.slot, self.myName, 1))
 end
 
-function MF:Announce()
+-- Someone in our group we haven't heard from yet (a new member, or one that hasn't announced itself).
+function MF:GroupHasUnknown()
+  for name in pairs(self.roster) do if not self.online[name] then return true end end
+  return false
+end
+
+function MF:Announce(force)
   local tok = self:Token()
   if self.db.slot == 0 or not tok then return end
-  self:AnnounceDirect()
-  self:SendGroup(infoPayload(self.db.slot, self.myName, 1))
+  self:AnnounceDirect(force)
+  if force or self:GroupHasUnknown() then self:SendGroup(infoPayload(self.db.slot, self.myName, 1)) end
   self:KeepAnnouncing()
 end
 
@@ -267,21 +294,23 @@ end
 function MF:HandleInfo(sender, slot, name, flag)
   local direct = sender == name -- otherwise it's relayed by the master
   self:RecordMember(slot, name)
-  if direct and not self.online[name] then
+  if not direct then return end
+  local isNew = not self.online[name]
+  if isNew then
     self.online[name] = true
     self:Fire('TEAM_CHANGED')
   end
-  if flag == 1 and direct then self:SendInfo(name, 0) end
-  if direct then
-    self:Debug("invite check for %s: autoInvite=%s master=%s grouped=%s", name, tostring(self.db.autoInvite),
-               tostring(self:IsMaster()), tostring(self.roster[name] ~= nil))
+  if flag == 1 then self:SendInfo(name, 0, "answering their announce") end
+  if self.db.autoInvite and self:IsMaster() and not self.roster[name] then
+    self:Debug("%s isn't grouped with us: scheduling invites", name)
+    self:ScheduleInvites()
   end
-  if direct and self.db.autoInvite and self:IsMaster() and not self.roster[name] then self:ScheduleInvites() end
-  if direct and self:IsMaster() then
+  -- the master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply
+  if self:IsMaster() and (isNew or flag == 1) then
     for s, n in pairs(self.db.slots) do
       if n ~= name and n ~= self.myName then
-        if self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0)) end -- tell them about the newcomer
-        self:SendWhisper(name, infoPayload(s, n, 0)) -- tell the newcomer about them
+        if self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name) end
+        self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them")
       end
     end
   end
@@ -307,7 +336,7 @@ MF:On("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
   if handler then handler(self, sender, rest) end
 end)
 
--- kind letter -> function(MF, sender, rest of payload) lives in MF.messageHandlers (defined in Core.lua).
+-- kind letter -> function(MF, sender, rest of payload) lives in MF.messageHandlers (defined in Mama.lua).
 MF.messageHandlers.I = function(self, sender, rest)
   local slot, name, flag = rest:match("^(%d+);([^;]+);(%d)$")
   if slot then self:HandleInfo(sender, tonumber(slot), name, tonumber(flag)) end
@@ -330,6 +359,7 @@ end
 
 MF:Listen("LOGIN", function(self)
   C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
+  self:HashSelfTest()
   self:SetOwnSlot()
   C_Timer.After(5, function() self:Announce() end)
 end)
@@ -339,7 +369,10 @@ MF:On("GROUP_ROSTER_UPDATE", function(self)
   self.announcePending = true
   C_Timer.After(2, function() -- debounce: rosters change several times in a row when inviting
     self.announcePending = nil
-    if IsInGroup() and self:Token() then self:SendGroup(infoPayload(self.db.slot, self.myName, 1)) end
+    -- only when someone in the group hasn't heard from us yet (rosters also "change" on leader or loot changes)
+    if IsInGroup() and self:Token() and self:GroupHasUnknown() then
+      self:SendGroup(infoPayload(self.db.slot, self.myName, 1))
+    end
   end)
 end)
 
@@ -351,7 +384,7 @@ function MF:AcceptToken(text)
   end
   self:SetToken(text:match("^%s*(.-)%s*$"))
   self:Print("token accepted, team master is %s", tok.master)
-  self:Announce()
+  self:Announce(true)
   return true
 end
 
@@ -371,7 +404,7 @@ function MF:SetSlot(n)
     self:Print(
       "this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
     self:ShowTokenDialog("copy")
-    self:Announce()
+    self:Announce(true)
   else
     if tok and tok.master == self.myName then
       self:SetToken(nil) -- we were the master before; need the new master's token
@@ -380,7 +413,7 @@ function MF:SetSlot(n)
     self:Print("this window is slot %d", n)
     self:Fire('TEAM_CHANGED')
     if tok then
-      self:Announce()
+      self:Announce(true)
     else
       self:ShowTokenDialog("paste")
     end

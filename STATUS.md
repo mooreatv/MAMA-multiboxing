@@ -1,4 +1,4 @@
-# Mama-forever status (the `forever` edition of M.A.M.A.) — last updated 2026-10-06
+# Mama-forever status (the `forever` edition of M.A.M.A.) â€” last updated 2026-10-06
 
 Goal was: merge MoLib + DynamicBoxer + MAMA-multiboxing (sibling dirs in `moorea\`) into one standalone addon
 for WoW Forever (beta, believed mostly retail-API based). No library, no DBox dependency, no other WoW version support.
@@ -64,6 +64,8 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 ## Phase 3 - Test (DONE)
 - luacheck config in `Mama/.luacheckrc` (globals, read_globals for modern C_* APIs).
 - luaformat config in `Mama-forever/luaformat.cfg` (indent 2, column limit 120).
+  Run (PowerShell, repo root): `$env:PATH = "C:\msys64\ucrt64\bin;" + $env:PATH; & "$env:APPDATA\luarocks\bin\lua-format.exe" -c luaformat.cfg -i Mama\X.lua`
+  (lua-format.exe needs the msys64 ucrt64 runtime DLLs; Git's mingw64 ones are the wrong version).
 - In-game testing done on 2-3 clients: team sync, invite, raid convert, lead/assist/follow, quest share,
   options UI, layer behavior, taxi. Still unverified: mount sync, `C_PartyInfo.UninviteUnit` edge cases.
 
@@ -162,7 +164,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Commands: `/mama help`, `/mama debug [on|off]`, `/mama s N`, `/mama token [new|<token>]`, `/mama lead [name|auto]`,
   `/mama team [list|add|remove|clear]`, `/mama invite`, `/mama disband`, `/mama raid`, `/mama complete [N]`,
   `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama ui [on|off]`, `/mama identify`, `/mama options`,
-  `/mama bug`, `/mama status`.
+  `/mama bug`, `/mama clearlog`, `/mama status`. The log gets a `---reload--- <date> <name>` line at each login/reload.
 - Debug (`/mama debug on`) logs every received addon message, rejection reasons and the auto-invite decision.
 - Message signing: HMAC-like construction using `hashes(base .. secret)` (djb2/sdbm style, non-cryptographic but
   keyed with a 12-char random secret). Team isolation via random `teamId` in token; replay protection via 120s

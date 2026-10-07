@@ -106,6 +106,8 @@ end)
 
 MF:On("PLAYER_LOGIN", function(self)
   self.myName = self:FullName("player")
+  -- each login or /reload starts with a marker, so it's easy to see where to start copying in /mama bug
+  record(("---reload--- %s %s"):format(date("%Y-%m-%d"), tostring(self.myName)))
   -- Team slots and the history of who held which slot are remembered per faction (the saved variables are account wide).
   self.faction = UnitFactionGroup("player") or "Neutral"
   local s = self.db
