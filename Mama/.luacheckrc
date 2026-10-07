@@ -57,6 +57,7 @@ read_globals = {
   "IsInGroup",
   "IsInGuild",
   "IsInRaid",
+  "IsModifierKeyDown",
   "IsQuestCompletable",
   "IsShiftKeyDown",
   "GetNumRoutes",

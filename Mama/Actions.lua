@@ -101,7 +101,17 @@ MF:On("PLAYER_REGEN_ENABLED", function(self) if self.pendingRefresh then self:Re
 MF.noShare = {}
 local escortConfirmed = false -- the next accepted quest is an escort we joined: its starter already has everyone
 
+-- Opening the NPC (gossip/greeting) or clicking a quest with a modifier held skips auto accept, to read it first.
+local heldNpc -- GUID of the NPC whose dialog was opened with a modifier held
+local function noteModifier() heldNpc = IsModifierKeyDown() and UnitGUID("npc") or nil end
+MF:On("GOSSIP_SHOW", noteModifier)
+MF:On("QUEST_GREETING", noteModifier)
+
 local function acceptQuest(self)
+  if IsModifierKeyDown() or (heldNpc and heldNpc == UnitGUID("npc")) then
+    self:Debug("not auto accepting quest: modifier held")
+    return
+  end
   if self.db.autoQuest and IsInGroup() then
     self:Debug("accepting quest")
     if UnitIsPlayer("questnpc") then self.noShare[GetQuestID()] = true end
