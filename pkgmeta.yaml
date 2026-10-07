@@ -2,6 +2,7 @@ package-as: Mama
 
 ignore:
     - install.bat
+    - installprobe.bat
     - Mama_icon.png
     - OldChangeLog.txt
     - luaformat.cfg

@@ -31,6 +31,7 @@ MF.defaults = {
   autoInvite = true,
   autoRaid = true,
   autoFFA = true,
+  autoTrade = true,
   compact = false,
   identifyOnLogin = true,
   statusScale = 1

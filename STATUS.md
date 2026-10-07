@@ -174,6 +174,19 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Body "/assist Name\n/follow Name" for minions; lead window gets "/follow player" (harmless no-op, no chat output).
   Body "/assist Name\n/follow Name" (unquoted; client appends trailing newline, kept for user additions).
 
+## Professions + mats trade (in progress, 2026-10-06)
+- Probe (`/mf check`, `/mf items`, `/mf copy` window): `GetProfessions()` returns profession indexes (prof1, prof2, then
+  first aid, fishing, cooking); `GetProfessionInfo(i)` 7th value = skillLine ID (Tailoring 197, Enchanting 333...).
+  `GetNumSkillLines`/`GetSkillLineInfo` and `Enum.ItemTradeGoodsSubclass` don't exist. Item class/subclass as retail:
+  Tradegoods 7 (Parts 1, Cloth 5, Leather 6, Metal & Stone 7 = ore+bars+stone, Cooking 8, Herb 9, Elemental 10,
+  Other 11, Enchanting 12), Recipe 9 (subclass = profession: LW 1, Alchemy 6...). `C_Container.GetContainerItemInfo`
+  gives `isBound`/`quality`; `C_Item.GetItemInfo` is nil for uncached items, `GetItemInfoInstant` always works.
+- `Professions.lua`: `P;id:rank,...` whispered once per newly seen member (`MEMBER_SEEN` fired from `HandleInfo`),
+  sent to the team when a 25 point step changes, `Q;` asks. Saved in `db.profs[faction][name]`.
+- `Trade.lua`: on `TRADE_SHOW` with a team member, fills up to 6 stacks per category's best team holder.
+- Unverified in game: `GetUnitName("NPC", true)` in trade, `PickupContainerItem` + `ClickTradeButton` fill, button
+  placement above `TradeFrame`.
+
 ## Still to do
 - Port from old Mama maybe: mount/dismount sync.
 - Unverified on Forever: `C_PartyInfo.UninviteUnit`, raid conversion with >5 characters, taxi, mount.
