@@ -27,4 +27,7 @@
     <Binding name="MAMA_IDENTIFY" category="MAMAFOREVER">
         MamaForever:Identify()
     </Binding>
+    <Binding name="MAMA_TOGGLE" category="MAMAFOREVER">
+        MamaForever:ToggleDisabled()
+    </Binding>
 </Bindings>

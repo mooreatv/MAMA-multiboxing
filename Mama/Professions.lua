@@ -135,8 +135,8 @@ function MF:AskProfessions(name) self:SendWhisper(name, "Q;", "need their profes
 
 MF:Listen("LOGIN", function(self) lastSignature = signature(refreshOwn(self)) end)
 
--- A team member we just heard from directly (login, reload, first contact) gets ours once.
-MF:Listen("MEMBER_SEEN", function(self, name) self:SendProfessions(name, "first contact") end)
+-- A team member we just heard from directly, or that asks (login, reload), gets ours.
+MF:Listen("MEMBER_SEEN", function(self, name) self:SendProfessions(name, "hello") end)
 
 local changePending
 MF:On("SKILL_LINES_CHANGED", function(self)

@@ -74,7 +74,7 @@ end
 
 function MF:UpdateLoot()
   local state = groupState(self)
-  if not state or state == lootState then return end
+  if not state or state == lootState or self:Disabled() then return end
   local known = lootState ~= nil
   lootState = state
   if state == "solo" then
@@ -110,7 +110,7 @@ MF:Listen("TEAM_CHANGED", function(self)
 end)
 
 -- Auto-accept invites only from characters we were told are on our team.
-MF:On("PARTY_INVITE_REQUEST", function(self, from)
+MF:OnTeam("PARTY_INVITE_REQUEST", function(self, from)
   if self.db.autoAccept and self.db.team[from] then
     self:Debug("accepting invite from %s", from)
     AcceptGroup()
@@ -289,7 +289,7 @@ end
 -- Several teammates tend to announce themselves at once: collect them into a single invite pass.
 local invitePending
 function MF:ScheduleInvites()
-  if invitePending then return end
+  if invitePending or self:Disabled() then return end
   invitePending = true
   C_Timer.After(1.5, function()
     invitePending = false

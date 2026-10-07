@@ -36,6 +36,8 @@ MF.defaults = {
   autoRaid = true,
   autoFFA = true,
   autoTrade = true,
+  followWarn = true,
+  forwardWhispers = true,
   compact = false,
   identifyOnLogin = true,
   statusScale = 1
@@ -97,6 +99,24 @@ end
 
 frame:SetScript("OnEvent", function(_, event, ...) for _, fn in ipairs(handlers[event]) do fn(MF, ...) end end)
 
+-- Same as On, for team automation that must not happen while this character has Mama turned off.
+function MF:OnTeam(event, fn) self:On(event, function(mf, ...) if not mf:Disabled() then fn(mf, ...) end end) end
+
+-- Per character off switch (the saved settings are account wide), for a character that is sometimes part of another
+-- team: no addon messages in or out and no team automation; the status window and commands keep working.
+function MF:Disabled() return self.db and self.myName and self.db.disabled[self.myName] or false end
+
+function MF:SetDisabled(off)
+  if off == self:Disabled() then return end
+  self.db.disabled[self.myName] = off or nil
+  self:Print(off and "|cFFFF3333disabled|r for %s: no team messages or automation (/mama enable to turn back on)" or
+               "enabled again for %s", self.myName)
+  self:RefreshStatus()
+  if not off then self:Announce(true) end
+end
+
+function MF:ToggleDisabled() self:SetDisabled(not self:Disabled()) end
+
 MF:On("ADDON_LOADED", function(self, name)
   if name ~= addonName then return end
   MamaForeverSaved = MamaForeverSaved or {}
@@ -105,6 +125,7 @@ MF:On("ADDON_LOADED", function(self, name)
   for k, v in pairs(self.defaults) do if s[k] == nil then s[k] = v end end
   s.team = s.team or {} -- set of full names ("First Last") allowed to auto-invite us
   s.slots = s.slots or {} -- slot number -> character full name ("First Last"), learned from the team handshake
+  s.disabled = s.disabled or {} -- set of character full names with Mama turned off (see MF:Disabled)
   self.db = s
   self:LoadLog()
 end)
@@ -183,3 +204,6 @@ MF:AddCommand("debug", function(self, rest)
   self.db.debug = self:ParseOnOff(rest, self.db.debug)
   self:Print("debug is now %s", tostring(self.db.debug))
 end, "debug [on|off] - toggle debug output")
+MF:AddCommand("enable", function(self, rest) self:SetDisabled(rest:lower() == "off") end,
+              "enable [on|off] - turn Mama on/off for this character (off: no team messages or automation)")
+MF:AddCommand("disable", function(self) self:SetDisabled(true) end, "disable - same as enable off")

@@ -115,13 +115,14 @@ end
 -- Addon messages are throttled: space our sends out a bit.
 local nextSend = 0
 local function schedule(fn)
+  if MF:Disabled() then return end
   local t = GetTime()
   local at = math.max(t, nextSend)
   nextSend = at + 0.25
   if at <= t then
     fn()
   else
-    C_Timer.After(at - t, fn)
+    C_Timer.After(at - t, function() if not MF:Disabled() then fn() end end)
   end
 end
 
@@ -235,7 +236,7 @@ end
 
 function MF:Announce(force)
   local tok = self:Token()
-  if self.db.slot == 0 or not tok then return end
+  if self.db.slot == 0 or not tok or self:Disabled() then return end
   self:AnnounceDirect(force)
   if force or self:ShouldPingGroup() then self:SendGroup(infoPayload(self.db.slot, self.myName, 1)) end
   self:KeepAnnouncing()
@@ -252,7 +253,7 @@ function MF:KeepAnnouncing()
       return
     end
     C_Timer.After(20, function()
-      if next(self.online) or self.db.slot == 0 or not self:Token() then
+      if next(self.online) or self.db.slot == 0 or not self:Token() or self:Disabled() then
         retryRunning = false
         return
       end
@@ -308,8 +309,9 @@ function MF:HandleInfo(sender, slot, name, flag)
   if isNew then
     self.online[name] = true
     self:Fire('TEAM_CHANGED')
-    self:Fire("MEMBER_SEEN", name)
   end
+  -- new to us, or asking (they just logged in or reloaded, and may have missed what we sent before)
+  if isNew or flag == 1 then self:Fire("MEMBER_SEEN", name) end
   if flag == 1 then self:SendInfo(name, 0, "answering their announce") end
   if self.db.autoInvite and self:IsMaster() and not self.roster[name] then
     self:Debug("%s isn't grouped with us: scheduling invites", name)
@@ -326,7 +328,7 @@ function MF:HandleInfo(sender, slot, name, flag)
   end
 end
 
-MF:On("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
+MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
   if prefix ~= PREFIX then return end
   self:Debug("received addon msg on %s from %s", tostring(channel), tostring(sender))
   if sender == self.myName then return end
@@ -352,14 +354,15 @@ MF.messageHandlers.I = function(self, sender, rest)
   if slot then self:HandleInfo(sender, tonumber(slot), name, tonumber(flag)) end
 end
 
--- Send to every other team member we know: one group message for those grouped with us, whispers for the rest.
-function MF:SendTeam(payload)
+-- Send to every other team member we know: one group message for those grouped with us, whispers for the rest
+-- (onlineOnly: only to those we heard from, for frequent messages, whispers to offline characters are lost anyway).
+function MF:SendTeam(payload, onlineOnly)
   local anyGrouped = false
   for _, name in pairs(self.db.slots) do
     if name ~= self.myName then
       if self.roster[name] then
         anyGrouped = true
-      else
+      elseif self.online[name] or not onlineOnly then
         self:SendWhisper(name, payload)
       end
     end

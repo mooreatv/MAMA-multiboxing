@@ -20,6 +20,8 @@ Actions.lua
 Professions.lua
 Trade.lua
 Dialogs.lua
+Alerts.lua
+Stats.lua
 Status.lua
 Options.lua
 Bug.lua

@@ -56,6 +56,17 @@ local SECTIONS = {
       }
     }
   }, {
+    "Alerts to the lead", {
+      {
+        "followWarn", "Warn when follow breaks",
+        "Out of combat, when this window stops following and the lead gets away (stuck behind something), warn " ..
+          "the lead's window."
+      }, {
+        "forwardWhispers", "Forward whispers to the lead",
+        "Whispers from players outside the team are shown in the lead's window too."
+      }
+    }
+  }, {
     "Display", {
       {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."},
       {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."}
