@@ -10,9 +10,7 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
-
 -- Team: who is in the group, who is the lead, which characters are "ours".
-
 local _, MF = ...
 
 MF.roster = {} -- full name -> unit token, for the other group members
@@ -36,9 +34,7 @@ function MF:GetLead()
   -- An explicit lead only counts while it is us or in our current group (it may be left over from a previous team).
   local lead = self.db.lead
   if lead and (lead == self.myName or self.roster[lead]) then return lead end
-  for _, u in ipairs(self:GroupUnits()) do
-    if UnitIsGroupLeader(u) then return self:FullName(u) end
-  end
+  for _, u in ipairs(self:GroupUnits()) do if UnitIsGroupLeader(u) then return self:FullName(u) end end
 end
 
 function MF:SetLead(name)
@@ -52,28 +48,28 @@ end
 MF:Listen("LOGIN", function(self) self:RefreshRoster() end)
 
 -- Leader: free for all loot once the whole team is grouped; back to group loot if extra people join.
-local ffaIssued, groupIssued
+-- Each switch is issued once per change of situation, so a loot method picked by hand afterwards sticks.
+local FFA = Enum.LootMethod.Freeforall -- what C_PartyInfo.GetLootMethod() returns for free for all
+local lootIssued -- "ffa" or "group": what we last set for the current group
 MF:On("GROUP_ROSTER_UPDATE", function(self)
-  if not self.db.autoFFA or not IsInGroup() or not UnitIsGroupLeader("player") then return end
   local n = GetNumGroupMembers()
-  if n <= 1 then
-    ffaIssued, groupIssued = false, false
+  if not IsInGroup() or n <= 1 then
+    lootIssued = nil
     return
   end
+  if not self.db.autoFFA or not UnitIsGroupLeader("player") then return end
   local expected = 0
-  for s in pairs(self.db.slots) do
-    if s > expected then expected = s end
-  end
+  for s in pairs(self.db.slots) do if s > expected then expected = s end end
   if expected < 2 then return end
   local cur = C_PartyInfo.GetLootMethod()
-  if not ffaIssued and n == expected and cur ~= 0 and cur ~= "freeforall" then
+  if n == expected and lootIssued ~= "ffa" and cur ~= FFA then
     self:Print("setting loot to free for all (team of %d)", expected)
     C_PartyInfo.SetLootMethod("freeforall")
-    ffaIssued = true
-  elseif not groupIssued and n > expected and (cur == 0 or cur == "freeforall") then
+    lootIssued = "ffa"
+  elseif n > expected and lootIssued ~= "group" and cur == FFA then
     self:Print("extra people in the group (%d vs %d), switching to group loot", n, expected)
     C_PartyInfo.SetLootMethod("group")
-    groupIssued = true
+    lootIssued = "group"
   end
 end)
 
@@ -93,6 +89,13 @@ local function sortedTeam(team)
   return names
 end
 
+-- When we are the group leader, hand the group lead to `name` (another member of our group).
+function MF:PromoteIfLeader(name)
+  if UnitIsGroupLeader("player") and name ~= self.myName and self.roster[name] then
+    C_PartyInfo.PromoteToLeader(self.roster[name])
+  end
+end
+
 -- Make `name` the lead on every window; whoever is group leader promotes them if needed.
 function MF:AnnounceLead(name)
   self:SetLead(name)
@@ -100,22 +103,16 @@ function MF:AnnounceLead(name)
   if IsInGroup() and not UnitIsGroupLeader("player") and name == self.myName then
     self:Print("asking the team to make us lead")
   end
-  if UnitIsGroupLeader("player") and name ~= self.myName and self.roster[name] then
-    PromoteToLeader(self.roster[name])
-  end
+  self:PromoteIfLeader(name)
 end
 
-function MF:MakeMeLead()
-  self:AnnounceLead(self.myName)
-end
+function MF:MakeMeLead() self:AnnounceLead(self.myName) end
 
 MF.messageHandlers.L = function(self, sender, rest)
   if rest == "" then return end
   self:Print("%s says %s is the lead", sender, rest)
   self:SetLead(rest)
-  if UnitIsGroupLeader("player") and rest ~= self.myName and self.roster[rest] then
-    PromoteToLeader(self.roster[rest])
-  end
+  self:PromoteIfLeader(rest)
 end
 
 MF:AddCommand("lead", function(self, rest)
@@ -193,9 +190,8 @@ MF:AddCommand("complete", function(self, rest)
   self:TeamComplete(n)
 end, "complete [N] - team is complete: forget slots above N (default: above the last one that's here), on all windows")
 
-MF:AddCommand("invite", function(self)
-  self:InviteMissing()
-end, "invite - invite the team members that aren't in the group yet (converts to raid above 5)")
+MF:AddCommand("invite", function(self) self:InviteMissing() end,
+              "invite - invite the team members that aren't in the group yet (converts to raid above 5)")
 
 local inviteQueue
 local inviteCount
@@ -232,7 +228,8 @@ local function processInvites(tries)
   inviteQueue = nil
 end
 
-function MF:InviteMissing()
+-- onlyOnline: just the ones we heard from this session (automatic invites; offline ones would only error).
+function MF:InviteMissing(onlyOnline)
   if inviteQueue then return end -- already running
   inviteQueue = {}
   local slots = {}
@@ -240,11 +237,13 @@ function MF:InviteMissing()
   table.sort(slots)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
-    if n ~= self.myName and not self.roster[n] then inviteQueue[#inviteQueue + 1] = n end
+    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) then
+      inviteQueue[#inviteQueue + 1] = n
+    end
   end
   if #inviteQueue == 0 then
     inviteQueue = nil
-    self:Print("everyone is already in the group")
+    if not onlyOnline then self:Print("everyone is already in the group") end
     return
   end
   inviteCount = math.max(1, GetNumGroupMembers())
@@ -262,7 +261,7 @@ function MF:ScheduleInvites()
     for _, n in pairs(self.db.slots) do
       if n ~= self.myName and not self.roster[n] and self.online[n] then missing = true end
     end
-    if missing then self:InviteMissing() end
+    if missing then self:InviteMissing(true) end
   end)
 end
 
@@ -293,7 +292,7 @@ function MF:Disband()
 end
 
 MF:AddCommand("disband", function(self) self:Disband() end,
-  "disband - leader: uninvite the team; otherwise leave the group")
+              "disband - leader: uninvite the team; otherwise leave the group")
 MF:AddCommand("raid", function(self) self:PartyToggle() end, "raid - toggle between party and raid")
 MF:AddCommand("autoinvite", function(self, rest)
   self.db.autoInvite = self:ParseOnOff(rest, self.db.autoInvite)

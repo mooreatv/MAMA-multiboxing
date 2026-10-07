@@ -6,7 +6,6 @@
 -- What the Forever client does (see the dialog probe logs): GOSSIP_SHOW with GossipFrame; quests are picked with
 -- C_GossipInfo.SelectActiveQuest/SelectAvailableQuest(questID), which closes the gossip and opens QuestFrame
 -- (QuestFrameRewardPanel for a quest that can be turned in) with GetQuestID() set; GetQuestReward(choiceIndex) turns in.
-
 local _, MF = ...
 
 local PENDING_SECONDS = 6
@@ -24,10 +23,8 @@ local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the qu
 local function setPicked(index, source)
   if not index or index < 1 or index > #reward.items or reward.picked == index then return end
   reward.picked = index
-  MF:Debug(
-    "dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's",
-    index, tostring(reward.items[index]), source
-  )
+  MF:Debug("dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's", index,
+           tostring(reward.items[index]), source)
 end
 
 -- Every clickable reward choice under the quest frame, whatever it is named in this client.
@@ -36,17 +33,15 @@ local function hookButtons()
     if depth > 6 then return end
     for _, c in ipairs({f:GetChildren()}) do
       local name = c.GetName and c:GetName() or ""
-      if not hooked[c] and c.HookScript and c.HasScript and c:HasScript("OnClick")
-        and (c.type == "choice" or name:find("QuestInfoItem") or name:find("QuestInfoReward")) and (c:GetID() or 0) > 0 then
+      if not hooked[c] and c.HookScript and c.HasScript and c:HasScript("OnClick") and
+        (c.type == "choice" or name:find("QuestInfoItem") or name:find("QuestInfoReward")) and (c:GetID() or 0) > 0 then
         hooked[c] = true
         c:HookScript("OnClick", function(b) setPicked(b:GetID(), "button " .. (b:GetName() or "?")) end)
       end
       scan(c, depth + 1)
     end
   end
-  for _, name in ipairs({"QuestFrame", "QuestInfoFrame"}) do
-    if _G[name] then scan(_G[name], 0) end
-  end
+  for _, name in ipairs({"QuestFrame", "QuestInfoFrame"}) do if _G[name] then scan(_G[name], 0) end end
 end
 
 local function shown(frameName)
@@ -64,7 +59,8 @@ poll:SetScript("OnUpdate", function()
 end)
 
 local function clean(s)
-  s = tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("[;:|]", ""):gsub("^%s+", ""):gsub("%s+$", "")
+  s = tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("[;:|]", ""):gsub("^%s+", "")
+        :gsub("%s+$", "")
   return s:sub(1, MAX_TEXT)
 end
 
@@ -87,7 +83,7 @@ end
 local function send(self, verb, id, text)
   if mirroring or not self.db.autoDialog or not iAmLead(self) then
     self:Debug("dialog: not sending %s %s (mirroring=%s autoDialog=%s lead=%s grouped=%s)", verb, tostring(id),
-      tostring(mirroring), tostring(self.db.autoDialog), tostring(self:GetLead()), tostring(IsInGroup()))
+               tostring(mirroring), tostring(self.db.autoDialog), tostring(self:GetLead()), tostring(IsInGroup()))
     return
   end
   local t = GetTime()
@@ -121,12 +117,14 @@ local function gossipOption(self, id, text)
   return false
 end
 
-local function questPick(listFn, selectFn)
+-- noShare: the quest gets accepted here too because we mirror the lead, so it must not be shared again (Actions.lua).
+local function questPick(listFn, selectFn, noShare)
   return function(self, id)
     if not shown("GossipFrame") then return false end
     for _, q in ipairs(C_GossipInfo[listFn]() or {}) do
       if q.questID == id then
         self:Debug("dialog: %s(%d) '%s'", selectFn, id, clean(q.title))
+        if noShare then self.noShare[id] = true end
         C_GossipInfo[selectFn](id)
         return true
       end
@@ -158,16 +156,14 @@ local function questReward(self, id, text)
   elseif #reward.items == 1 then
     choice = 1
   elseif #reward.items > 1 then
-    for i, item in ipairs(reward.items) do
-      if want > 0 and item == want then choice = i end
-    end
+    for i, item in ipairs(reward.items) do if want > 0 and item == want then choice = i end end
     if choice == 0 then
       self:Print("not turning in quest %d: the lead's reward (item %d) isn't offered here", id, want)
       return true
     end
   end
   self:Debug("dialog: turning in quest %d with reward %d: %s (hand-picked %d, lead's item %d)", id, choice,
-    picked > 0 and choice == picked and "YOUR selection" or "following the lead", picked, want)
+             picked > 0 and choice == picked and "YOUR selection" or "following the lead", picked, want)
   GetQuestReward(choice)
   return true
 end
@@ -191,11 +187,11 @@ end
 
 local receivers = {
   go = gossipOption,
-  qa = questPick("GetAvailableQuests", "SelectAvailableQuest"),
+  qa = questPick("GetAvailableQuests", "SelectAvailableQuest", true),
   qc = questPick("GetActiveQuests", "SelectActiveQuest"),
   qp = questContinue,
   qr = questReward,
-  tx = taxi,
+  tx = taxi
 }
 
 -- Try every pending choice (in order): a stale one that doesn't match must not block the ones behind it.
@@ -222,7 +218,11 @@ local function run(self)
         end
       end
     end
-    if done then table.remove(pending, i) else i = i + 1 end
+    if done then
+      table.remove(pending, i)
+    else
+      i = i + 1
+    end
   end
 end
 
@@ -233,7 +233,13 @@ MF.messageHandlers.D = function(self, sender, rest)
     self:Debug("dialog: ignoring %s from %s (disabled or not the lead)", verb, sender)
     return
   end
-  table.insert(pending, {verb = verb, npc = tonumber(npc), id = tonumber(id), text = text, expires = GetTime() + PENDING_SECONDS})
+  table.insert(pending, {
+    verb = verb,
+    npc = tonumber(npc),
+    id = tonumber(id),
+    text = text,
+    expires = GetTime() + PENDING_SECONDS
+  })
   run(self)
 end
 
@@ -261,7 +267,9 @@ MF:On("QUEST_COMPLETE", function(self)
   if reward.questID ~= GetQuestID() then reward.picked = 0 end
   reward.questID = GetQuestID()
   reward.items = {}
-  for i = 1, GetNumQuestChoices() do reward.items[i] = tonumber((GetQuestItemLink("choice", i) or ""):match("item:(%d+)")) or 0 end
+  for i = 1, GetNumQuestChoices() do
+    reward.items[i] = tonumber((GetQuestItemLink("choice", i) or ""):match("item:(%d+)")) or 0
+  end
   hookButtons()
   C_Timer.After(0, hookButtons) -- the buttons may only be created after this event
   C_Timer.After(0.5, hookButtons)
@@ -281,12 +289,8 @@ MF:Listen("LOGIN", function(self)
   hooksecurefunc(C_GossipInfo, "SelectOption", function(id)
     self:Debug("dialog: hook SelectOption(%s)", tostring(id))
     local text
-    for _, o in ipairs(gossipCache) do
-      if o.gossipOptionID == id then text = o.name end
-    end
-    for _, o in ipairs(C_GossipInfo.GetOptions() or {}) do
-      if o.gossipOptionID == id then text = o.name end
-    end
+    for _, o in ipairs(gossipCache) do if o.gossipOptionID == id then text = o.name end end
+    for _, o in ipairs(C_GossipInfo.GetOptions() or {}) do if o.gossipOptionID == id then text = o.name end end
     send(self, "go", id, text)
   end)
   if C_GossipInfo.SelectOptionByIndex then
@@ -297,13 +301,11 @@ MF:Listen("LOGIN", function(self)
   end
   hooksecurefunc(C_GossipInfo, "SelectAvailableQuest", function(id) send(self, "qa", id, "") end)
   hooksecurefunc(C_GossipInfo, "SelectActiveQuest", function(id) send(self, "qc", id, "") end)
-  hooksecurefunc("CompleteQuest", function()
-    if shown("QuestFrameProgressPanel") then send(self, "qp", GetQuestID(), "") end
-  end)
+  hooksecurefunc("CompleteQuest",
+                 function() if shown("QuestFrameProgressPanel") then send(self, "qp", GetQuestID(), "") end end)
   if _G.QuestInfoItem_OnClick then
-    hooksecurefunc("QuestInfoItem_OnClick", function(b)
-      if b and b.type == "choice" then setPicked(b:GetID(), "QuestInfoItem_OnClick") end
-    end)
+    hooksecurefunc("QuestInfoItem_OnClick",
+                   function(b) if b and b.type == "choice" then setPicked(b:GetID(), "QuestInfoItem_OnClick") end end)
   end
   hooksecurefunc("GetQuestReward", function(choice)
     if reward.questID == 0 then return end
@@ -317,5 +319,6 @@ end)
 
 MF:AddCommand("dialog", function(self, rest)
   self.db.autoDialog = self:ParseOnOff(rest, self.db.autoDialog)
-  self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths) is now %s", tostring(self.db.autoDialog))
+  self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths) is now %s",
+             tostring(self.db.autoDialog))
 end, "dialog [on|off] - make the other windows pick the same dialog options/flight path as the lead")

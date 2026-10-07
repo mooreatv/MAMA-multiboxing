@@ -10,12 +10,10 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
-
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
 -- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet.
 -- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
 -- token dialog, options, compact view, identify. Plain click on a row targets it (or invites it if not grouped).
-
 local _, MF = ...
 
 local ROW_H, WIDTH = 18, 190
@@ -25,24 +23,18 @@ local pendingRefresh
 
 local TIP = table.concat({
   "|cFF99E5FFLeft click|r invite the team",
-  "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)",
-  "|cFF99E5FFRight click|r options",
-  "|cFF99E5FFShift left|r toggle party/raid",
-  "|cFF99E5FFShift right|r toggle compact view",
-  "|cFF99E5FFShift middle|r identify this window (big slot number)",
-  "|cFF99E5FFCtrl left|r toggle auto invite",
-  "|cFF99E5FFCtrl right|r show/paste the team token",
-  "|cFF99E5FFAlt left|r resend our info to the team",
+  "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)", "|cFF99E5FFRight click|r options",
+  "|cFF99E5FFShift left|r toggle party/raid", "|cFF99E5FFShift right|r toggle compact view",
+  "|cFF99E5FFShift middle|r identify this window (big slot number)", "|cFF99E5FFCtrl left|r toggle auto invite",
+  "|cFF99E5FFCtrl right|r show/paste the team token", "|cFF99E5FFAlt left|r resend our info to the team",
   "|cFF99E5FFAlt right|r team is complete (forget slots that aren't here)",
   "|cFF99E5FFMousewheel|r resize, |cFF99E5FFdrag|r the header to move",
-  "On a row: left click targets (or invites if not in group), right click unit menu.",
+  "On a row: left click targets (or invites if not in group), right click unit menu."
 }, "\n")
 
 local function expectedCount()
   local n = 0
-  for s in pairs(MF.db.slots) do
-    if s > n then n = s end
-  end
+  for s in pairs(MF.db.slots) do if s > n then n = s end end
   return n
 end
 
@@ -99,9 +91,7 @@ function MF:Identify(seconds)
 end
 
 MF:Listen("LOGIN", function(self)
-  if self.db.identifyOnLogin and self.db.slot > 0 then
-    C_Timer.After(2, function() self:Identify(6) end)
-  end
+  if self.db.identifyOnLogin and self.db.slot > 0 then C_Timer.After(2, function() self:Identify(6) end) end
 end)
 MF:AddCommand("identify", function(self) self:Identify() end, "identify - show this window's slot big on screen")
 
@@ -111,18 +101,31 @@ local function WindowClick(button)
     if ctrl then
       MF.db.autoInvite = not MF.db.autoInvite
       MF:Print("slot 1 auto invite is now %s", tostring(MF.db.autoInvite))
-    elseif shift then MF:PartyToggle()
-    elseif alt then MF:Announce(); MF:Print("resent our info to the team")
-    else MF:InviteMissing() end
+    elseif shift then
+      MF:PartyToggle()
+    elseif alt then
+      MF:Announce(true)
+      MF:Print("resent our info to the team")
+    else
+      MF:InviteMissing()
+    end
   elseif button == "RightButton" then
-    if ctrl then MF:ShowTokenDialog(MF.db.slot == 1 and "copy" or "paste")
+    if ctrl then
+      MF:ShowTokenDialog(MF.db.slot == 1 and "copy" or "paste")
     elseif shift then
       MF.db.compact = not MF.db.compact
       MF:RefreshStatus()
-    elseif alt then MF:TeamComplete()
-    else MF.commands.options.fn(MF) end
+    elseif alt then
+      MF:TeamComplete()
+    else
+      MF.commands.options.fn(MF)
+    end
   elseif button == "MiddleButton" then
-    if shift then MF:Identify() else MF:Disband() end
+    if shift then
+      MF:Identify()
+    else
+      MF:Disband()
+    end
   end
 end
 

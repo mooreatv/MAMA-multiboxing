@@ -10,9 +10,7 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
-
 -- Key binding labels (the bindings themselves are in Bindings.xml, which the client loads automatically).
-
 BINDING_HEADER_MAMAFOREVER = "Mama-forever"
 BINDING_NAME_MAMA_LEAD = "Make me lead |cFF99E5FF(/mama lead)|r"
 _G["BINDING_NAME_CLICK MamaFollow:LeftButton"] = "Follow + assist lead"
@@ -58,7 +56,10 @@ function MamaForever:ShowTokenDialog(mode)
     f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")
     local token = self:TokenText()
     e:SetScript("OnTextChanged", function(box, user)
-      if user then box:SetText(token) box:HighlightText() end -- read only
+      if user then
+        box:SetText(token)
+        box:HighlightText()
+      end -- read only
     end)
     e:SetScript("OnEnterPressed", function() f:Hide() end)
     e:SetText(token)
@@ -69,7 +70,11 @@ function MamaForever:ShowTokenDialog(mode)
     e:SetScript("OnTextChanged", nil)
     e:SetScript("OnEnterPressed", function(box)
       local ok, err = MamaForever:AcceptToken(box:GetText())
-      if ok then f:Hide() else MamaForever:Print("%s", err) end
+      if ok then
+        f:Hide()
+      else
+        MamaForever:Print("%s", err)
+      end
     end)
     e:SetText("")
   end

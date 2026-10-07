@@ -13,6 +13,7 @@
 ## X-WoWI-ID: 26337
 ## IconTexture: Interface\AddOns\Mama\mama
 Mama.lua
+Hash.lua
 Team.lua
 Comm.lua
 Actions.lua

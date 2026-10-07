@@ -1,7 +1,6 @@
 -- Actions: follow/assist/train secure buttons (for keybinds), the account-wide "MAMA" macro, quest auto-accept.
 -- Findings on Forever: /click MamaFollow from a macro does nothing, but the same button works from a keybind
 -- and an action-bar macro with the plain text "/assist Name" + "/follow Name" works too.
-
 local _, MF = ...
 
 local MACRO_NAME = "MAMA"
@@ -19,15 +18,11 @@ local function makeButton(name)
   return b
 end
 
-local function stripTrailing(s)
-  return (s or ""):gsub("%s+$", "")
-end
+local function stripTrailing(s) return (s or ""):gsub("%s+$", "") end
 
+-- Returns true when the macro had to be created or changed.
 function MF:UpdateMacro(lead)
-  if not self.db.macro then
-    self:Debug("macro maintenance is off")
-    return
-  end
+  if not self.db.macro then return false end
   local body
   if lead and lead ~= self.myName then
     body = "/assist " .. lead .. "\n/follow " .. lead
@@ -36,19 +31,27 @@ function MF:UpdateMacro(lead)
     body = "/follow player"
   end
   local idx = GetMacroIndexByName(MACRO_NAME)
-  self:Debug("macro index for %s: %s", MACRO_NAME, tostring(idx))
   if not idx or idx == 0 then
     local ok, err = pcall(CreateMacro, MACRO_NAME, MACRO_ICON, body, false) -- false: account-wide
-    self:Debug("CreateMacro -> %s, %s", tostring(ok), tostring(err))
+    self:Debug("CreateMacro %s -> %s, %s", MACRO_NAME, tostring(ok), tostring(err))
     if not ok or not err then self:Print("couldn't create the %s macro: %s", MACRO_NAME, tostring(err)) end
-    return
+    return true
   end
   local _, _, current = GetMacroInfo(idx)
-  if stripTrailing(current) ~= body then
-    EditMacro(idx, nil, nil, body) -- nil name/icon: keep whatever the user chose
-  end
+  if stripTrailing(current) == body then return false end
+  self:Debug("macro %s (index %d) now: %s", MACRO_NAME, idx, body:gsub("\n", " | "))
+  EditMacro(idx, nil, nil, body) -- nil name/icon: keep whatever the user chose
+  return true
 end
 
+-- Sets a button's macro text; returns true when it changed.
+local function setText(button, text)
+  if button:GetAttribute("macrotext") == text then return false end
+  button:SetAttribute("macrotext", text)
+  return true
+end
+
+-- Called on every team/roster/leader change (often several times in a row): only acts and logs when something differs.
 function MF:RefreshActions()
   if InCombatLockdown() then
     self.pendingRefresh = true
@@ -65,61 +68,66 @@ function MF:RefreshActions()
   local train = "/follow player"
   if target and self.db.slot > 0 then
     local count = 0
-    for slot in pairs(self.db.slots) do
-      if slot > count then count = slot end
-    end
+    for slot in pairs(self.db.slots) do if slot > count then count = slot end end
     if count > 0 then
       local previousSlot = ((self.db.slot + count - 2) % count) + 1
       local previous = self.db.slots[previousSlot]
       train = assist .. "\n/follow " .. (previous or "player")
     end
   end
-  self.buttons.MamaFollow:SetAttribute("macrotext", follow)
-  self.buttons.MamaAssist:SetAttribute("macrotext", assist)
-  self.buttons.MamaTrain:SetAttribute("macrotext", train)
-  self:UpdateMacro(lead)
-  self:Debug("actions refreshed, lead=%s target=%s", tostring(lead), tostring(target))
+  local changed = setText(self.buttons.MamaFollow, follow)
+  changed = setText(self.buttons.MamaAssist, assist) or changed
+  changed = setText(self.buttons.MamaTrain, train) or changed
+  changed = self:UpdateMacro(lead) or changed
+  if changed then self:Debug("actions refreshed, lead=%s target=%s", tostring(lead), tostring(target)) end
 end
 
 MF:Listen("LOGIN", function(self)
   self.buttons = {
     MamaFollow = makeButton("MamaFollow"),
     MamaAssist = makeButton("MamaAssist"),
-    MamaTrain = makeButton("MamaTrain"),
+    MamaTrain = makeButton("MamaTrain")
   }
   self:RefreshActions()
   -- the macro list may not be ready yet at login, so check again once the world is loaded
   C_Timer.After(3, function() self:RefreshActions() end)
 end)
-MF:On("PLAYER_ENTERING_WORLD", function(self)
-  if self.buttons then self:RefreshActions() end
-end)
-MF:Listen("TEAM_CHANGED", function(self)
-  if self.buttons then self:RefreshActions() end
-end)
-MF:On("PLAYER_REGEN_ENABLED", function(self)
-  if self.pendingRefresh then self:RefreshActions() end
-end)
+MF:On("PLAYER_ENTERING_WORLD", function(self) if self.buttons then self:RefreshActions() end end)
+MF:Listen("TEAM_CHANGED", function(self) if self.buttons then self:RefreshActions() end end)
+MF:On("PLAYER_REGEN_ENABLED", function(self) if self.pendingRefresh then self:RefreshActions() end end)
 
--- Quests we got shared by a team member: don't share them back out when they get accepted.
-local receivedQuests = {}
+-- Quests we got from a team member (shared to us, or picked up by mirroring the lead's dialog, see Dialogs.lua):
+-- don't share them back out when they get accepted, the others already have them.
+MF.noShare = {}
+local escortConfirmed = false -- the next accepted quest is an escort we joined: its starter already has everyone
 
 local function acceptQuest(self)
   if self.db.autoQuest and IsInGroup() then
     self:Debug("accepting quest")
-    if UnitIsPlayer("questnpc") then receivedQuests[GetQuestID()] = true end
+    if UnitIsPlayer("questnpc") then self.noShare[GetQuestID()] = true end
     AcceptQuest()
   end
 end
 MF:On("QUEST_DETAIL", acceptQuest)
-MF:On("QUEST_ACCEPT_CONFIRM", acceptQuest)
+
+-- Someone in the group started an escort/event quest: that's a confirmation popup, answered with ConfirmAcceptQuest.
+MF:On("QUEST_ACCEPT_CONFIRM", function(self, who, title)
+  if not (self.db.autoQuest and IsInGroup()) then return end
+  self:Debug("confirming quest %s started by %s", tostring(title), tostring(who))
+  escortConfirmed = true
+  C_Timer.After(5, function() escortConfirmed = false end) -- in case it doesn't get accepted after all
+  ConfirmAcceptQuest()
+  StaticPopup_Hide("QUEST_ACCEPT")
+end)
 
 -- Share every quest we accept with the group, so the other windows pick it up (their QUEST_DETAIL auto-accepts).
 MF:On("QUEST_ACCEPTED", function(self, id)
   self:Debug("QUEST_ACCEPTED %s", tostring(id))
+  local skip = self.noShare[id] or escortConfirmed
+  self.noShare[id], escortConfirmed = nil, false
   if not self.db.autoShare or not IsInGroup() then return end
-  if receivedQuests[id] then
-    receivedQuests[id] = nil
+  if skip then
+    self:Debug("not sharing quest %s: we got it from the team", tostring(id))
     return
   end
   if not C_QuestLog.IsPushableQuest(id) then
@@ -132,10 +140,15 @@ MF:On("QUEST_ACCEPTED", function(self, id)
 end)
 
 -- Abandon on one window, abandon everywhere (only quests that aren't complete yet).
+-- The quest is the one selected when SetAbandonQuest is called (before the confirmation popup): the selection can
+-- change while the popup is up, so remember it then.
 local abandoning = false
+local abandonID
+hooksecurefunc(C_QuestLog, "SetAbandonQuest", function() abandonID = C_QuestLog.GetSelectedQuest() end)
 local function abandonHook()
+  local id = abandonID
+  abandonID = nil
   if abandoning or not MF.db.autoAbandon then return end
-  local id = C_QuestLog.GetSelectedQuest()
   if id and id ~= 0 then MF:SendTeam("A;" .. id) end
 end
 hooksecurefunc(C_QuestLog, "AbandonQuest", abandonHook)
