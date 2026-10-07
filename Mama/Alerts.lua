@@ -12,7 +12,8 @@
    ]] --
 -- Alerts sent from the other windows to the lead's:
 -- "F;subzone": we stopped following out of combat and the lead got away (stuck behind something).
--- "W;i/n;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255 bytes).
+-- "W;i/n;flag;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255
+-- bytes), flag "GM" or "". "W;0/0;flag;;" when the whisper was secret (chat lockdown).
 local _, MF = ...
 
 local WATCH = 10 -- seconds after follow ends during which the lead getting out of range means we're stuck
@@ -90,21 +91,44 @@ local function split(text, size)
   return parts
 end
 
-MF:On("CHAT_MSG_WHISPER", function(self, text, sender)
+-- Chat text and sender can be secret values (chat messaging lockdown): unreadable, even as table keys.
+local function secret(v) return issecretvalue and issecretvalue(v) end
+
+-- flag (specialFlags) is never secret, "GM" for a game master.
+MF:On("CHAT_MSG_WHISPER", function(self, text, sender, _, _, _, flag)
   local l = lead(self)
-  if not (self.db.forwardWhispers and l and sender) or self:SlotOf(sender) or self.db.team[sender] then return end
+  if not (self.db.forwardWhispers and l and sender) then return end
+  flag = flag == "GM" and "GM" or ""
+  if secret(text) or secret(sender) then
+    self:SendWhisper(l, "W;0/0;" .. flag .. ";;", "forwarding a hidden whisper")
+    return
+  end
+  if self:SlotOf(sender) or self.db.team[sender] then return end
   local parts = split(text, CHUNK)
   for i, part in ipairs(parts) do
-    self:SendWhisper(l, ("W;%d/%d;%s;%s"):format(i, #parts, sender, part), "forwarding a whisper")
+    self:SendWhisper(l, ("W;%d/%d;%s;%s;%s"):format(i, #parts, flag, sender, part), "forwarding a whisper")
   end
 end)
 
 MF.messageHandlers.W = function(self, sender, rest)
-  local i, n, from, text = rest:match("^(%d+)/(%d+);([^;]+);(.*)$")
+  local i, n, flag, from, text = rest:match("^(%d+)/(%d+);(%a*);([^;]*);(.*)$")
   if not i then return end
   local slot = self:SlotOf(sender)
-  local part = n ~= "1" and (" (" .. i .. "/" .. n .. ")") or ""
-  self:Print("|cFFFF80FF%s%s got a whisper%s from|r |Hplayer:%s|h[%s]|h|cFFFF80FF: %s|r",
-             slot and ("slot " .. slot .. " ") or "", sender, part, from, from, text)
-  if i == "1" then PlaySound(SOUNDKIT.TELL_MESSAGE) end
+  local who = (slot and ("slot " .. slot .. " ") or "") .. sender
+  local gm = flag == "GM"
+  local tag = gm and "|cFF00CCFF<GM>|r " or ""
+  if from == "" then
+    self:Print("|cFFFF80FF%s got a %swhisper|cFFFF80FF we can't read (chat lockdown), look in its window|r", who, tag)
+  else
+    local part = n ~= "1" and (" (" .. i .. "/" .. n .. ")") or ""
+    self:Print("|cFFFF80FF%s got a whisper%s from|r %s|Hplayer:%s|h[%s]|h|cFFFF80FF: %s|r", who, part, tag, from, from,
+               text)
+  end
+  if tonumber(i) > 1 then return end
+  if gm then
+    RaidNotice_AddMessage(RaidWarningFrame, who .. " got a whisper from a GM", ChatTypeInfo.RAID_WARNING)
+    PlaySound(SOUNDKIT.GM_CHAT_WARNING)
+  else
+    PlaySound(SOUNDKIT.TELL_MESSAGE)
+  end
 end

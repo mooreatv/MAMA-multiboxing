@@ -66,6 +66,7 @@ read_globals = {
   "hooksecurefunc",
   "InCombatLockdown",
   "IsAltKeyDown",
+  "issecretvalue",
   "IsControlKeyDown",
   "IsInGroup",
   "IsInGuild",

@@ -200,8 +200,11 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   slot holders), footer tooltip lists every known character of the faction (alts, with age) and the total.
 - `Alerts.lua` (options `followWarn`, `forwardWhispers`): on `AUTOFOLLOW_END` out of combat (us and the lead), watch
   10s; if not following again and `CheckInteractDistance(lead, 4)` fails, whisper `F;subzone` to the lead (raid
-  warning + sound, 15s per sender). `CHAT_MSG_WHISPER` from non team senders -> `W;i/n;sender;text` to the lead
-  (150 byte UTF-8 safe parts), printed with a player link.
+  warning + sound, 15s per sender). `CHAT_MSG_WHISPER` from non team senders -> `W;i/n;flag;sender;text` to the
+  lead (150 byte UTF-8 safe parts), printed with a player link. GM whispers come as plain `CHAT_MSG_WHISPER` with
+  `specialFlags` (arg6) `"GM"` (as `Blizzard_GMChatUI` checks): flag `GM` -> `<GM>` tag, raid warning, GM chat sound.
+  Text/sender are `SecretInChatMessagingLockdown` per 1.60.1 docs: if `issecretvalue` (when it exists) says so, send
+  `W;0/0;flag;;` and the lead prints "look in its window" (untested, never seen a lockdown on Forever).
 
 - Per character off switch `db.disabled[name]` (`MF:Disabled/SetDisabled/ToggleDisabled`, `/mama disable`,
   `/mama enable [off]`, binding `MAMA_TOGGLE`, Ctrl+Middle on the status window, red "disabled" in its title): all
