@@ -11,8 +11,8 @@
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
 -- Trade: opening a trade with a team member puts the mats their professions use in the trade window (cloth to the
--- tailor, ore to the miner...). Each category goes to the best holder on the team (see Professions.lua), so mats only
--- move towards whoever will use them; the trade itself is still accepted by hand.
+-- tailor, ore to the miner...), unless we use them too (see GivesTo; the "Mama: give mats" button gives those anyway).
+-- The trade itself is still accepted by hand.
 local _, MF = ...
 
 local P = MF.PROF
@@ -70,7 +70,7 @@ MF.tradeCategories = {
     function(it) return it.class == TRADEGOODS and (it.sub == PARTS or it.sub == EXPLOSIVES or it.sub == DEVICES) end,
     {P.ENGINEERING}
   }, {"cooking", "raw meat and fish", false, tradeGoods(COOKING), {P.COOKING}}, {
-    "recipes", "recipes", false, function(it) return it.class == RECIPE and RECIPES[it.sub] end,
+    "recipes", "recipes (any profession)", true, function(it) return it.class == RECIPE and RECIPES[it.sub] end,
     function(it) return {RECIPES[it.sub]} end
   }
 }
@@ -81,8 +81,8 @@ function MF:TradeCategoryOn(key, default)
   return v
 end
 
--- The team member (us included) who should get mats for these professions: the first profession anyone on the team
--- has wins, then the highest rank; ties keep the mats where they are, then go to the lowest slot.
+-- The team member (us included) who uses these professions best: the first profession anyone on the team has wins,
+-- then the highest rank; ties keep the mats where they are, then go to the lowest slot.
 function MF:BestHolder(profs)
   local team = self:TeamProfessions()
   local members = {}
@@ -100,10 +100,26 @@ function MF:BestHolder(profs)
   end
 end
 
+-- Whether mats for these professions go to partner. They must have one of them. Automatically: when we don't have any
+-- (so bars go to whichever blacksmith or engineer we trade with), or when they are the team's best holder (a better
+-- tailor). manual (the button): whenever they have one, e.g. a blacksmith's spare bars to an engineer.
+function MF:GivesTo(profs, partner, manual)
+  local theirs = self:ProfessionsOf(partner) or {}
+  local mine = self:ProfessionsOf(self.myName) or {}
+  local theyHave, iHave = false, false
+  for _, p in ipairs(profs) do
+    theyHave = theyHave or theirs[p] ~= nil
+    iHave = iHave or mine[p] ~= nil
+  end
+  if not theyHave then return false end
+  if manual or not iHave then return true end
+  return self:BestHolder(profs) == partner
+end
+
 -- Bag stacks that should go to partner: list of {bag, slot, count, label}, biggest stacks first.
-function MF:MatsFor(partner)
+function MF:MatsFor(partner, manual)
   local list = {}
-  local holders = {} -- cache: category key -> best holder (recipes vary per item, not cached)
+  local gives = {} -- cache: category key -> GivesTo (recipes vary per item, not cached)
   for bag = 0, NUM_BAG_SLOTS or 4 do
     for slot = 1, C_Container.GetContainerNumSlots(bag) do
       local info = C_Container.GetContainerItemInfo(bag, slot)
@@ -113,16 +129,14 @@ function MF:MatsFor(partner)
         for _, c in ipairs(self.tradeCategories) do
           local key, label, default, match, to = c[1], c[2], c[3], c[4], c[5]
           if self:TradeCategoryOn(key, default) and match(it) then
-            local holder
+            local give
             if type(to) == "function" then
-              holder = self:BestHolder(to(it))
+              give = self:GivesTo(to(it), partner, manual)
             else
-              if holders[key] == nil then holders[key] = self:BestHolder(to) or false end
-              holder = holders[key]
+              if gives[key] == nil then gives[key] = self:GivesTo(to, partner, manual) end
+              give = gives[key]
             end
-            if holder == partner then
-              list[#list + 1] = {bag = bag, slot = slot, count = info.stackCount, label = label}
-            end
+            if give then list[#list + 1] = {bag = bag, slot = slot, count = info.stackCount, label = label} end
             break -- first matching category decides
           end
         end
@@ -148,7 +162,12 @@ function MF:FillTrade(manual)
     self:AskProfessions(partner)
     return
   end
-  local mats = self:MatsFor(partner)
+  local mats = self:MatsFor(partner, manual)
+  local kept = manual and 0 or #self:MatsFor(partner, true) - #mats -- mats we could use too: only the button gives them
+  if kept > 0 then
+    self:Print("keeping %d stacks %s could use as you can too: |cFF99E5FFMama: give mats|r gives them anyway", kept,
+               partner)
+  end
   if #mats == 0 then
     if manual then self:Print("nothing for %s (%s)", partner, self:ProfessionsText(partner)) end
     return
@@ -181,7 +200,6 @@ MF:On("TRADE_SHOW", function(self)
   partner = self:FullName("NPC")
   waitingFor = nil
   self:Debug("trade with %s", tostring(partner))
-  self.tradeButton:SetShown(not self.db.autoTrade) -- only needed when filling isn't automatic
   -- let the trade window settle before putting items in
   if self.db.autoTrade then C_Timer.After(0.3, function() self:FillTrade(false) end) end
 end)
@@ -207,8 +225,9 @@ MF:Listen("LOGIN", function(self)
   b:SetScript("OnEnter", function(btn)
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:SetText("Give mats")
-    GameTooltip:AddLine("Put the mats this team member's professions use in the trade (see /mama trade list).", 1, 1, 1,
-                        true)
+    GameTooltip:AddLine(
+      "Put the mats this team member's professions use in the trade, including the ones you could " ..
+        "use yourself (auto fill keeps those). Categories: Options > Mama-forever > Trade.", 1, 1, 1, true)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)

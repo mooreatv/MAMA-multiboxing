@@ -183,9 +183,12 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   gives `isBound`/`quality`; `C_Item.GetItemInfo` is nil for uncached items, `GetItemInfoInstant` always works.
 - `Professions.lua`: `P;id:rank,...` whispered once per newly seen member (`MEMBER_SEEN` fired from `HandleInfo`),
   sent to the team when a 25 point step changes, `Q;` asks. Saved in `db.profs[faction][name]`.
-- `Trade.lua`: on `TRADE_SHOW` with a team member, fills up to 6 stacks per category's best team holder.
-- Unverified in game: `GetUnitName("NPC", true)` in trade, `PickupContainerItem` + `ClickTradeButton` fill, button
-  placement above `TradeFrame`.
+- `Trade.lua`: on `TRADE_SHOW` with a team member, fills up to 6 stacks the partner can use and we can't (or they are
+  the team's best holder); the "Mama: give mats" button also gives mats we could use (`MF:GivesTo`). Verified in game.
+- Options: sections, 2 checkboxes per row; Trade subcategory page (`Settings.RegisterCanvasLayoutSubcategory`) with
+  one checkbox per category; "Send settings to team" sends `O;<0/1 per option>;<0/1 per trade category>` on the group channel
+  (positional, same addon version assumed; length mismatch is reported and ignored).
+  Unverified in game: subcategory page, settings sync.
 
 ## Still to do
 - Port from old Mama maybe: mount/dismount sync.

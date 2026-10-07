@@ -66,22 +66,25 @@ Follow and assist are protected actions that must come from a key press or your 
 
 Each window tells the team its professions (`/mama profs` lists them, `/mama profs sync` asks everyone again; also in
 the status window row tooltips). Opening a trade with a team member puts the mats they use in the trade window (6
-stacks per trade, trade again for more); you still click Trade. Each kind goes to the best holder on the team, so a
-tailor keeps their own cloth:
+stacks per trade, trade again for more); you still click Trade. Mats you could use yourself stay with you (a tailor
+keeps their cloth, unless the other tailor is better); the "Mama: give mats" button above the trade window gives them
+anyway (e.g. a blacksmith's spare bars to an engineer):
 
 | Mats | Go to |
 |---|---|
 | cloth | tailor |
 | leather and hides | leatherworker |
 | ore | miner (to smelt) |
-| bars and stones | blacksmith, else engineer |
+| bars and stones | blacksmith or engineer |
 | herbs | alchemist |
 | enchanting mats, BoE greens | enchanter (to disenchant) |
 | engineering parts | engineer |
-| raw meat and fish, recipes | cook / the recipe's profession (off by default) |
+| recipes and patterns | whoever has that profession |
+| raw meat and fish | cook (off by default) |
 
-`/mama trade off` turns the auto fill off (the "Mama: give mats" button above the trade window still works),
-`/mama trade list` shows the kinds, `/mama trade greens off` turns one off.
+Pick the kinds in Options > AddOns > Mama-forever > Trade (or `/mama trade list`, `/mama trade greens off`);
+`/mama trade off` turns the auto fill off (the button still works). "Send settings to team" (on both options pages)
+copies this window's options and trade kinds to the rest of the group.
 
 ### Status window
 
