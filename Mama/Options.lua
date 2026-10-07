@@ -27,8 +27,14 @@ local SECTIONS = {
     }
   }, {
     "Quests and dialogs", {
-      {"autoQuest", "Auto accept quests", "Accept quests shared by your other windows (and quest dialogs) while grouped."},
-      {"autoShare", "Auto share quests", "Share every quest you accept with the group so your other windows get it too."}
+      {
+        "autoQuest", "Auto accept quests",
+        "Accept quests shared by your other windows (and quest dialogs) while grouped."
+      },
+      {
+        "autoShare", "Auto share quests",
+        "Share every quest you accept with the group so your other windows get it too."
+      }
     }, {
       {
         "autoAbandon", "Abandon quests everywhere",
@@ -40,8 +46,10 @@ local SECTIONS = {
     }
   }, {
     "Follow and trade", {
-      {"macro", "Maintain the MAMA macro", "Keep the account-wide MAMA follow + assist macro pointing at the current lead."},
       {
+        "macro", "Maintain the MAMA macro",
+        "Keep the account-wide MAMA follow + assist macro pointing at the current lead."
+      }, {
         "autoTrade", "Auto fill trades with mats",
         "When trading with a team member, put in the mats their professions use (cloth to the tailor, ore to the " ..
           "miner...). See /mama trade list."
