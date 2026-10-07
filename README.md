@@ -60,6 +60,7 @@ Follow and assist are protected actions that must come from a key press or your 
 ### Quests
 
 - Quests you accept are shared with the group, and shared quests are accepted automatically on the other windows.
+- Hold Shift, Ctrl or Alt while opening a quest giver (or clicking a quest) to skip auto accept and read it first.
 - Abandoning a quest on one window abandons it on the others (never a completed quest).
 
 ### Professions and trading mats
