@@ -145,7 +145,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Follow/assist via CLICK keybindings (secure buttons, key-up, ignore `down`), plus account macro "MAMA" (icon 132171 only at creation).
   Keybinds: follow+assist lead, assist lead, follow train + assist lead, make-me-lead (`MAMA_LEAD`, also `/mama lead`;
   `auto` follows the group leader), invite, disband, identify, complete.
-  Binding category header `MAMAFOREVER` = "Mama-forever".
+  Binding category `BINDING_HEADER_MAMAFOREVER` = "Mama-forever" (the keybindings UI shows `_G[category]` verbatim, so
+  the category must be the global's name, not `MAMAFOREVER`).
   `/click Button` from a macro does NOT work (PreClick fires but the action doesn't happen); must use keybinds or action-bar macros.
 - Quests: auto-accept, auto-share on accept (guard against re-sharing received quests), abandon sync (not for completed quests),
   all options on by default. Quest share CONFIRMED: sender QuestLogPushQuest -> receiver QUEST_DETAIL -> AcceptQuest() -> QUEST_ACCEPTED.
