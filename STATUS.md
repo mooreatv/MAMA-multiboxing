@@ -126,7 +126,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - One-time pairing: `/mama s N` shows a copy/paste token dialog (`teamId:secret:MasterName:` + checksum); `/mama token [new|<token>]`.
   Signed, timestamped addon messages (WHISPER to master/team + PARTY/RAID + GUILD); payloads `I;slot;name;flag`, `A;questID`, `L;name`, `Z;count`.
   Slot 1 = master/relay. Max slot 40. SAY/YELL addon messages do NOT work in Forever (retail-style client); only GUILD is used as an extra broadcast.
-- Paired slot members (`db.slots`) are trusted for auto-accept; `/mama team add` can separately add a name to `db.team` for invite auto-accept.
+- Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
+  `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
   That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.
   Auto invite, raid conversion, and disband are implemented.
 - Per-faction pairing (no cross faction grouping in Forever): ONE account wide token (`db.token`, `db.tokenFaction`), but the slot map
@@ -161,8 +162,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Debug (`/mama debug on`) logs every received addon message, rejection reasons and the auto-invite decision.
 - Message signing: HMAC-SHA256, truncated to 64 bits, using the shared token secret (implemented in `Hash.lua`).
   The token's typo-check character uses simple hashes and is not a message signature. Messages include a random
-  team ID and timestamp; accepted signatures are rejected if replayed, and messages outside the 120-second age window
-  are rejected. Guild broadcasts are visible to guild members but filtered by team ID and signature.
+  team ID and timestamp; accepted signatures are rejected if replayed, and messages older than 120s or more than 5s in
+  the future are rejected. Guild broadcasts are visible to guild members but filtered by team ID and signature.
   Sufficient for the threat model (other players in same guild/raid cannot spoof team commands).
 - Account-wide macro "MAMA" (CreateMacro with numeric fileID icon 132171 at first creation; EditMacro preserves user-chosen icon).
   Body "/assist Name\n/follow Name" for minions; lead window gets "/follow player" (harmless no-op, no chat output).
