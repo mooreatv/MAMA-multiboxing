@@ -35,6 +35,7 @@ function MF:GetLead()
   local lead = self.db.lead
   if lead and (lead == self.myName or self.roster[lead]) then return lead end
   for _, u in ipairs(self:GroupUnits()) do if UnitIsGroupLeader(u) then return self:FullName(u) end end
+  return nil
 end
 
 function MF:SetLead(name)
