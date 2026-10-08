@@ -4,30 +4,31 @@
    (contact the author if you need a different license)
 
    defaults don't work (https://github.com/Stanzilla/WoWUIBugs/issues/12) so removed them for now
+   the key bindings UI shows _G[category] as the category name: BINDING_HEADER_MAMAFOREVER is set in UI.lua
 -->
 <Bindings>
-    <Binding name="CLICK MamaFollow:LeftButton" category="MAMAFOREVER">
+    <Binding name="CLICK MamaFollow:LeftButton" category="BINDING_HEADER_MAMAFOREVER">
     </Binding>
-    <Binding name="CLICK MamaAssist:LeftButton" category="MAMAFOREVER">
+    <Binding name="CLICK MamaAssist:LeftButton" category="BINDING_HEADER_MAMAFOREVER">
     </Binding>
-    <Binding name="CLICK MamaTrain:LeftButton" category="MAMAFOREVER">
+    <Binding name="CLICK MamaTrain:LeftButton" category="BINDING_HEADER_MAMAFOREVER">
     </Binding>
-    <Binding name="MAMA_LEAD" category="MAMAFOREVER">
+    <Binding name="MAMA_LEAD" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:MakeMeLead()
     </Binding>
-    <Binding name="MAMA_INVITE" category="MAMAFOREVER">
+    <Binding name="MAMA_INVITE" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:InviteMissing()
     </Binding>
-    <Binding name="MAMA_COMPLETE" category="MAMAFOREVER">
+    <Binding name="MAMA_COMPLETE" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:TeamComplete()
     </Binding>
-    <Binding name="MAMA_DISBAND" category="MAMAFOREVER">
+    <Binding name="MAMA_DISBAND" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:Disband()
     </Binding>
-    <Binding name="MAMA_IDENTIFY" category="MAMAFOREVER">
+    <Binding name="MAMA_IDENTIFY" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:Identify()
     </Binding>
-    <Binding name="MAMA_TOGGLE" category="MAMAFOREVER">
+    <Binding name="MAMA_TOGGLE" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:ToggleDisabled()
     </Binding>
 </Bindings>
