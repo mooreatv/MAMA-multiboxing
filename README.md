@@ -31,9 +31,12 @@ Do this once per window/character:
 4. `/reload` (or just keep playing): the windows announce themselves to each other, the status window appears,
    and slot 1 invites everybody (switching to a raid above 5 characters).
 
-The token is saved, so you don't redo this at the next login. Every message between your windows is signed with the
-token's secret, so strangers can't give your characters orders. Characters that exchange the token are the only ones
-whose group invites are auto accepted. `/mama token` shows it again, `/mama token new` (slot 1) makes a new one.
+The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
+only messages signed with that secret are accepted as team commands. Characters that exchange the token
+are added to the trusted team and their group invites are auto accepted. `/mama token` shows it again,
+`/mama token new` (slot 1) makes a new one. `/mama team add [Full Name]` can separately trust a name for auto-accepting
+that character's group invites; it does not pair that character, assign it a slot, or give it the token needed to
+exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
 **New characters may need one manual invite.** Windows find each other by whispering names they already know (slot 1
 from the token, characters recorded in earlier sessions). Addon messages only work by whisper, party/raid or guild (not
@@ -114,6 +117,7 @@ Mama, alts included (last known values). Hover the title for all the shortcuts:
 | Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
 | Alt+Left | resend our info to the team |
 | Ctrl+Middle | turn Mama off/on for this character (see below) |
+| Alt+Right | mark the team complete (forget slots that aren't here) |
 | Mouse wheel / drag title | resize / move |
 
 On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu.
@@ -121,14 +125,16 @@ On a row: left click targets the character (or invites it when not grouped), rig
 **Turning Mama off for one character** (e.g. one that is sometimes part of another team): `/mama disable`, the
 *Turn Mama off/on* key binding or Ctrl+Middle click on the status window. That character then sends and reads no
 team messages and does no team automation (auto accept invites/quests, quest sharing, loot, trade fill, alerts); the
-status window title shows "disabled" in red. It is remembered for that character until `/mama enable`.
+status window title shows "disabled" in red. Its slot and token setup are kept, and it is remembered for that
+character until `/mama enable` turns it back on.
 
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
 `macro`, `quest`, `dialog`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-auto fill trades, MAMA macro, follow broken warning, whisper forwarding, status window, slot display at login, debug.
+mirror the lead's dialog choices, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper
+forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 

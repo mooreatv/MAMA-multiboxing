@@ -2,6 +2,7 @@
 
 Goal was: merge MoLib + DynamicBoxer + MAMA-multiboxing (sibling dirs in `moorea\`) into one standalone addon
 for WoW Forever (beta, believed mostly retail-API based). No library, no DBox dependency, no other WoW version support.
+The probe notes below are a chronological record; later status sections supersede older "unverified" notes.
 
 ## Decisions
 - Drop ISBoxer team discovery (only own slot/roster protocol, i.e. DBox's no-ISBoxer path), ISBoxerPatches.lua.
@@ -17,19 +18,6 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
 - License: unchanged (LGPLv3).
 - This IS the original MAMA-multiboxing repo (kept for stars, CurseForge/Wago/WoWI ids and secrets). The Forever
   rewrite replaced the old addon on `master` (PR #21); old classic/retail/MoP code is only in git history.
-
-## Phase 0 - Probe addon (needs 2+ beta clients, one char with spaced name) - DONE
-`/mf probe` dumps to chat + SavedVariables:
-1. Interface number (`select(4, GetBuildInfo())`), existing `C_*` namespaces.
-2. `UnitName`, `UnitFullName`, `GetUnitName(unit,true)`, `GetRealmName`, `GetNormalizedRealmName`, `Ambiguate`
-   for spaced and non-spaced names; hidden realm suffix format?
-3. Addon messages: `C_ChatInfo.SendAddonMessage` WHISPER between chars on different layers; fallbacks
-   (custom CHANNEL, GUILD, PARTY, `BNSendGameData`). Names in `CHAT_MSG_ADDON` sender.
-4. `InviteUnit` / `C_PartyInfo.InviteUnit` by name across layers; layer merge after accept; `PARTY_INVITE_REQUEST` names.
-5. Group APIs: `ConvertToRaid`, loot method, `LeaveParty`, `GetNumGroupMembers`.
-6. Protected-ness of `FollowUnit`/`AssistUnit`/`TargetUnit`; secure buttons and `/click` still OK?
-7. Mount (`C_MountJournal`), quest share/abandon (`C_QuestLog`), taxi (`TakeTaxiNode`/`C_TaxiMap`).
-8. UI: `Settings` panel API, `BackdropTemplate`.
 
 ## Phase 0 - Probe (DONE)
 `Probe/MamaForeverProbe/` (not packaged). `/mf probe` dumps to chat + SavedVariables:
@@ -67,7 +55,7 @@ for WoW Forever (beta, believed mostly retail-API based). No library, no DBox de
   Run (PowerShell, repo root): `$env:PATH = "C:\msys64\ucrt64\bin;" + $env:PATH; & "$env:APPDATA\luarocks\bin\lua-format.exe" -c luaformat.cfg -i Mama\X.lua`
   (lua-format.exe needs the msys64 ucrt64 runtime DLLs; Git's mingw64 ones are the wrong version).
 - In-game testing done on 2-3 clients: team sync, invite, raid convert, lead/assist/follow, quest share,
-  options UI, layer behavior, taxi. Still unverified: mount sync, `C_PartyInfo.UninviteUnit` edge cases.
+  options UI, layer behavior, taxi. At that stage, mount sync and `C_PartyInfo.UninviteUnit` edge cases remained unverified.
 
 ## Phase 4 - Release (DONE)
 - README.md (Forever-only scope + credits to MoLib/DynamicBoxer).
@@ -138,7 +126,10 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - One-time pairing: `/mama s N` shows a copy/paste token dialog (`teamId:secret:MasterName:` + checksum); `/mama token [new|<token>]`.
   Signed, timestamped addon messages (WHISPER to master/team + PARTY/RAID + GUILD); payloads `I;slot;name;flag`, `A;questID`, `L;name`, `Z;count`.
   Slot 1 = master/relay. Max slot 40. SAY/YELL addon messages do NOT work in Forever (retail-style client); only GUILD is used as an extra broadcast.
-- Team trust list (`db.team`/`db.slots`) drives auto-accept of invites; auto invite, raid convert, disband.
+- Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
+  `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
+  That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.
+  Auto invite, raid conversion, and disband are implemented.
 - Per-faction pairing (no cross faction grouping in Forever): ONE account wide token (`db.token`, `db.tokenFaction`), but the slot map
   (`db.slotsBy[faction]`, exposed as `db.slots`) and a history of the last 5 characters per slot (`db.history[faction][slot]`) are per faction.
   Announcing whispers the same faction's master/slot owners + up to 3 recent holders per slot, retried every 20s until someone answers
@@ -147,7 +138,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Cross-home-realm whisper support (different realm IDs confirmed working; sender shown without realm).
 - Status window (DynamicBoxer parity): slot column + `>` marker, class/connection state, row click targets/invites, left invite, middle disband,
   right options, shift-left party/raid, shift-right compact, shift-middle big slot number, ctrl-left auto-invite, ctrl-right token dialog,
-  alt-left resend info, wheel resize, drag to move. Skipped: alt-right pause, ctrl-middle force team complete.
+  alt-left resend info, alt-right mark the team complete, ctrl-middle toggle Mama off/on for this character, wheel resize, drag to move.
 - Identify overlay (big slot number + class icon + name), also at login for 6s.
   Identify splash: faction crest (Horde 516953, Alliance 516949 enlarged to 100; no Pandaren in Forever, no glow layer)
   left of the slot number, class icon right, name below, all anchored to the number.
@@ -164,12 +155,15 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (reload, leader change, manual change) triggers a switch. Uses `C_PartyInfo.GetLootMethod/SetLootMethod`.
 - Commands: `/mama help`, `/mama debug [on|off]`, `/mama s N`, `/mama token [new|<token>]`, `/mama lead [name|auto]`,
   `/mama team [list|add|remove|clear]`, `/mama invite`, `/mama disband`, `/mama raid`, `/mama complete [N]`,
-  `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama ui [on|off]`, `/mama identify`, `/mama options`,
-  `/mama bug`, `/mama clearlog`, `/mama status`. The log gets a `---reload--- <date> <name>` line at each login/reload.
+  `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama dialog [on|off]`,
+  `/mama profs [sync]`, `/mama trade`, `/mama ui [on|off]`, `/mama enable [off]`, `/mama disable`,
+  `/mama identify`, `/mama options`, `/mama bug`, `/mama clearlog`, `/mama status`.
+  The log gets a `---reload--- <date> <name>` line at each login/reload.
 - Debug (`/mama debug on`) logs every received addon message, rejection reasons and the auto-invite decision.
-- Message signing: HMAC-like construction using `hashes(base .. secret)` (djb2/sdbm style, non-cryptographic but
-  keyed with a 12-char random secret). Team isolation via random `teamId` in token; replay protection via 120s
-  timestamp window. Guild broadcast visible to all guild members but isolated by team ID + signature.
+- Message signing: HMAC-SHA256, truncated to 64 bits, using the shared token secret (implemented in `Hash.lua`).
+  The token's typo-check character uses simple hashes and is not a message signature. Messages include a random
+  team ID and timestamp; accepted signatures are rejected if replayed, and messages older than 120s or more than 5s in
+  the future are rejected. Guild broadcasts are visible to guild members but filtered by team ID and signature.
   Sufficient for the threat model (other players in same guild/raid cannot spoof team commands).
 - Account-wide macro "MAMA" (CreateMacro with numeric fileID icon 132171 at first creation; EditMacro preserves user-chosen icon).
   Body "/assist Name\n/follow Name" for minions; lead window gets "/follow player" (harmless no-op, no chat output).
@@ -217,4 +211,4 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 
 ## Still to do
 - Port from old Mama maybe: mount/dismount sync.
-- Unverified on Forever: `C_PartyInfo.UninviteUnit`, raid conversion with >5 characters, taxi, mount.
+- Still unverified on Forever: `C_PartyInfo.UninviteUnit` edge cases and raid conversion with more than 5 characters.
