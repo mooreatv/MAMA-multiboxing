@@ -123,6 +123,7 @@ end
 
 local function newPanel(name, title, subtitle)
   local panel = CreateFrame("Frame")
+  panel:Hide() -- new frames start shown: OnShow (values refresh) wouldn't fire the first time Settings shows it
   panel.name = name
   local t = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
   t:SetPoint("TOPLEFT", 16, -16)
