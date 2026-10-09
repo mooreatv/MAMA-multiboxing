@@ -11,10 +11,6 @@ ignore:
     - README.md
     - .github
 
-manual-changelog:
-    filename: ChangeLog.txt
-    markup-type: text
-
 move-folders:
   Mama/Mama: Mama
 
