@@ -9,6 +9,7 @@ ignore:
     - Probe
     - STATUS.md
     - README.md
+    - ReleaseNotes-v2.0.0.md
     - .github
 
 move-folders:
