@@ -258,6 +258,29 @@ MF:On("GOSSIP_SHOW", function(self)
   end
   retry(self)
 end)
+
+-- An NPC offering a single gossip option and no quest (vendor, trainer, flight master...) gets that option picked, as
+-- the Blizzard UI already does for options flagged selectOptionWhenOnlyOption. Only on the first page of a dialog (a
+-- one option follow-up page is left to read), and not when a modifier is held while opening the NPC.
+local firstPage = true
+MF:On("GOSSIP_CLOSED", function() firstPage = true end)
+MF:On("GOSSIP_SHOW", function(self)
+  local first = firstPage
+  firstPage = false
+  if not first or not self.db.autoGossip or IsModifierKeyDown() then return end
+  local options = C_GossipInfo.GetOptions() or {}
+  if #options ~= 1 or options[1].selectOptionWhenOnlyOption or C_GossipInfo.GetNumAvailableQuests() > 0 or
+    C_GossipInfo.GetNumActiveQuests() > 0 then return end
+  local id = options[1].gossipOptionID
+  -- next frame: GossipFrame handles this same event and would show itself again over the vendor window
+  C_Timer.After(0, function()
+    local now = C_GossipInfo.GetOptions() or {}
+    if #now ~= 1 or now[1].gossipOptionID ~= id then return end
+    self:Debug("dialog: only one option, selecting %s (%s)", tostring(id), clean(now[1].name))
+    C_GossipInfo.SelectOption(id)
+  end)
+end)
+
 MF:On("QUEST_PROGRESS", function(self)
   currentNpc()
   retry(self)
@@ -322,3 +345,8 @@ MF:AddCommand("dialog", function(self, rest)
   self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths) is now %s",
              tostring(self.db.autoDialog))
 end, "dialog [on|off] - make the other windows pick the same dialog options/flight path as the lead")
+
+MF:AddCommand("gossip", function(self, rest)
+  self.db.autoGossip = self:ParseOnOff(rest, self.db.autoGossip)
+  self:Print("picking the only option of NPC dialogs (vendors, trainers...) is now %s", tostring(self.db.autoGossip))
+end, "gossip [on|off] - pick the only option of an NPC dialog (straight to the vendor, trainer...)")

@@ -25,6 +25,7 @@ MF.defaults = {
   macro = true,
   autoQuest = true,
   autoDialog = true,
+  autoGossip = true,
   autoAccept = true,
   lead = false,
   slot = 0,
