@@ -43,6 +43,12 @@ local SECTIONS = {
         "autoDialog", "Mirror the lead's dialog choices",
         "When the lead picks a gossip option, quest or flight path, pick the same one if your dialog offers it."
       }
+    }, {
+      {
+        "autoGossip", "Skip single option dialogs",
+        "When an NPC offers only one option and no quest (most vendors and trainers), pick it: straight to the " ..
+          "vendor. Hold Shift, Ctrl or Alt while opening the NPC to see the dialog."
+      }
     }
   }, {
     "Follow and trade", {

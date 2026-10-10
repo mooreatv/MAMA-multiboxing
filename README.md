@@ -65,6 +65,9 @@ Follow and assist are protected actions that must come from a key press or your 
 - Quests you accept are shared with the group, and shared quests are accepted automatically on the other windows.
 - Hold Shift, Ctrl or Alt while opening a quest giver (or clicking a quest) to skip auto accept and read it first.
 - Abandoning a quest on one window abandons it on the others (never a completed quest).
+- Talking to an NPC whose dialog has only one option and no quest (most vendors and trainers) picks that option: you go
+  straight to the vendor window. Hold Shift, Ctrl or Alt while opening the NPC to see the dialog; `/mama gossip off`
+  turns it off.
 
 ### Professions and trading mats
 
@@ -131,9 +134,9 @@ character until `/mama enable` turns it back on.
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-mirror the lead's dialog choices, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper
+mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)

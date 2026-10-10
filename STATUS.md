@@ -156,7 +156,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (reload, leader change, manual change) triggers a switch. Uses `C_PartyInfo.GetLootMethod/SetLootMethod`.
 - Commands: `/mama help`, `/mama debug [on|off]`, `/mama s N`, `/mama token [new|<token>]`, `/mama lead [name|auto]`,
   `/mama team [list|add|remove|clear]`, `/mama invite`, `/mama disband`, `/mama raid`, `/mama complete [N]`,
-  `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama dialog [on|off]`,
+  `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama dialog [on|off]`, `/mama gossip [on|off]`,
   `/mama profs [sync]`, `/mama trade`, `/mama ui [on|off]`, `/mama enable [off]`, `/mama disable`,
   `/mama identify`, `/mama options`, `/mama bug`, `/mama clearlog`, `/mama status`.
   The log gets a `---reload--- <date> <name>` line at each login/reload.
@@ -205,6 +205,13 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   `/mama enable [off]`, binding `MAMA_TOGGLE`, Ctrl+Middle on the status window, red "disabled" in its title): all
   sends dropped in `schedule`, incoming addon messages ignored, no announce loop; `MF:OnTeam(event, fn)` registers
   handlers skipped while disabled (invite/quest auto accept); loot, auto invite, quest share, trade fill check it too.
+
+## Single option gossip (2026-10-10, verified in game)
+- Option `autoGossip` (default on, `/mama gossip`): on the first `GOSSIP_SHOW` of a dialog (reset on `GOSSIP_CLOSED`),
+  1 option, no available/active quest, no modifier held -> `C_GossipInfo.SelectOption` next frame (same check as
+  Blizzard's GossipFrameShared `HandleShow`, minus its `selectOptionWhenOnlyOption` flag / `ForceGossip`; options
+  with that flag are left to Blizzard). Follow-up pages with one option are not picked. On the lead the pick goes
+  through the `SelectOption` hook and is mirrored like a click.
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
