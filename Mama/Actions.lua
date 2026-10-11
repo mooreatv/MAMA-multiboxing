@@ -118,6 +118,10 @@ local function acceptQuest(self)
     AcceptQuest()
   end
 end
+MF:On("QUEST_DETAIL", function(self)
+  self:Debug("QUEST_DETAIL %s: autoQuest=%s grouped=%s disabled=%s", tostring(GetQuestID()),
+             tostring(self.db.autoQuest), tostring(IsInGroup()), tostring(self:Disabled()))
+end)
 MF:OnTeam("QUEST_DETAIL", acceptQuest)
 
 -- Someone in the group started an escort/event quest: that's a confirmation popup, answered with ConfirmAcceptQuest.

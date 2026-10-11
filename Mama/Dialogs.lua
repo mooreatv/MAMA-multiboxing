@@ -253,6 +253,8 @@ end
 MF:On("GOSSIP_SHOW", function(self)
   currentNpc()
   gossipCache = C_GossipInfo.GetOptions() or {}
+  self:Debug("dialog: gossip with %d options, %d available and %d active quests", #gossipCache,
+             C_GossipInfo.GetNumAvailableQuests(), C_GossipInfo.GetNumActiveQuests())
   for i, o in ipairs(gossipCache) do
     self:Debug("dialog: gossip option %d: id=%s name=%s", i, tostring(o.gossipOptionID), clean(o.name))
   end
@@ -260,7 +262,8 @@ MF:On("GOSSIP_SHOW", function(self)
 end)
 
 -- An NPC offering a single gossip option and no quest (vendor, trainer, flight master...) gets that option picked, as
--- the Blizzard UI already does for options flagged selectOptionWhenOnlyOption. Only on the first page of a dialog (a
+-- the Blizzard UI already does for options flagged selectOptionWhenOnlyOption; one offering a single quest to pick up
+-- and nothing else gets that quest opened (then auto accepted, see Actions.lua). Only on the first page of a dialog (a
 -- one option follow-up page is left to read), and not when a modifier is held while opening the NPC.
 local firstPage = true
 MF:On("GOSSIP_CLOSED", function() firstPage = true end)
@@ -269,8 +272,19 @@ MF:On("GOSSIP_SHOW", function(self)
   firstPage = false
   if not first or not self.db.autoGossip or IsModifierKeyDown() then return end
   local options = C_GossipInfo.GetOptions() or {}
-  if #options ~= 1 or options[1].selectOptionWhenOnlyOption or C_GossipInfo.GetNumAvailableQuests() > 0 or
-    C_GossipInfo.GetNumActiveQuests() > 0 then return end
+  local available = C_GossipInfo.GetAvailableQuests() or {}
+  if C_GossipInfo.GetNumActiveQuests() > 0 then return end
+  if #options == 0 and #available == 1 then
+    local id = available[1].questID
+    C_Timer.After(0, function()
+      local now = C_GossipInfo.GetAvailableQuests() or {}
+      if #now ~= 1 or now[1].questID ~= id or #(C_GossipInfo.GetOptions() or {}) > 0 then return end
+      self:Debug("dialog: only one quest, opening %s (%s)", tostring(id), clean(now[1].title))
+      C_GossipInfo.SelectAvailableQuest(id)
+    end)
+    return
+  end
+  if #options ~= 1 or options[1].selectOptionWhenOnlyOption or #available > 0 then return end
   local id = options[1].gossipOptionID
   -- next frame: GossipFrame handles this same event and would show itself again over the vendor window
   C_Timer.After(0, function()
