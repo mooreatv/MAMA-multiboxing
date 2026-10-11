@@ -126,6 +126,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - One-time pairing: `/mama s N` shows a copy/paste token dialog (`teamId:secret:MasterName:` + checksum); `/mama token [new|<token>]`.
   Signed, timestamped addon messages (WHISPER to master/team + PARTY/RAID + GUILD); payloads `I;slot;name;flag`, `A;questID`, `L;name`, `Z;count`.
   Slot 1 = master/relay. Max slot 40. SAY/YELL addon messages do NOT work in Forever (retail-style client); only GUILD is used as an extra broadcast.
+  Beta server whispers can arrive minutes late (rejected as too old), group messages don't: whispers to grouped members go on PARTY/RAID
+  as `T;Name;payload` (only Name handles it; older versions ignore T, update all windows together). Ungrouped whispered `I` info is
+  accepted up to 600s old (whispers can't be replayed by others); other kinds keep 120s. Whisper forward chunk 120 bytes (255 limit).
 - Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
   `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
   That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.
