@@ -43,13 +43,23 @@ local function bestStage(starter)
   return best
 end
 
+-- #showtooltip takes conditionals like /cast: the conditional spells first, in order, then the last spell
+-- (e.g. "[nocombat] Charge; Rend").
+local function tooltip(spells)
+  local parts = {}
+  for _, spell in ipairs(spells) do if spell:match("^%[") then parts[#parts + 1] = spell end end
+  local last = spells[#spells]
+  if last and not last:match("^%[") then parts[#parts + 1] = (last:gsub("^!", "")) end
+  return #parts > 0 and " " .. table.concat(parts, "; ") or ""
+end
+
 -- Returns the class starter macro body and icon, for the given stage (default: the best known one).
 local function starterMacro(target, stage)
   local starter = classStarter()
   local spells = starter[stage or bestStage(starter)]
   local last = spells[#spells]
   local lines = {
-    "#showtooltip" .. (last and " " .. last:gsub("^!", "") or ""), "/follow " .. target, "/assist " .. target,
+    "#showtooltip" .. tooltip(spells), "/follow " .. target, "/assist " .. target,
     "/stopmacro [help][dead][noexists][noharm]"
   }
   if not starter.noStartAttack then lines[#lines + 1] = "/startattack" end
