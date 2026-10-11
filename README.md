@@ -66,7 +66,7 @@ Follow and assist are protected actions that must come from a key press or your 
   pointed at the current lead. Open the macro window (`/macro`, character tab), drag `MAMA` to an action bar once
   and use it. Edit it freely (spell, icon, extra lines): only the `/follow` and `/assist` lines are updated.
   Until you edit it, the starter picks up a better spell when you learn it (Judgement for paladins, Serpent Sting
-  for hunters).
+  for hunters, Charge out of combat and Rend for warriors).
   `/mama macro reset` puts the class starter back, `/mama macro off` stops managing it. The account wide `MAMA` macro
   of older versions is deleted.
 
