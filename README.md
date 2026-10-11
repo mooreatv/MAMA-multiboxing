@@ -38,6 +38,11 @@ are added to the trusted team and their group invites are auto accepted. `/mama 
 that character's group invites; it does not pair that character, assign it a slot, or give it the token needed to
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
+**New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` then
+`/mama token` and copy it (`/mama token new` for a brand new team). On each other window, `/mama s N` if its slot
+changes, then `/mama token` and paste it (or `/mama token <paste>`, or Ctrl+Right on the status window). Pasting a
+token makes that window forget the previous team and talk to the new master right away.
+
 **New characters may need one manual invite.** Windows find each other by whispering names they already know (slot 1
 from the token, characters recorded in earlier sessions). Addon messages only work by whisper, party/raid or guild (not
 say/yell), so a character never seen before, or the first team on another faction, can't be found: invite it once by
