@@ -128,7 +128,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Slot 1 = master/relay. Max slot 40. SAY/YELL addon messages do NOT work in Forever (retail-style client); only GUILD is used as an extra broadcast.
   Beta server whispers can arrive minutes late (rejected as too old), group messages don't: whispers to grouped members go on PARTY/RAID
   as `T;Name;payload` (only Name handles it; older versions ignore T, update all windows together). Ungrouped whispered `I` info is
-  accepted up to 600s old (whispers can't be replayed by others); other kinds keep 120s. Whisper forward chunk 120 bytes (255 limit).
+  accepted up to 600s old (whispers can't be replayed by others); other kinds keep 120s. Whisper forward chunk 120 bytes (255 limit). Verified in game.
 - Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
   `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
   That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.
@@ -228,7 +228,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   opens the quest (`QUEST_DETAIL` -> auto accept when grouped). Forever shows a gossip for a single quest NPC instead
   of going straight to the quest (seen in game: "0 options, 1 available and 0 active quests").
   Likewise 0 options, 0 available, 1 active quest with `isComplete` -> `C_GossipInfo.SelectActiveQuest(questID)` (turn in);
-  an unfinished active quest is left alone.
+  an unfinished active quest is left alone. Verified in game (3 windows, one with the quest unfinished: left alone, no loop).
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
