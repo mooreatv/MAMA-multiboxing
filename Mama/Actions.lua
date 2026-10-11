@@ -207,19 +207,22 @@ MF.noShare = {}
 local escortConfirmed = false -- the next accepted quest is an escort we joined: its starter already has everyone
 
 -- Opening the NPC (gossip/greeting) or clicking a quest with a modifier held skips auto accept, to read it first.
+-- Not for quests shared by a player: the modifier state is seen by every window, so a modifier still held on the
+-- lead while it accepts would leave the shared quest open on the others.
 local heldNpc -- GUID of the NPC whose dialog was opened with a modifier held
 local function noteModifier() heldNpc = IsModifierKeyDown() and UnitGUID("npc") or nil end
 MF:On("GOSSIP_SHOW", noteModifier)
 MF:On("QUEST_GREETING", noteModifier)
 
 local function acceptQuest(self)
-  if IsModifierKeyDown() or (heldNpc and heldNpc == UnitGUID("npc")) then
+  local shared = UnitIsPlayer("questnpc")
+  if not shared and (IsModifierKeyDown() or (heldNpc and heldNpc == UnitGUID("npc"))) then
     self:Debug("not auto accepting quest: modifier held")
     return
   end
   if self.db.autoQuest and IsInGroup() then
     self:Debug("accepting quest")
-    if UnitIsPlayer("questnpc") then self.noShare[GetQuestID()] = true end
+    if shared then self.noShare[GetQuestID()] = true end
     AcceptQuest()
   end
 end
