@@ -395,13 +395,12 @@ function MF:AcceptToken(text)
   if tok.master == self.myName and self.db.slot ~= 1 then
     return false, "this token was created by this very character; copy it from slot 1 into the other windows"
   end
-  local old = self:Token()
   self:SetToken(text:match("^%s*(.-)%s*$"))
-  if not old or old.team ~= tok.team then -- another team: the slots we knew (and their master) are from the old one
-    wipe(self.db.slots)
-    self:SetOwnSlot()
-    self:Fire("TEAM_CHANGED")
-  end
+  -- Forget the slots we knew: they may be from an older team, whose slot 1 would be taken as master over the token's.
+  -- The master sends the current team back when it answers our announce.
+  wipe(self.db.slots)
+  self:SetOwnSlot()
+  self:Fire("TEAM_CHANGED")
   self:Print("token accepted, team master is %s", tok.master)
   self:Announce(true)
   return true
