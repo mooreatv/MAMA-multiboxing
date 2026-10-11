@@ -142,7 +142,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Identify overlay (big slot number + class icon + name), also at login for 6s.
   Identify splash: faction crest (Horde 516953, Alliance 516949 enlarged to 100; no Pandaren in Forever, no glow layer)
   left of the slot number, class icon right, name below, all anchored to the number.
-- Follow/assist via CLICK keybindings (secure buttons, key-up, ignore `down`), plus account macro "MAMA" (icon 132171 only at creation).
+- Follow/assist via CLICK keybindings (secure buttons, key-up, ignore `down`), plus per-character macro "MAMA" (see below).
   Keybinds: follow+assist lead, assist lead, follow train + assist lead, make-me-lead (`MAMA_LEAD`, also `/mama lead`;
   `auto` follows the group leader), invite, disband, identify, complete.
   Binding category `BINDING_HEADER_MAMAFOREVER` = "Mama-forever" (the keybindings UI shows `_G[category]` verbatim, so
@@ -156,7 +156,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (reload, leader change, manual change) triggers a switch. Uses `C_PartyInfo.GetLootMethod/SetLootMethod`.
 - Commands: `/mama help`, `/mama debug [on|off]`, `/mama s N`, `/mama token [new|<token>]`, `/mama lead [name|auto]`,
   `/mama team [list|add|remove|clear]`, `/mama invite`, `/mama disband`, `/mama raid`, `/mama complete [N]`,
-  `/mama autoinvite [on|off]`, `/mama macro [on|off]`, `/mama quest [on|off]`, `/mama dialog [on|off]`, `/mama gossip [on|off]`,
+  `/mama autoinvite [on|off]`, `/mama macro [on|off|reset]`, `/mama quest [on|off]`, `/mama dialog [on|off]`, `/mama gossip [on|off]`,
   `/mama profs [sync]`, `/mama trade`, `/mama ui [on|off]`, `/mama enable [off]`, `/mama disable`,
   `/mama identify`, `/mama options`, `/mama bug`, `/mama clearlog`, `/mama status`.
   The log gets a `---reload--- <date> <name>` line at each login/reload.
@@ -166,9 +166,15 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   team ID and timestamp; accepted signatures are rejected if replayed, and messages older than 120s or more than 5s in
   the future are rejected. Guild broadcasts are visible to guild members but filtered by team ID and signature.
   Sufficient for the threat model (other players in same guild/raid cannot spoof team commands).
-- Account-wide macro "MAMA" (CreateMacro with numeric fileID icon 132171 at first creation; EditMacro preserves user-chosen icon).
-  Body "/assist Name\n/follow Name" for minions; lead window gets "/follow player" (harmless no-op, no chat output).
-  Body "/assist Name\n/follow Name" (unquoted; client appends trailing newline, kept for user additions).
+- Per-character macro "MAMA" (CreateMacro(name, icon, body, true); found by scanning indexes MAX_ACCOUNT_MACROS+1.., not
+  GetMacroIndexByName which can return an account macro). Created once from a class starter (#showtooltip, /follow, /assist,
+  /stopmacro [help][dead][noexists][noharm], /startattack, /petattack for hunter/warlock, /cast basic spell; hunter `!Auto Shot`;
+  paladin gets a `# /cast Judgement` hint), icon 134400 (dynamic) or 132171. Starter stages: an untouched starter (equal to an
+  earlier stage once retargeted) moves to the stage whose spell is known (C_SpellBook.IsSpellKnown: Judgement 20271, Serpent
+  Sting rank 1 1978, both verified true in game; IDs only detect learning, macros /cast by name without rank; on LEARNED_SPELL_IN_SKILL_LINE and refreshes); icon swapped only if it was the old stage's. After that only lines whose command is /follow or
+  /assist are rewritten (target = lead, `player` on the lead window); the rest is the user's. `/mama macro reset` restores the starter.
+  The account-wide "MAMA" of older versions is deleted (DeleteMacro) when the per-character one is created. Needs in-game check:
+  `/assist player` on the lead window is silent.
 
 ## Professions + mats trade (in progress, 2026-10-06)
 - Probe (`/mf check`, `/mf items`, `/mf copy` window): `GetProfessions()` returns profession indexes (prof1, prof2, then

@@ -1,10 +1,78 @@
--- Actions: follow/assist/train secure buttons (for keybinds), the account-wide "MAMA" macro, quest auto-accept.
+-- Actions: follow/assist/train secure buttons (for keybinds), the per-character "MAMA" macro, quest auto-accept.
 -- Findings on Forever: /click MamaFollow from a macro does nothing, but the same button works from a keybind
 -- and an action-bar macro with the plain text "/assist Name" + "/follow Name" works too.
 local _, MF = ...
 
 local MACRO_NAME = "MAMA"
 local MACRO_ICON = 132171 -- numeric file ID only; set at creation so users can pick their own later
+local DYNAMIC_ICON = 134400 -- question mark: the client shows the #showtooltip spell's icon
+
+-- Starting point of each class's MAMA macro (the user edits it from there): pet = also send the pet,
+-- noStartAttack = no /startattack (melee auto attack cancels Auto Shot). Stages = spells to /cast; while the macro is
+-- an untouched starter it moves to the last stage whose `known` spell ID is learned. "!" keeps spamming from toggling
+-- Auto Shot off; "#" lines are ignored by the client.
+local STARTERS = {
+  DRUID = {{"Wrath"}},
+  HUNTER = {pet = true, noStartAttack = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = 1978}},
+  MAGE = {{"Fireball"}},
+  PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = 20271}},
+  PRIEST = {{"Smite"}},
+  ROGUE = {{"Sinister Strike"}},
+  SHAMAN = {{"Lightning Bolt"}},
+  WARLOCK = {pet = true, {"Shadow Bolt"}},
+  WARRIOR = {{"Heroic Strike"}}
+}
+
+local function classStarter()
+  local _, class = UnitClass("player")
+  return STARTERS[class] or {{}}
+end
+
+local function bestStage(starter)
+  local best = 1
+  for i, stage in ipairs(starter) do if not stage.known or C_SpellBook.IsSpellKnown(stage.known) then best = i end end
+  return best
+end
+
+-- Returns the class starter macro body and icon, for the given stage (default: the best known one).
+local function starterMacro(target, stage)
+  local starter = classStarter()
+  local spells = starter[stage or bestStage(starter)]
+  local last = spells[#spells]
+  local lines = {
+    "#showtooltip" .. (last and " " .. last:gsub("^!", "") or ""), "/follow " .. target, "/assist " .. target,
+    "/stopmacro [help][dead][noexists][noharm]"
+  }
+  if not starter.noStartAttack then lines[#lines + 1] = "/startattack" end
+  if starter.pet then lines[#lines + 1] = "/petattack" end
+  for _, spell in ipairs(spells) do lines[#lines + 1] = "/cast " .. spell end
+  if spells.hint then lines[#lines + 1] = spells.hint end
+  return table.concat(lines, "\n"), last and DYNAMIC_ICON or MACRO_ICON
+end
+
+local function stripTrailing(s) return (s:gsub("%s+$", "")) end
+
+local function findMacro(first, last) for i = first, last do if GetMacroInfo(i) == MACRO_NAME then return i end end end
+
+-- Character macros come after all the account macro slots.
+local function charMacroIndex()
+  local _, count = GetNumMacros()
+  local base = Constants.MacroConsts.MAX_ACCOUNT_MACROS
+  return findMacro(base + 1, base + count)
+end
+
+local function accountMacroIndex() return findMacro(1, (GetNumMacros())) end
+
+-- The only part of the macro Mama manages: every /follow and /assist line gets the target, the rest is the user's.
+local function retarget(body, target)
+  return (body:gsub("[^\n]+", function(line)
+    local cmd = (line:match("^%s*/(%a+)") or ""):lower()
+    if cmd == "follow" or cmd == "assist" then return "/" .. cmd .. " " .. target end
+  end))
+end
+
+-- Lead window (or no lead): follow self (harmless, no chat output) so the macro only does the rest for the lead.
+local function macroTarget(self, lead) return lead and lead ~= self.myName and lead or "player" end
 
 local function makeButton(name)
   local b = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
@@ -18,30 +86,66 @@ local function makeButton(name)
   return b
 end
 
-local function stripTrailing(s) return (s or ""):gsub("%s+$", "") end
+local createFailed -- only say once per session that the macro couldn't be created
+
+-- Creates this character's macro from the class starter; replaces the old account-wide one (older versions).
+function MF:CreateMamaMacro(target)
+  local old = accountMacroIndex()
+  if old then
+    DeleteMacro(old)
+    self:Debug("deleted the account macro %s (index %d)", MACRO_NAME, old)
+  end
+  local body, icon = starterMacro(target)
+  local ok, err = pcall(CreateMacro, MACRO_NAME, icon, body, true) -- true: per character
+  self:Debug("CreateMacro %s -> %s, %s", MACRO_NAME, tostring(ok), tostring(err))
+  if ok and err then
+    self:Print(
+      "created the %s macro for this character: drag it from the character tab of /macro to an action bar, " ..
+        "then edit it as you like (Mama only changes the /follow and /assist lines)", MACRO_NAME)
+  elseif not createFailed then
+    createFailed = true
+    self:Print("couldn't create the %s macro (character macros full?): %s", MACRO_NAME, tostring(err))
+  end
+  return ok and err ~= nil
+end
 
 -- Returns true when the macro had to be created or changed.
 function MF:UpdateMacro(lead)
   if not self.db.macro then return false end
-  local body
-  if lead and lead ~= self.myName then
-    body = "/assist " .. lead .. "\n/follow " .. lead
-  else
-    -- Lead window: follow self (harmless, no chat output) so the macro is a no-op button for the lead.
-    body = "/follow player"
+  local target = macroTarget(self, lead)
+  local idx = charMacroIndex()
+  if not idx then return self:CreateMamaMacro(target) end
+  local _, icon, current = GetMacroInfo(idx)
+  current = current or ""
+  local body = retarget(current, target)
+  local newIcon -- nil: keep whatever the user chose
+  local best = bestStage(classStarter())
+  for stage = 1, best - 1 do
+    local old, oldIcon = starterMacro(target, stage)
+    if stripTrailing(body) == old then -- still an earlier starter, not edited: use the newly learned spell
+      body, newIcon = starterMacro(target, best)
+      if icon ~= oldIcon then newIcon = nil end
+      self:Print("the %s macro now uses your newly learned spell", MACRO_NAME)
+      break
+    end
   end
-  local idx = GetMacroIndexByName(MACRO_NAME)
-  if not idx or idx == 0 then
-    local ok, err = pcall(CreateMacro, MACRO_NAME, MACRO_ICON, body, false) -- false: account-wide
-    self:Debug("CreateMacro %s -> %s, %s", MACRO_NAME, tostring(ok), tostring(err))
-    if not ok or not err then self:Print("couldn't create the %s macro: %s", MACRO_NAME, tostring(err)) end
-    return true
-  end
-  local _, _, current = GetMacroInfo(idx)
-  if stripTrailing(current) == body then return false end
+  if body == current then return false end
   self:Debug("macro %s (index %d) now: %s", MACRO_NAME, idx, body:gsub("\n", " | "))
-  EditMacro(idx, nil, nil, body) -- nil name/icon: keep whatever the user chose
+  EditMacro(idx, nil, newIcon, body)
   return true
+end
+
+-- Puts the class starter back (body and icon).
+function MF:ResetMacro()
+  local target = macroTarget(self, self:GetLead())
+  local idx = charMacroIndex()
+  if not idx then
+    self:CreateMamaMacro(target)
+    return
+  end
+  local body, icon = starterMacro(target)
+  EditMacro(idx, nil, icon, body)
+  self:Print("the %s macro is back to the %s starter", MACRO_NAME, (UnitClass("player")))
 end
 
 -- Sets a button's macro text; returns true when it changed.
@@ -95,6 +199,7 @@ end)
 MF:On("PLAYER_ENTERING_WORLD", function(self) if self.buttons then self:RefreshActions() end end)
 MF:Listen("TEAM_CHANGED", function(self) if self.buttons then self:RefreshActions() end end)
 MF:On("PLAYER_REGEN_ENABLED", function(self) if self.pendingRefresh then self:RefreshActions() end end)
+MF:On("LEARNED_SPELL_IN_SKILL_LINE", function(self) if self.buttons then self:RefreshActions() end end)
 
 -- Quests we got from a team member (shared to us, or picked up by mirroring the lead's dialog, see Dialogs.lua):
 -- don't share them back out when they get accepted, the others already have them.
@@ -188,10 +293,19 @@ end
 
 MF:AddCommand("macro", function(self, rest)
   local setting = rest:lower()
+  if setting == "reset" then
+    if InCombatLockdown() then
+      self:Print("can't change macros in combat")
+    else
+      self:ResetMacro()
+    end
+    return
+  end
   if setting == "on" or setting == "off" then self.db.macro = setting == "on" end
-  self:Print("keeping the account macro \"%s\" up to date is now %s", MACRO_NAME, tostring(self.db.macro))
+  self:Print("keeping this character's \"%s\" macro up to date is now %s", MACRO_NAME, tostring(self.db.macro))
   self:RefreshActions()
-end, "macro [on|off] - show or set whether to maintain the account-wide MAMA macro (drag it to a bar once)")
+end, "macro [on|off|reset] - show or set whether to maintain this character's MAMA macro (drag it to a bar " ..
+                "once, edit it freely: only its /follow and /assist lines are updated); reset puts the class starter back")
 
 MF:AddCommand("quest", function(self, rest)
   self.db.autoQuest = self:ParseOnOff(rest, self.db.autoQuest)

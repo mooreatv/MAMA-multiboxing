@@ -55,7 +55,8 @@ local SECTIONS = {
     "Follow and trade", {
       {
         "macro", "Maintain the MAMA macro",
-        "Keep the account-wide MAMA follow + assist macro pointing at the current lead."
+        "Create a per character MAMA macro (a starter for your class) and keep its /follow and /assist lines " ..
+          "pointing at the current lead. The rest of the macro is yours to edit."
       }, {
         "autoTrade", "Auto fill trades with mats",
         "When trading with a team member, put in the mats their professions use (cloth to the tailor, ore to the " ..
