@@ -151,6 +151,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   `/click Button` from a macro does NOT work (PreClick fires but the action doesn't happen); must use keybinds or action-bar macros.
 - Quests: auto-accept, auto-share on accept (guard against re-sharing received quests), abandon sync (not for completed quests),
   all options on by default. Quest share CONFIRMED: sender QuestLogPushQuest -> receiver QUEST_DETAIL -> AcceptQuest() -> QUEST_ACCEPTED.
+  Modifier held = don't auto accept (read first) only for NPC quests: IsModifierKeyDown() is seen by every window, so a modifier
+  still held on the lead while accepting skipped auto accept of the share on the minions.
 - Options panel in Settings (Game Menu > Options > AddOns).
 - Loot (option `autoFFA`, default on): group leader sets free-for-all when the whole team (up to the highest known slot)
   is first grouped, group loot when strangers (no slot) join, free-for-all again once they leave. Nothing else
