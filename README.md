@@ -72,8 +72,8 @@ Follow and assist are protected actions that must come from a key press or your 
 - Abandoning a quest on one window abandons it on the others (never a completed quest).
 - Talking to an NPC whose dialog has only one option and no quest (most vendors and trainers) picks that option: you go
   straight to the vendor window. Same for an NPC with only one quest to pick up and nothing else: the quest opens (and
-  gets auto accepted when grouped). Hold Shift, Ctrl or Alt while opening the NPC to see the dialog; `/mama gossip off`
-  turns it off.
+  gets auto accepted when grouped), or with only one completed quest to turn in: it opens for turn in. Hold Shift, Ctrl
+  or Alt while opening the NPC to see the dialog; `/mama gossip off` turns it off.
 
 ### Professions and trading mats
 

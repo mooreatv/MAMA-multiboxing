@@ -47,8 +47,8 @@ local SECTIONS = {
       {
         "autoGossip", "Skip single option dialogs",
         "When an NPC offers only one option and no quest (most vendors and trainers), pick it: straight to the " ..
-          "vendor. Same for an NPC offering only one quest to pick up. Hold Shift, Ctrl or Alt while opening the " ..
-          "NPC to see the dialog."
+          "vendor. Same for an NPC offering only one quest to pick up, or only one completed quest to turn in. " ..
+          "Hold Shift, Ctrl or Alt while opening the NPC to see the dialog."
       }
     }
   }, {
