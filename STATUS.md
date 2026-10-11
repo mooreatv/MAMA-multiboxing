@@ -212,6 +212,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Blizzard's GossipFrameShared `HandleShow`, minus its `selectOptionWhenOnlyOption` flag / `ForceGossip`; options
   with that flag are left to Blizzard). Follow-up pages with one option are not picked. On the lead the pick goes
   through the `SelectOption` hook and is mirrored like a click.
+- Same pass: 0 options, 1 available quest, 0 active -> `C_GossipInfo.SelectAvailableQuest(questID)` next frame, which
+  opens the quest (`QUEST_DETAIL` -> auto accept when grouped). Forever shows a gossip for a single quest NPC instead
+  of going straight to the quest (seen in game: "0 options, 1 available and 0 active quests").
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
