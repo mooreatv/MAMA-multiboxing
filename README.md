@@ -56,9 +56,14 @@ Follow and assist are protected actions that must come from a key press or your 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
   *Follow train + assist lead* (each slot follows the previous slot; the lead stops following),
   *Make me lead*, *Invite team*, *Disband team*, *Identify slot*.
-- **The MAMA macro**: Mama-forever creates an account wide macro called `MAMA` and keeps its text pointed at the
-  current lead. Open the macro window (`/macro`), drag `MAMA` to an action bar once and use it. You can change its
-  icon, and add lines after the ones Mama writes (they are kept). Turn this off with `/mama macro off`.
+- **The MAMA macro**: Mama-forever creates a per character macro called `MAMA` with a starter for your class
+  (follow and assist the lead, attack, send the pet, cast a basic spell) and keeps its `/follow` and `/assist` lines
+  pointed at the current lead. Open the macro window (`/macro`, character tab), drag `MAMA` to an action bar once
+  and use it. Edit it freely (spell, icon, extra lines): only the `/follow` and `/assist` lines are updated.
+  Until you edit it, the starter picks up a better spell when you learn it (Judgement for paladins, Serpent Sting
+  for hunters).
+  `/mama macro reset` puts the class starter back, `/mama macro off` stops managing it. The account wide `MAMA` macro
+  of older versions is deleted.
 
 ### Quests
 
