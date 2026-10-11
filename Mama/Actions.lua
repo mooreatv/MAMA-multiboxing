@@ -9,18 +9,22 @@ local DYNAMIC_ICON = 134400 -- question mark: the client shows the #showtooltip 
 
 -- Starting point of each class's MAMA macro (the user edits it from there): pet = also send the pet,
 -- noStartAttack = no /startattack (melee auto attack cancels Auto Shot). Stages = spells to /cast; while the macro is
--- an untouched starter it moves to the last stage whose `known` spell ID is learned. "!" keeps spamming from toggling
--- Auto Shot off; "#" lines are ignored by the client.
+-- an untouched starter it moves to the last stage whose `known` spell IDs (rank 1) are all learned. "!" keeps spamming
+-- from toggling Auto Shot off; "#" lines are ignored by the client.
 local STARTERS = {
   DRUID = {{"Wrath"}},
-  HUNTER = {pet = true, noStartAttack = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = 1978}},
+  HUNTER = {pet = true, noStartAttack = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = {1978}}},
   MAGE = {{"Fireball"}},
-  PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = 20271}},
+  PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = {20271}}},
   PRIEST = {{"Smite"}},
   ROGUE = {{"Sinister Strike"}},
   SHAMAN = {{"Lightning Bolt"}},
   WARLOCK = {pet = true, {"Shadow Bolt"}},
-  WARRIOR = {{"Heroic Strike"}}
+  -- Charge (100) in when out of combat, then Rend (772) or Heroic Strike: either can be learned first
+  WARRIOR = {
+    {"Heroic Strike"}, {"[nocombat] Charge", "Heroic Strike", known = {100}}, {"Rend", known = {772}},
+    {"[nocombat] Charge", "Rend", known = {100, 772}}
+  }
 }
 
 local function classStarter()
@@ -28,9 +32,14 @@ local function classStarter()
   return STARTERS[class] or {{}}
 end
 
+local function knowsAll(ids)
+  for _, id in ipairs(ids or {}) do if not C_SpellBook.IsSpellKnown(id) then return false end end
+  return true
+end
+
 local function bestStage(starter)
   local best = 1
-  for i, stage in ipairs(starter) do if not stage.known or C_SpellBook.IsSpellKnown(stage.known) then best = i end end
+  for i, stage in ipairs(starter) do if knowsAll(stage.known) then best = i end end
   return best
 end
 
