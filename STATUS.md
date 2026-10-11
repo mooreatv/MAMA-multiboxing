@@ -135,6 +135,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Announcing whispers the same faction's master/slot owners + up to 3 recent holders per slot, retried every 20s until someone answers
   (offline whispers are lost). Slot 1 of each faction is that faction's master (`IsMaster` = slot 1 + token), so each faction's team auto-invites.
   `/mama s 1` reuses the token; `/mama token new` makes a new one and clears the current faction's slots.
+  Pasting a token of another team (different team ID) clears them too, so the old team's slot 1 isn't taken as master.
 - Cross-home-realm whisper support (different realm IDs confirmed working; sender shown without realm).
 - Status window (DynamicBoxer parity): slot column + `>` marker, class/connection state, row click targets/invites, left invite, middle disband,
   right options, shift-left party/raid, shift-right compact, shift-middle big slot number, ctrl-left auto-invite, ctrl-right token dialog,
