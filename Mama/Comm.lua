@@ -7,6 +7,8 @@
 -- replayed.
 -- Messages are whispered to the master (slot 1) by full name (works ungrouped and across home realms)
 -- and sent on the party/raid channel once grouped. The master relays who is on the team.
+-- Whispers can arrive minutes late (seen on the beta server), group messages don't: a "whisper" to someone grouped
+-- with us goes on the group channel, addressed to them ("T;Name;payload").
 local _, MF = ...
 
 local PREFIX = "MAMAFOREVER"
@@ -16,6 +18,9 @@ MF.online = {} -- names we've heard from directly this session
 local ALNUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 local MOD = 4294967296
 local FUTURE_LIMIT, PAST_LIMIT = -5, 120 -- seconds a message may be from the future / past
+-- Whispered info ("slot N is X") is still useful when it arrives late, and whispers can't be seen (so replayed) by
+-- others: accept it for longer. Other kinds (abandon, settings...) could undo something done since.
+local LATE_INFO_LIMIT = 600
 
 local function now() return GetServerTime() end
 
@@ -95,18 +100,19 @@ end
 local accepted = {}
 C_Timer.NewTicker(PAST_LIMIT, function()
   local t = now()
-  for sig, at in pairs(accepted) do if t - at > PAST_LIMIT - FUTURE_LIMIT then accepted[sig] = nil end end
+  for sig, at in pairs(accepted) do if t - at > LATE_INFO_LIMIT - FUTURE_LIMIT then accepted[sig] = nil end end
 end)
 
 -- Returns true, payload for a valid message of our team; false, reason otherwise.
-function MF:VerifyMessage(msg, tok)
+function MF:VerifyMessage(msg, tok, channel)
   local base, team, payload, ts, sig = msg:match("^(([^:]+):(.-):%w%w%w%w:(%d+):)(%x+)$")
   if not base then return false, "malformed" end
   if team ~= tok.team then return false, "other team" end
   if self:Sign(base, tok.secret) ~= sig then return false, "bad signature" end
   local delta = now() - tonumber(ts)
   if delta < FUTURE_LIMIT then return false, "from the future" end
-  if delta > PAST_LIMIT then return false, "too old" end
+  local limit = (channel == "WHISPER" and payload:sub(1, 2) == "I;") and LATE_INFO_LIMIT or PAST_LIMIT
+  if delta > limit then return false, ("too old (%ds)"):format(delta) end
   if accepted[sig] then return false, "replayed" end
   accepted[sig] = now()
   return true, payload
@@ -126,13 +132,22 @@ local function schedule(fn)
   end
 end
 
+local function groupChannel() return IsInRaid() and "RAID" or "PARTY" end
+
 -- why: optional reason, shown in the debug log
 function MF:SendWhisper(to, payload, why)
   local tok = self:Token()
   if not tok or to == self.myName then return end
+  why = why and (" (" .. why .. ")") or ""
   schedule(function()
+    if self.roster[to] and IsInGroup() then
+      local msg = self:SecureMessage("T;" .. to .. ";" .. payload, tok)
+      self:Debug("group msg to %s: %s%s", to, payload, why)
+      C_ChatInfo.SendAddonMessage(PREFIX, msg, groupChannel())
+      return
+    end
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("whisper to %s: %s%s", to, payload, why and (" (" .. why .. ")") or "")
+    self:Debug("whisper to %s: %s%s", to, payload, why)
     C_ChatInfo.SendAddonMessage(PREFIX, msg, "WHISPER", to)
   end)
 end
@@ -143,7 +158,7 @@ function MF:SendGroup(payload)
   schedule(function()
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("group msg: %s", payload)
-    C_ChatInfo.SendAddonMessage(PREFIX, msg, IsInRaid() and "RAID" or "PARTY")
+    C_ChatInfo.SendAddonMessage(PREFIX, msg, groupChannel())
   end)
 end
 
@@ -337,14 +352,19 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
     self:Debug("ignoring message from %s: we have no token", tostring(sender))
     return
   end
-  local ok, payload = self:VerifyMessage(text, tok)
+  local ok, payload = self:VerifyMessage(text, tok, channel)
   if not ok then
     self:Debug("ignoring message from %s: %s", tostring(sender), payload)
     return
   end
+  local to, inner = payload:match("^T;([^;]+);(.*)$")
+  if to then
+    if to ~= self.myName then return end -- addressed to another member of the group
+    payload = inner
+  end
   self:Debug("valid message from %s: %s", tostring(sender), payload)
   local kind, rest = payload:match("^(%a);(.*)$")
-  local handler = kind and self.messageHandlers[kind]
+  local handler = kind ~= "T" and kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end
 end)
 

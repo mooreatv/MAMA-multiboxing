@@ -18,7 +18,7 @@ local _, MF = ...
 
 local WATCH = 10 -- seconds after follow ends during which the lead getting out of range means we're stuck
 local SPAM = 15 -- seconds between two follow warnings from the same window
-local CHUNK = 150 -- bytes of whisper text per message
+local CHUNK = 120 -- bytes of whisper text per message (fits in 255 with the signature, names and "T;Name;" wrap)
 
 local function lead(self)
   local l = self:GetLead()
