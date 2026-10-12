@@ -233,6 +233,11 @@ MF:AddCommand("invite", function(self) self:InviteMissing() end,
 local inviteQueue
 local inviteCount
 
+-- Invites take as long as whispers to arrive (~2 min on the beta server): automatic invites skip whoever we invited
+-- less than INVITE_AGAIN seconds ago (clicking invite always invites).
+local INVITE_AGAIN = 150
+local invitedAt = {} -- name -> GetTime() of our last invite
+
 -- Invites the missing team members in slot order; above 5 it waits for the group to exist, then converts to raid.
 local function processInvites(tries)
   while inviteQueue and #inviteQueue > 0 do
@@ -256,6 +261,7 @@ local function processInvites(tries)
         return
       end
       MF:Print("inviting %s", name)
+      invitedAt[name] = GetTime()
       C_PartyInfo.InviteUnit(name)
       inviteCount = inviteCount + 1
       tries = 0
@@ -266,7 +272,8 @@ local function processInvites(tries)
 end
 
 -- onlyOnline: just the ones we heard from this session (automatic invites; offline ones would only error).
-function MF:InviteMissing(onlyOnline)
+-- quiet: no message when nobody is missing.
+function MF:InviteMissing(onlyOnline, quiet)
   if inviteQueue then return end -- already running
   inviteQueue = {}
   local slots = {}
@@ -274,18 +281,30 @@ function MF:InviteMissing(onlyOnline)
   table.sort(slots)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
-    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) then
+    local recent = onlyOnline and invitedAt[n] and GetTime() - invitedAt[n] < INVITE_AGAIN
+    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) and not recent then
       inviteQueue[#inviteQueue + 1] = n
     end
   end
   if #inviteQueue == 0 then
     inviteQueue = nil
-    if not onlyOnline then self:Print("everyone is already in the group") end
+    if not onlyOnline and not quiet then self:Print("everyone is already in the group") end
     return
   end
   inviteCount = math.max(1, GetNumGroupMembers())
   processInvites(0)
 end
+
+-- The master invites its team as soon as it logs in, without waiting to hear from them (they auto-accept): with
+-- lagging whispers that saves a whole round trip. Members not logged in yet only give a "not found" error.
+MF:Listen("LOGIN", function(self)
+  C_Timer.After(5, function()
+    if not (self.db.autoInvite and self:IsMaster()) or self:Disabled() then return end
+    if IsInGroup() and not UnitIsGroupLeader("player") then return end
+    self:Debug("inviting the team at login")
+    self:InviteMissing(false, true)
+  end)
+end)
 
 -- Several teammates tend to announce themselves at once: collect them into a single invite pass.
 local invitePending

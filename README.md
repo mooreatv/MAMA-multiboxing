@@ -39,7 +39,7 @@ that character's group invites; it does not pair that character, assign it a slo
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
 Each character remembers its own team (slot, token, teammates): switching between teams played on the same
-accounts picks up the right one at login.
+accounts picks up the right one at login. Slot 1 invites its team as soon as it logs in.
 
 **New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` then
 `/mama token` and copy it (`/mama token new` for a brand new team). On each other window, `/mama s N` if its slot
