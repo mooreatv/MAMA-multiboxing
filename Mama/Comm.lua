@@ -103,7 +103,7 @@ C_Timer.NewTicker(PAST_LIMIT, function()
   for sig, at in pairs(accepted) do if t - at > LATE_INFO_LIMIT - FUTURE_LIMIT then accepted[sig] = nil end end
 end)
 
--- Returns true, payload for a valid message of our team; false, reason otherwise.
+-- Returns true, payload, seconds since it was sent for a valid message of our team; false, reason otherwise.
 function MF:VerifyMessage(msg, tok, channel)
   local base, team, payload, ts, sig = msg:match("^(([^:]+):(.-):%w%w%w%w:(%d+):)(%x+)$")
   if not base then return false, "malformed" end
@@ -115,7 +115,7 @@ function MF:VerifyMessage(msg, tok, channel)
   if delta > limit then return false, ("too old (%ds)"):format(delta) end
   if accepted[sig] then return false, "replayed" end
   accepted[sig] = now()
-  return true, payload
+  return true, payload, delta
 end
 
 -- Addon messages are throttled: space our sends out a bit.
@@ -352,7 +352,7 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
     self:Debug("ignoring message from %s: we have no token", tostring(sender))
     return
   end
-  local ok, payload = self:VerifyMessage(text, tok, channel)
+  local ok, payload, delay = self:VerifyMessage(text, tok, channel)
   if not ok then
     self:Debug("ignoring message from %s: %s", tostring(sender), payload)
     return
@@ -362,7 +362,7 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
     if to ~= self.myName then return end -- addressed to another member of the group
     payload = inner
   end
-  self:Debug("valid message from %s: %s", tostring(sender), payload)
+  self:Debug("valid message from %s%s: %s", tostring(sender), delay > 1 and (" (%ds late)"):format(delay) or "", payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end
