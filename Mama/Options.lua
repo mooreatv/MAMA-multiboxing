@@ -67,8 +67,8 @@ local SECTIONS = {
     "Alerts to the lead", {
       {
         "followWarn", "Warn when follow breaks",
-        "Out of combat, when this window stops following and the lead gets away (stuck behind something), warn " ..
-          "the lead's window."
+        "Out of combat, when this window stops following and the lead gets away (stuck behind something), or a " ..
+          "follow key or macro doesn't start following, warn the lead's window."
       }, {
         "forwardWhispers", "Forward whispers to the lead",
         "Whispers from players outside the team are shown in the lead's window too."
