@@ -38,6 +38,9 @@ are added to the trusted team and their group invites are auto accepted. `/mama 
 that character's group invites; it does not pair that character, assign it a slot, or give it the token needed to
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
+Each character remembers its own team (slot, token, teammates): switching between teams played on the same
+accounts picks up the right one at login.
+
 **New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` then
 `/mama token` and copy it (`/mama token new` for a brand new team). On each other window, `/mama s N` if its slot
 changes, then `/mama token` and paste it (or `/mama token <paste>`, or Ctrl+Right on the status window). Pasting a
