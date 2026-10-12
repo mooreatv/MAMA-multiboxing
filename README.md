@@ -39,7 +39,12 @@ that character's group invites; it does not pair that character, assign it a slo
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
 Each character remembers its own team (slot, token, teammates): switching between teams played on the same
-accounts picks up the right one at login. Slot 1 invites its team as soon as it logs in.
+accounts picks up the right one at login.
+
+**Log in slot 1 last** (when you can't log in all windows at once). Slot 1 invites its team as soon as it logs in, and
+the others accept automatically. If slot 1 logs in first, those invites find nobody, and the group only forms once the
+other windows' announces reach slot 1, which can take minutes when the server's chat lags. If that happens, left click
+the status window on slot 1 (or `/mama invite`, or the *Invite team* key) once everyone is logged in.
 
 **New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` then
 `/mama token` and copy it (`/mama token new` for a brand new team). On each other window, `/mama s N` if its slot
