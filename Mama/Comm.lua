@@ -71,11 +71,13 @@ end
 
 function MF:Token() return self.db.token and self:ParseToken(self.db.token) or nil end
 
--- One account wide token; the per faction part is the slot map and candidate history (no cross faction grouping).
+-- The token is account wide, remembered per character with its team (see PLAYER_LOGIN in Mama.lua); the slot map
+-- and candidate history are per faction (no cross faction grouping).
 -- tokenFaction remembers which faction the token's master character belongs to.
 function MF:SetToken(text)
   self.db.token = text
   self.db.tokenFaction = text and self.faction or nil
+  self:RememberTeam()
 end
 
 function MF:TokenText() return self.db.token or "" end
@@ -183,10 +185,19 @@ function MF:SlotCandidates()
   return list
 end
 
--- Recent holders (newest first) of the slots whose current owner we haven't heard from: that slot may be played
--- with another character today. Slots that are no longer part of the team (/mama complete, token new) are skipped.
+-- For the slots whose current owner we haven't heard from (or that have none): first who held it in the team this
+-- account played last (when this character was in another one), then its recent holders (newest first): that slot may
+-- be played with another character today. History of slots no longer part of the team (/mama complete, token new) is
+-- skipped.
 function MF:HistoryCandidates()
   local seen, list = {}, {}
+  for s, n in pairs(self.otherTeam or {}) do
+    local owner = self.db.slots[s]
+    if s ~= self.db.slot and n ~= owner and n ~= self.myName and not (owner and here(self, owner)) then
+      seen[n] = true
+      list[#list + 1] = {n, ("slot %d in this account's last team"):format(s)}
+    end
+  end
   for s, names in pairs(self.db.history[self.faction] or {}) do
     local owner = self.db.slots[s]
     if s ~= self.db.slot and owner and not here(self, owner) then
@@ -428,6 +439,7 @@ end
 
 function MF:SetSlot(n)
   self.db.slot = n
+  self:RememberTeam()
   if n == 0 then
     self:SetOwnSlot()
     self:Print("slot cleared, team features are off in this window")

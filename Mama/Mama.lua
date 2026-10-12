@@ -139,12 +139,34 @@ MF:On("PLAYER_LOGIN", function(self)
   self.faction = UnitFactionGroup("player") or "Neutral"
   local s = self.db
   s.slotsBy = s.slotsBy or {}
-  s.slotsBy[self.faction] = s.slotsBy[self.faction] or {}
-  s.slots = s.slotsBy[self.faction]
   s.history = s.history or {}
   s.history[self.faction] = s.history[self.faction] or {}
+  -- Each character also remembers its own last team (slot map, slot, token): switching between teams of the same
+  -- faction starts from the right one. A character seen for the first time starts from this account's last team.
+  -- The account's last team, when it's another one, is still tried after ours (see MF:HistoryCandidates).
+  s.chars = s.chars or {}
+  local last = s.slotsBy[self.faction] or {}
+  local c = s.chars[self.myName]
+  if c then
+    s.slot, s.token, s.tokenFaction = c.slot, c.token, c.tokenFaction
+    self.otherTeam = last
+  else
+    c = {slots = {}}
+    for slot, name in pairs(last) do c.slots[slot] = name end
+    s.chars[self.myName] = c
+    self.otherTeam = {}
+  end
+  s.slotsBy[self.faction] = c.slots
+  s.slots = c.slots
+  self:RememberTeam()
   self:Fire("LOGIN")
 end)
+
+-- Keeps this character's slot and token with its team (see PLAYER_LOGIN).
+function MF:RememberTeam()
+  local c = self.db.chars and self.myName and self.db.chars[self.myName]
+  if c then c.slot, c.token, c.tokenFaction = self.db.slot, self.db.token, self.db.tokenFaction end
+end
 
 -- Names in Forever are "First Last" with a space and no realm part: always treat them as opaque whole strings.
 function MF:FullName(unit) return GetUnitName(unit, true) end

@@ -139,6 +139,10 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (offline whispers are lost). Slot 1 of each faction is that faction's master (`IsMaster` = slot 1 + token), so each faction's team auto-invites.
   `/mama s 1` reuses the token; `/mama token new` makes a new one and clears the current faction's slots.
   Pasting a token (even the same one again) clears them too, so an older team's slot 1 isn't taken as master; the master relays the team back.
+- Per-character team (`db.chars[name]` = {slots, slot, token, tokenFaction}): at login a known character restores its own slot map, slot
+  and token (switching between teams of the same faction on the same accounts); a new one copies the account's last faction team
+  (`slotsBy[faction]`, which then points at the current character's map). The account's previous team (`MF.otherTeam`) is whispered with
+  the history candidates, for slots whose owner hasn't answered or that have none.
 - Cross-home-realm whisper support (different realm IDs confirmed working; sender shown without realm).
 - Status window (DynamicBoxer parity): slot column + `>` marker, class/connection state, row click targets/invites, left invite, middle disband,
   right options, shift-left party/raid, shift-right compact, shift-middle big slot number, ctrl-left auto-invite, ctrl-right token dialog,
