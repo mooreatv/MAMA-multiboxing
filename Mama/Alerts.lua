@@ -12,12 +12,14 @@
    ]] --
 -- Alerts sent from the other windows to the lead's:
 -- "F;subzone": we stopped following out of combat and the lead got away (stuck behind something).
+-- "F;subzone;1": a /follow (key, MAMA macro) didn't start following out of combat (too far, not visible...).
 -- "W;i/n;flag;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255
 -- bytes), flag "GM" or "". "W;0/0;flag;;" when the whisper was secret (chat lockdown).
 local _, MF = ...
 
 local WATCH = 10 -- seconds after follow ends during which the lead getting out of range means we're stuck
 local SPAM = 15 -- seconds between two follow warnings from the same window
+local START = 1 -- seconds for a /follow to start following
 local CHUNK = 120 -- bytes of whisper text per message (fits in 255 with the signature, names and "T;Name;" wrap)
 
 local function lead(self)
@@ -27,7 +29,7 @@ end
 
 local function busy(unit) return UnitAffectingCombat("player") or (unit and UnitAffectingCombat(unit)) end
 
-local following, watch
+local following, watch, begins = false, nil, 0
 
 local function stopWatch()
   if watch then watch:Cancel() end
@@ -36,7 +38,28 @@ end
 
 MF:On("AUTOFOLLOW_BEGIN", function()
   following = true
+  begins = begins + 1
   stopWatch()
+end)
+
+-- /follow (our keys and macro, or the user's own) calls the global FollowUnit: when it doesn't start following, tell
+-- the lead. Not in combat (the MAMA macro is pressed all fight long, out of range is normal there), nor for ourselves
+-- (the lead's window follows "player").
+local lastTry = -SPAM
+hooksecurefunc("FollowUnit", function(who)
+  local self = MF
+  local l = lead(self)
+  if not (self.db.followWarn and l) or self:Disabled() or busy() then return end
+  who = who and who ~= "" and who or "target"
+  if who == self.myName or UnitIsUnit(who, "player") then return end
+  local before = begins
+  C_Timer.After(START, function()
+    if begins ~= before or following or busy() or UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then return end
+    if GetTime() - lastTry < SPAM then return end
+    lastTry = GetTime()
+    self:Debug("/follow %s didn't start following, telling %s", who, l)
+    self:SendWhisper(l, "F;" .. (GetSubZoneText() or "") .. ";1", "can't follow")
+  end)
 end)
 
 -- Following ends when we move by hand, the lead gets too far, a fight starts... Only worth a warning when it happened
@@ -68,8 +91,10 @@ MF.messageHandlers.F = function(self, sender, rest)
   local slot = self:SlotOf(sender)
   if not slot or GetTime() - (lastWarn[sender] or -SPAM) < SPAM then return end
   lastWarn[sender] = GetTime()
-  local where = rest ~= "" and (" near " .. rest) or ""
-  local msg = ("Slot %d %s stopped following%s"):format(slot, sender, where)
+  local zone, start = rest:match("^([^;]*);?(.*)$")
+  local where = zone ~= "" and (" near " .. zone) or ""
+  local what = start == "1" and "can't follow" or "stopped following"
+  local msg = ("Slot %d %s %s%s"):format(slot, sender, what, where)
   self:Print("|cFFFF4040%s|r", msg)
   RaidNotice_AddMessage(RaidWarningFrame, msg, ChatTypeInfo.RAID_WARNING)
   PlaySound(SOUNDKIT.RAID_WARNING)
