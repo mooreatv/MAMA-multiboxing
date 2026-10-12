@@ -129,6 +129,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Beta server whispers can arrive minutes late (rejected as too old), group messages don't: whispers to grouped members go on PARTY/RAID
   as `T;Name;payload` (only Name handles it; older versions ignore T, update all windows together). Ungrouped whispered `I` info is
   accepted up to 600s old (whispers can't be replayed by others); other kinds keep 120s. Whisper forward chunk 120 bytes (255 limit). Verified in game.
+  Measured (debug "(Ns late)"): whispers 90-117s late, invites similar. To cut traffic while waiting: announce retries back off
+  20/40/80/120s; a member's repeated announce (same slot) is answered at most once per 60s; automatic invites skip names invited
+  < 60s ago; SendAddonMessage results other than Success are logged (Enum.SendAddonMessageResult name, e.g. AddonMessageThrottle).
 - Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
   `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
   That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.

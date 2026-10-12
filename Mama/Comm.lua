@@ -136,6 +136,15 @@ end
 
 local function groupChannel() return IsInRaid() and "RAID" or "PARTY" end
 
+-- Sends and logs when the client didn't (throttled...): to tell our own traffic apart from server lag.
+local function send(msg, channel, to)
+  local ok, r = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, to)
+  if ok and (r == nil or r == true or r == 0) then return end
+  local why = r -- error message, or result code
+  if ok then for k, v in pairs(Enum.SendAddonMessageResult or {}) do if v == r then why = k end end end
+  MF:Debug("%s message not sent: %s", channel, tostring(why))
+end
+
 -- why: optional reason, shown in the debug log
 function MF:SendWhisper(to, payload, why)
   local tok = self:Token()
@@ -145,12 +154,12 @@ function MF:SendWhisper(to, payload, why)
     if self.roster[to] and IsInGroup() then
       local msg = self:SecureMessage("T;" .. to .. ";" .. payload, tok)
       self:Debug("group msg to %s: %s%s", to, payload, why)
-      C_ChatInfo.SendAddonMessage(PREFIX, msg, groupChannel())
+      send(msg, groupChannel())
       return
     end
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("whisper to %s: %s%s", to, payload, why)
-    C_ChatInfo.SendAddonMessage(PREFIX, msg, "WHISPER", to)
+    send(msg, "WHISPER", to)
   end)
 end
 
@@ -160,7 +169,7 @@ function MF:SendGroup(payload)
   schedule(function()
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("group msg: %s", payload)
-    C_ChatInfo.SendAddonMessage(PREFIX, msg, groupChannel())
+    send(msg, groupChannel())
   end)
 end
 
@@ -220,7 +229,7 @@ function MF:Broadcast(payload)
   schedule(function()
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     self:Debug("broadcast on GUILD: %s", payload)
-    pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "GUILD")
+    send(msg, "GUILD")
   end)
 end
 
@@ -268,17 +277,21 @@ function MF:Announce(force)
   self:KeepAnnouncing()
 end
 
--- Whispers to offline characters are silently lost, so keep announcing until we hear from someone directly.
+-- Whispers to offline characters are silently lost, so keep announcing until we hear from someone directly. Whispers
+-- can also take minutes to arrive (beta server): wait longer each time, so a lagging answer isn't buried under retries.
+local RETRY_FIRST, RETRY_MAX = 20, 120
 local retryRunning
 function MF:KeepAnnouncing()
   if retryRunning then return end
   retryRunning = true
+  local delay = RETRY_FIRST / 2
   local function tick()
     if next(self.online) or self.db.slot == 0 or not self:Token() then
       retryRunning = false
       return
     end
-    C_Timer.After(20, function()
+    delay = math.min(delay * 2, RETRY_MAX)
+    C_Timer.After(delay, function()
       if next(self.online) or self.db.slot == 0 or not self:Token() or self:Disabled() then
         retryRunning = false
         return
@@ -327,6 +340,11 @@ function MF:RecordMember(slot, name)
   end
 end
 
+-- A member keeps re-announcing until our answer reaches it, which can take minutes when whispers lag: answer the same
+-- member (same slot) at most once per ANSWER_EVERY seconds, the copies of the announce still in flight add nothing.
+local ANSWER_EVERY = 60
+local answered = {} -- name -> {at = GetTime(), slot = slot} of our last answer to their announce
+
 function MF:HandleInfo(sender, slot, name, flag)
   local direct = sender == name -- otherwise it's relayed by the master
   self:RecordMember(slot, name)
@@ -337,14 +355,21 @@ function MF:HandleInfo(sender, slot, name, flag)
     self:Fire('TEAM_CHANGED')
   end
   -- new to us, or asking (they just logged in or reloaded, and may have missed what we sent before)
-  if isNew or flag == 1 then self:Fire("MEMBER_SEEN", name) end
-  if flag == 1 then self:SendInfo(name, 0, "answering their announce") end
+  local asking = isNew or flag == 1
+  local last = answered[name]
+  if asking and not isNew and last and last.slot == slot and GetTime() - last.at < ANSWER_EVERY then
+    self:Debug("%s asked again, answered %ds ago: not answering again yet", name, math.floor(GetTime() - last.at))
+    asking = false
+  end
+  if asking then answered[name] = {at = GetTime(), slot = slot} end
+  if asking then self:Fire("MEMBER_SEEN", name) end
+  if asking and flag == 1 then self:SendInfo(name, 0, "answering their announce") end
   if self.db.autoInvite and self:IsMaster() and not self.roster[name] then
     self:Debug("%s isn't grouped with us: scheduling invites", name)
     self:ScheduleInvites()
   end
   -- the master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply
-  if self:IsMaster() and (isNew or flag == 1) then
+  if self:IsMaster() and asking then
     for s, n in pairs(self.db.slots) do
       if n ~= name and n ~= self.myName then
         if self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name) end

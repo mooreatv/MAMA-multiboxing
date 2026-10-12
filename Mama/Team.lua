@@ -233,6 +233,11 @@ MF:AddCommand("invite", function(self) self:InviteMissing() end,
 local inviteQueue
 local inviteCount
 
+-- Invites can take a minute or more to arrive (beta server): automatic invites skip whoever we invited less than
+-- INVITE_AGAIN seconds ago (clicking invite always invites).
+local INVITE_AGAIN = 60
+local invitedAt = {} -- name -> GetTime() of our last invite
+
 -- Invites the missing team members in slot order; above 5 it waits for the group to exist, then converts to raid.
 local function processInvites(tries)
   while inviteQueue and #inviteQueue > 0 do
@@ -256,6 +261,7 @@ local function processInvites(tries)
         return
       end
       MF:Print("inviting %s", name)
+      invitedAt[name] = GetTime()
       C_PartyInfo.InviteUnit(name)
       inviteCount = inviteCount + 1
       tries = 0
@@ -274,7 +280,8 @@ function MF:InviteMissing(onlyOnline)
   table.sort(slots)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
-    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) then
+    local recent = onlyOnline and invitedAt[n] and GetTime() - invitedAt[n] < INVITE_AGAIN
+    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) and not recent then
       inviteQueue[#inviteQueue + 1] = n
     end
   end
