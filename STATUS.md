@@ -132,7 +132,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Measured (debug "(Ns late)"): whispers 90-117s late, invites similar. To cut traffic while waiting: announce retries back off
   20/40/80/120s; a member's repeated announce (same slot) is answered at most once per 60s; automatic invites skip names invited
   < 150s ago; invites lag like whispers (110s measured), so the master invites its own team 5s after login without waiting for
-  their announces (saves a full round trip); SendAddonMessage results other than Success are logged (Enum.SendAddonMessageResult name, e.g. AddonMessageThrottle).
+  their announces (saves a full round trip; measured: team complete 1m55s after login vs 3m49s before); SendAddonMessage results other than Success are logged (Enum.SendAddonMessageResult name, e.g. AddonMessageThrottle).
 - Auto-accept of invites checks `db.team`. It is filled when a verified info message records a slot member (`RecordMember`), or by
   `/mama team add [name]` (no name: everyone grouped). Alerts also use `db.team` to skip whisper forwarding for team members.
   That command does not pair the character or let it exchange signed team messages; it still needs a slot and the shared token.
