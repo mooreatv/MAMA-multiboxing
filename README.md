@@ -87,6 +87,9 @@ Follow and assist are protected actions that must come from a key press or your 
   straight to the vendor window. Same for an NPC with only one quest to pick up and nothing else: the quest opens (and
   gets auto accepted when grouped), or with only one completed quest to turn in: it opens for turn in. Hold Shift, Ctrl
   or Alt while opening the NPC to see the dialog; `/mama gossip off` turns it off.
+- The lead's dialog choices (gossip options, quests, flight paths) are made on the other windows too, and so are the
+  lead's clicks on popups (spirit healer, accept resurrect or summon, release spirit...) on the windows showing the
+  same popup. Never for deleting items, logging out or quitting. `/mama dialog off` turns it off.
 
 ### Professions and trading mats
 
