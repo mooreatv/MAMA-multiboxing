@@ -16,6 +16,7 @@ local addonName, MF = ...
 _G.MamaForever = MF
 
 MF.prefix = "|cFF99E5FFMama:|r "
+MF.logName, MF.slash = "Mama", "/mama" -- for Bug.lua
 -- the packager substitutes the toc's version with the release tag; a source checkout still has the placeholder
 local GetMeta = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 MF.version = GetMeta(addonName, "Version") or "?"
