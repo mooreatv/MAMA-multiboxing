@@ -6,6 +6,9 @@
 -- What the Forever client does (see the dialog probe logs): GOSSIP_SHOW with GossipFrame; quests are picked with
 -- C_GossipInfo.SelectActiveQuest/SelectAvailableQuest(questID), which closes the gossip and opens QuestFrame
 -- (QuestFrameRewardPanel for a quest that can be turned in) with GetQuestID() set; GetQuestReward(choiceIndex) turns in.
+--
+-- Popups (StaticPopup: spirit healer, resurrect, summon, release spirit...) are mirrored too: the button the lead
+-- clicks goes out with the popup's name ("which") and is clicked on the windows that have that same popup open.
 local _, MF = ...
 
 local PENDING_SECONDS = 6
@@ -19,6 +22,9 @@ local lastNpc = 0 -- the "npc" unit is already gone when some hooks run, so reme
 local taxiNames = {} -- node index -> name, cached when the map opens
 local hooked = {} -- reward buttons whose clicks we already track
 local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the quest complete dialog we have open
+-- Popups never mirrored: about the lead's own items or session, or answered elsewhere (team invites, Team.lua).
+local noPopup = {CAMP = true, QUIT = true, PARTY_INVITE = true}
+local function mirroredPopup(which) return which ~= "" and not noPopup[which] and not which:find("^DELETE") end
 
 local function setPicked(index, source)
   if not index or index < 1 or index > #reward.items or reward.picked == index then return end
@@ -185,14 +191,37 @@ local function taxi(self, _, text)
   return false
 end
 
+-- Popup choice as sent: "which,label" (the label tells apart per character buttons, like the self res options of DEATH).
+local function popupChoice(which, button)
+  return clean(which .. "," .. (button and button.GetText and button:GetText() or ""))
+end
+
+local function popup(self, index, text)
+  local which = text:match("^[^,]*")
+  if not mirroredPopup(which) then return true end
+  local _, dialog = StaticPopup_Visible(which)
+  if not dialog then return false end
+  local button = dialog.GetButton and dialog:GetButton(index)
+  if button and (not button:IsShown() or not button:IsEnabled() or popupChoice(which, button) ~= text) then
+    self:Print("not answering the %s popup like the lead: button %d isn't the same here (%s)", which, index,
+               popupChoice(which, button))
+    return true
+  end
+  self:Debug("dialog: clicking button %d of popup %s", index, which)
+  StaticPopup_OnClick(dialog, index)
+  return true
+end
+
 local receivers = {
   go = gossipOption,
   qa = questPick("GetAvailableQuests", "SelectAvailableQuest", true),
   qc = questPick("GetActiveQuests", "SelectActiveQuest"),
   qp = questContinue,
   qr = questReward,
-  tx = taxi
+  tx = taxi,
+  pp = popup
 }
+local anyNpc = {tx = true, pp = true} -- choices not tied to the NPC we talk to
 
 -- Try every pending choice (in order): a stale one that doesn't match must not block the ones behind it.
 local function run(self)
@@ -206,7 +235,7 @@ local function run(self)
       done = true
     else
       local npc = currentNpc()
-      if p.verb == "tx" or (npc and (p.npc == 0 or npc == 0 or p.npc == npc)) then
+      if anyNpc[p.verb] or (npc and (p.npc == 0 or npc == 0 or p.npc == npc)) then
         mirroring = true
         local ok, handled = pcall(receivers[p.verb], self, p.id, p.text)
         mirroring = false
@@ -364,13 +393,24 @@ MF:Listen("LOGIN", function(self)
     self:Debug("dialog: hook TakeTaxiNode(%s) %s", tostring(index), tostring(taxiNames[index] or TaxiNodeName(index)))
     send(self, "tx", 0, taxiNames[index] or TaxiNodeName(index))
   end)
+  -- Every popup button click goes through StaticPopup_OnClick; dialog.which is still set after it closed.
+  hooksecurefunc("StaticPopup_OnClick", function(dialog, index)
+    local which = dialog and dialog.which or ""
+    local button = dialog and dialog.GetButton and dialog:GetButton(index)
+    self:Debug("dialog: popup button %s clicked: %s", tostring(index), popupChoice(which, button))
+    if mirroredPopup(which) then send(self, "pp", index, popupChoice(which, button)) end
+  end)
+  hooksecurefunc("StaticPopup_Show", function(which)
+    self:Debug("dialog: popup %s shown", tostring(which))
+    retry(self)
+  end)
 end)
 
 MF:AddCommand("dialog", function(self, rest)
   self.db.autoDialog = self:ParseOnOff(rest, self.db.autoDialog)
-  self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths) is now %s",
+  self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths, popups) is now %s",
              tostring(self.db.autoDialog))
-end, "dialog [on|off] - make the other windows pick the same dialog options/flight path as the lead")
+end, "dialog [on|off] - make the other windows pick the same dialog options/flight path/popup button as the lead")
 
 MF:AddCommand("gossip", function(self, rest)
   self.db.autoGossip = self:ParseOnOff(rest, self.db.autoGossip)

@@ -41,7 +41,8 @@ local SECTIONS = {
         "When you abandon a quest on one window, abandon it on the other windows (never completed quests)."
       }, {
         "autoDialog", "Mirror the lead's dialog choices",
-        "When the lead picks a gossip option, quest or flight path, pick the same one if your dialog offers it."
+        "When the lead picks a gossip option, quest or flight path, or clicks a popup button (spirit healer, " ..
+          "resurrect, summon...), do the same if your window offers it."
       }
     }, {
       {
