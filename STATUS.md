@@ -240,15 +240,15 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Likewise 0 options, 0 available, 1 active quest with `isComplete` -> `C_GossipInfo.SelectActiveQuest(questID)` (turn in);
   an unfinished active quest is left alone. Verified in game (3 windows, one with the quest unfinished: left alone, no loop).
 
-## Popup mirroring (2026-10-12, spirit healer verified in game)
+## Popup mirroring (2026-10-12, spirit healer and release spirit verified in game)
 - Part of `autoDialog`. Every StaticPopup button click goes through the global `StaticPopup_OnClick(dialog, index)`
   (Blizzard_StaticPopup_Game/GameDialog.lua button OnClick); the lead's post hook sends `D;pp;npc;index;which,label`
   (`dialog.which` survives the hide). Receivers: `StaticPopup_Visible(which)` -> dialog; button `index` shown, enabled
   and with the same label (per character buttons, e.g. `DEATH` self res options) -> `StaticPopup_OnClick(dialog, index)`.
   Pending/retry like other dialog choices (6s), retried on a `StaticPopup_Show` hook. Not NPC bound. Never mirrored: `DELETE*`, `CAMP`, `QUIT`, `PARTY_INVITE`. Escape closes are not mirrored.
 - Spirit healer on 1.60.1 (Mainline defs): popup `XP_LOSS`, accept = `C_PlayerInteractionManager.ConfirmationInteraction
-  (SpiritHealer)`, not marked protected: clicking it from addon code works (verified). Others not tested yet: `DEATH`
-  (release), `RESURRECT*`, `CONFIRM_SUMMON`, `RECOVER_CORPSE`, `GOSSIP_CONFIRM`.
+  (SpiritHealer)`, not marked protected: clicking it from addon code works (verified). `DEATH`
+  (release spirit) verified too. Not tested yet: `RESURRECT*`, `CONFIRM_SUMMON`, `RECOVER_CORPSE`, `GOSSIP_CONFIRM`.
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
