@@ -164,8 +164,7 @@ forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
 
-No ISBoxer team discovery, no EMA integration, no support for other WoW versions, no AH/other tools. Flight-path
-choices are mirrored with dialog syncing; mount sync from the old Mama is not included yet.
+No ISBoxer team discovery (Even if it should still work, but use [WowOpenBox](https://github.com/WowOpenBox/WoWOpenBox#wowopenbox) instead - open source and designed to be safe and compliant), no EMA integration, no support for other WoW versions (yet).
 
 ## Development
 
