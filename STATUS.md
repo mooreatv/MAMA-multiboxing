@@ -286,7 +286,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   money, not guild) when affordable. Same skips as selling (disabled character, modifier held). Verified in game.
 - Options page: 5 sections, 10 rows fill most of the ~600px Settings canvas (920x724 panel); about one more row fits.
 - "Mama: vendor items" trade button (left of "Mama: give mats", `MF:GiveVendorItems`): the same stacks minus bound
-  ones (`MF:VendorTradeStacks`), unstackable first (`GetItemInfo` 8th value = max stack; uncached counts as a stack),
+  ones (`MF:VendorTradeStacks`), full slots first (unstackable or full stack: `GetItemInfo` 8th value = max stack; uncached
+  counts as partial), then partial stacks,
   into the free trade slots (`putInTrade`, shared with the mats fill). Any trade partner. Unverified in game.
 
 ## Possible improvements

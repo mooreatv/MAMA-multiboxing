@@ -12,7 +12,7 @@
    ]] --
 -- Trade: opening a trade with a team member puts the mats their professions use in the trade window (cloth to the
 -- tailor, ore to the miner...), unless we use them too (see GivesTo; the "Mama: give mats" button gives those anyway).
--- The trade itself is still accepted by hand. The "Mama: vendor items" button gives the items we'd sell at a vendor.
+-- The trade itself is still accepted by hand.
 local _, MF = ...
 
 local P = MF.PROF
@@ -262,7 +262,7 @@ MF:Listen("LOGIN", function(self)
   v:SetScript("OnEnter", function(btn)
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:SetText("Give vendor items")
-    GameTooltip:AddLine("Put the items you sell at vendors (sell list and greys, unstackable ones first) in the " ..
+    GameTooltip:AddLine("Put the items you sell at vendors (sell list and greys, partial stacks last) in the " ..
                           "trade, e.g. for the team member with the most free bag slots to sell them.", 1, 1, 1, true)
     GameTooltip:Show()
   end)
