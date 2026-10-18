@@ -98,12 +98,13 @@ function MF:Fire(name, ...) for _, fn in ipairs(listeners[name] or {}) do fn(sel
 -- Blizzard events: any number of handlers per event, called as fn(MF, ...).
 local frame = CreateFrame("Frame")
 local handlers = {}
-function MF:On(event, fn)
+-- first: run before the handlers already registered (they may change what the event's getters return).
+function MF:On(event, fn, first)
   if not handlers[event] then
     handlers[event] = {}
     frame:RegisterEvent(event)
   end
-  table.insert(handlers[event], fn)
+  table.insert(handlers[event], first and 1 or #handlers[event] + 1, fn)
 end
 
 frame:SetScript("OnEvent", function(_, event, ...) for _, fn in ipairs(handlers[event]) do fn(MF, ...) end end)

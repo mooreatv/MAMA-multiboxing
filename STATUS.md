@@ -246,6 +246,18 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   Likewise 0 options, 0 available, 1 active quest with `isComplete` -> `C_GossipInfo.SelectActiveQuest(questID)` (turn in);
   an unfinished active quest is left alone. Verified in game (3 windows, one with the quest unfinished: left alone, no loop).
 
+## Quest picks from gossip without hooks (2026-10-18)
+- Seen in game: with RestedXP on the lead, its auto turn in sent `qr` but no `qc`, so the other windows stayed on
+  the gossip. RestedXP keeps `local GossipSelectActiveQuest = C_GossipInfo.SelectActiveQuest` at load (before our
+  `LOGIN` hooks), so a `hooksecurefunc` on the table never sees its calls (hooks only replace the table entry).
+- The lead now sends `qa`/`qc` from the quest events instead: `GOSSIP_SHOW` records the available/active quest IDs,
+  and the first `QUEST_DETAIL`/`QUEST_PROGRESS`/`QUEST_COMPLETE` for one of them (gossip open or closed < 2s) sends the
+  pick, whoever made it. The follow-up quest offered after a turn in is not sent (the record is cleared).
+  The `QUEST_DETAIL` check runs before the auto accept (`MF:On(event, fn, true)`): `AcceptQuest()` makes
+  `GetQuestID()` return 0 for the handlers after it (seen in game).
+- Receivers: a `qp`/`qr` while our gossip lists that active quest opens it (`SelectActiveQuest`), then continues the
+  progress page; once per pending choice, and not when an earlier pending `qc`/`qp` for it does it already.
+
 ## Popup mirroring (2026-10-12, spirit healer, release spirit and corpse recovery verified in game)
 - Part of `autoDialog`. Every StaticPopup button click goes through the global `StaticPopup_OnClick(dialog, index)`
   (Blizzard_StaticPopup_Game/GameDialog.lua button OnClick); the lead's post hook sends `D;pp;npc;index;which,label`
