@@ -250,6 +250,21 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   (SpiritHealer)`, not marked protected: clicking it from addon code works (verified). `DEATH`
   (release spirit) and `RECOVER_CORPSE` verified too. Not tested yet: `RESURRECT*`, `CONFIRM_SUMMON`, `GOSSIP_CONFIRM`.
 
+## Away members and quieter follow alerts (2026-10-17, verified in game)
+- `db.away` (saved set of full names, `MF:IsAway(name)`, `ToggleAway`, `/mama away N ...|Name`, `/mama back
+  N ...|Name|all`, Alt+Middle on a status row; header Alt+Middle never disbands). Synced with `X;Name,Name` (every
+  away slot holder, empty = none) sent with `SendTeam` on change; receivers set every slot holder from the list. The
+  master also whispers `X;list` to a member asking (`HandleInfo` relay), so one offline at the change catches up.
+- Away effects: skipped by `InviteMissing`/`ScheduleInvites` (row click still invites), counts as present in
+  `groupState` ("team" = every slot 1..max is us, grouped or away) and `TrimTeam`, its `F` and `A` ignored. On its
+  own window: no follow alerts, no quest auto accept/confirm/share/abandon (send or obey), `D` ignored (dialog and
+  popup mirroring). Unchanged: `W`, `G`, `P`, trade fill, announces, its own single option gossip.
+- Follow alerts, everyone: 3s ticker notes when the lead was last `UnitIsVisible` (or we were following); both
+  alerts need that within 120s (`NEAR`). Not sent while the lead `UnitIsDeadOrGhost`/`UnitOnTaxi` (watch stops). The
+  lead drops `F` while itself dead/ghost/on a taxi and for 20s (`QUIET`) after `PLAYER_ALIVE` (also fires on
+  release), `PLAYER_UNGHOST`, `PLAYER_ENTERING_WORLD`, `PLAYER_CONTROL_GAINED` (taxi landing, also after stuns).
+  No message to the team needed.
+
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
 - Global inventory: per character bags/bank contents saved and shared across the team.

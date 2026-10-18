@@ -239,7 +239,7 @@ local function acceptQuest(self)
     self:Debug("not auto accepting quest: modifier held")
     return
   end
-  if self.db.autoQuest and IsInGroup() then
+  if self.db.autoQuest and IsInGroup() and not self:IsAway() then
     self:Debug("accepting quest")
     if shared then self.noShare[GetQuestID()] = true end
     AcceptQuest()
@@ -253,7 +253,7 @@ MF:OnTeam("QUEST_DETAIL", acceptQuest)
 
 -- Someone in the group started an escort/event quest: that's a confirmation popup, answered with ConfirmAcceptQuest.
 MF:OnTeam("QUEST_ACCEPT_CONFIRM", function(self, who, title)
-  if not (self.db.autoQuest and IsInGroup()) then return end
+  if not (self.db.autoQuest and IsInGroup()) or self:IsAway() then return end
   self:Debug("confirming quest %s started by %s", tostring(title), tostring(who))
   escortConfirmed = true
   C_Timer.After(5, function() escortConfirmed = false end) -- in case it doesn't get accepted after all
@@ -266,7 +266,7 @@ MF:On("QUEST_ACCEPTED", function(self, id)
   self:Debug("QUEST_ACCEPTED %s", tostring(id))
   local skip = self.noShare[id] or escortConfirmed
   self.noShare[id], escortConfirmed = nil, false
-  if not self.db.autoShare or not IsInGroup() or self:Disabled() then return end
+  if not self.db.autoShare or not IsInGroup() or self:Disabled() or self:IsAway() then return end
   if skip then
     self:Debug("not sharing quest %s: we got it from the team", tostring(id))
     return
@@ -289,7 +289,7 @@ hooksecurefunc(C_QuestLog, "SetAbandonQuest", function() abandonID = C_QuestLog.
 local function abandonHook()
   local id = abandonID
   abandonID = nil
-  if abandoning or not MF.db.autoAbandon then return end
+  if abandoning or not MF.db.autoAbandon or MF:IsAway() then return end
   if id and id ~= 0 then MF:SendTeam("A;" .. id) end
 end
 hooksecurefunc(C_QuestLog, "AbandonQuest", abandonHook)
@@ -297,6 +297,10 @@ hooksecurefunc(C_QuestLog, "AbandonQuest", abandonHook)
 MF.messageHandlers.A = function(self, sender, rest)
   local id = tonumber(rest)
   if not self.db.autoAbandon or not id then return end
+  if self:IsAway() or self:IsAway(sender) then
+    self:Debug("abandon of %d from %s: %s away", id, sender, self:IsAway() and "we're" or "they're")
+    return
+  end
   if not C_QuestLog.GetLogIndexForQuestID(id) then
     self:Debug("abandon of %d from %s: not in our log", id, sender)
     return

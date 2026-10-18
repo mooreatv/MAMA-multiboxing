@@ -99,6 +99,7 @@ read_globals = {
   "UnitIsGroupLeader",
   "UnitIsPlayer",
   "UnitIsUnit",
+  "UnitIsVisible",
   "UNKNOWN",
   "C_Container",
   "C_Item",

@@ -11,7 +11,8 @@
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
--- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet.
+-- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet,
+-- blue grey = away (Alt+middle click on its row toggles it), left out of the header count.
 -- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's).
 -- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
 -- token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the title).
@@ -26,6 +27,7 @@ local pendingRefresh
 local TIP = table.concat({
   "|cFF99E5FFLeft click|r invite the team",
   "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)", "|cFF99E5FFRight click|r options",
+  "|cFF99E5FFAlt middle|r on a row: that member is away/back (no invites, follow alerts, quest or dialog sync)",
   "|cFF99E5FFShift left|r toggle party/raid", "|cFF99E5FFShift right|r toggle compact view",
   "|cFF99E5FFShift middle|r identify this window (big slot number)",
   "|cFF99E5FFCtrl middle|r turn Mama off/on for this character", "|cFF99E5FFCtrl left|r toggle auto invite",
@@ -43,6 +45,7 @@ end
 
 local function stateOf(name)
   if name == MF.myName then return "me", 1, 1, 1, "ffffff" end
+  if name and MF:IsAway(name) then return "away", 0.5, 0.6, 0.75, "8099bf" end
   if name and MF.roster[name] then return "grouped", 0.2, 1, 0.2, "33ff33" end
   if name and MF.online[name] then return "online", 1, 0.85, 0.1, "ffd91a" end
   return "unknown", 0.6, 0.6, 0.6, "999999"
@@ -128,7 +131,7 @@ local function WindowClick(button)
       MF:ToggleDisabled()
     elseif shift then
       MF:Identify()
-    else
+    elseif not alt then -- Alt+middle is away on a row, never a disband
       MF:Disband()
     end
   end
@@ -262,7 +265,9 @@ local function GetRow(i)
   b:SetScript("PreClick", function(self, button, down)
     if down then return end
     local modified = IsControlKeyDown() or IsShiftKeyDown() or IsAltKeyDown()
-    if modified or button == "MiddleButton" then
+    if button == "MiddleButton" and IsAltKeyDown() then
+      if self.fullName then MF:ToggleAway(self.fullName) end
+    elseif modified or button == "MiddleButton" then
       WindowClick(button)
     elseif button == "LeftButton" and self.missingName and not self.unit then
       MF:Print("inviting %s", self.missingName)
@@ -274,6 +279,7 @@ local function GetRow(i)
     GameTooltip:AddLine(("Slot %d: %s"):format(self.slot, self.fullName or "(not seen yet)"))
     local profs = self.fullName and MF:ProfessionsText(self.fullName)
     if profs then GameTooltip:AddLine(profs, 0.8, 0.8, 0.8, true) end
+    if self.fullName and MF:IsAway(self.fullName) then GameTooltip:AddLine("Away", 0.5, 0.6, 0.75) end
     local s = MF:StatsOf(self.fullName)
     if s then
       GameTooltip:AddLine(("%s, %d/%d bag slots free"):format(MF:MoneyText(s.money), s.free, s.slots), 0.8, 0.8, 0.8)
@@ -285,6 +291,7 @@ local function GetRow(i)
     else
       GameTooltip:AddLine("Run |cFF99E5FF/mama s " .. self.slot .. "|r in that window", 1, 1, 1)
     end
+    if self.fullName then GameTooltip:AddLine("|cFF99E5FFAlt middle click|r away/back", 1, 1, 1) end
     GameTooltip:AddLine("Other clicks: see the header tooltip", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -301,12 +308,14 @@ function MF:RefreshStatus()
   end
   local n = expectedCount()
   local lead = self:GetLead()
-  local grouped = 0
+  local grouped, counted = 0, 0
   local compact = {}
   for i = 1, n do
     local name = self.db.slots[i]
     local state, r, g, b, hex = stateOf(name)
-    if state == "me" or state == "grouped" then grouped = grouped + 1 end
+    local away = name and self:IsAway(name)
+    if not away then counted = counted + 1 end
+    if not away and (state == "me" or state == "grouped") then grouped = grouped + 1 end
     local label = (i == self.db.slot and ">" or "") .. i
     compact[#compact + 1] = ("|cFF%s%s|r"):format(hex, label)
     local row = GetRow(i)
@@ -316,12 +325,13 @@ function MF:RefreshStatus()
     row:SetAttribute("unit", unit or (name == self.myName and "player") or nil)
     row.mark:SetText(i == self.db.slot and ">" or "")
     row.slotText:SetText(tostring(i))
-    row.name:SetText((name or "?") .. (name and name == lead and " |cFFFFD100*|r" or ""))
+    row.name:SetText((name or "?") .. (name and name == lead and " |cFFFFD100*|r" or "") ..
+                       (away and " |cFF8099BF(away)|r" or ""))
     row.name:SetTextColor(r, g, b)
     row:SetShown(not self.db.compact)
   end
   for i = n + 1, #rows do rows[i]:Hide() end
-  local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, n)
+  local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, counted)
   if self:Disabled() then count = count .. " |cFFFF3333disabled|r" end
   if self.db.compact then
     frame.header.text:SetText(table.concat(compact, " ") .. " " .. count)
