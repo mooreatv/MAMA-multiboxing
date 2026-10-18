@@ -11,7 +11,9 @@ It lets all your windows of the same team:
 - **follow and assist** whoever is the lead, with one key or one macro,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
-- be managed from a small **team status window** (invite, disband, party/raid, target, ...).
+- be managed from a small **team status window** (invite, disband, party/raid, target, ...),
+- mark a member **away** for a while (Alt+Left click its status window row, or `/mama away`): no invites, follow
+  alerts or quest/dialog sync, still trades and forwards whispers.
 
 Names in Forever are `First Last` (with a space) and there is no realm part: Mama-forever treats them as opaque names.
 
