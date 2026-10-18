@@ -278,6 +278,10 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   straight to `SetTextColor` (hex as alpha errors).
 - Sync (`SendTeam(payload, true)`: group + online whispers): `V;+;id`, `V;-;id`, `V;g;0|1` on each change;
   `V;=;i/n;greys;id,...` (20 IDs per chunk) replaces the receivers' list once all n chunks arrived (60s).
+- Option `autoRepair` (default off: early game money goes to training, greys can be upgrades): after the automatic
+  sale ends (0.5s later, for its money), `CanMerchantRepair()` -> `GetRepairAllCost()` -> `RepairAllItems()` (own
+  money, not guild) when affordable. Same skips as selling (disabled character, modifier held). Verified in game.
+- Options page: 5 sections, 10 rows fill most of the ~600px Settings canvas (920x724 panel); about one more row fits.
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).

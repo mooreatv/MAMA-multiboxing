@@ -181,7 +181,8 @@ local function toSell(self)
   return list
 end
 
-function MF:SellItems(manual)
+-- done: called once everything is sold (or there was nothing to sell), unless the merchant was closed first.
+function MF:SellItems(manual, done)
   endSale(self)
   if not merchantOpen then
     if manual then self:Print("talk to a merchant first") end
@@ -190,6 +191,7 @@ function MF:SellItems(manual)
   local list = toSell(self)
   if #list == 0 then
     if manual then self:Print("nothing to sell") end
+    if done then done() end
     return
   end
   local i = 0
@@ -198,7 +200,11 @@ function MF:SellItems(manual)
     i = i + 1
     local it = list[i]
     -- done, or the merchant is gone: using an item then would equip or eat it
-    if not it or not merchantOpen then return endSale(self) end
+    if not it or not merchantOpen then
+      endSale(self)
+      if not it and done then C_Timer.After(0.5, done) end -- the money of the last sales arrives first
+      return
+    end
     local info = C_Container.GetContainerItemInfo(it.bag, it.slot)
     if info and info.itemID == it.id and not info.isLocked then -- not moved or sold by hand meanwhile
       local price = select(11, C_Item.GetItemInfo(it.id)) or 0
@@ -209,11 +215,25 @@ function MF:SellItems(manual)
   end)
 end
 
+-- Option autoRepair (off by default: early on, repairing gear that gets replaced soon wastes the money training needs).
+function MF:Repair()
+  if not (self.db.autoRepair and merchantOpen and CanMerchantRepair()) then return end
+  local cost, needed = GetRepairAllCost()
+  if not needed or cost == 0 then return end
+  if cost > GetMoney() then
+    self:Print("not enough money to repair everything (%s)", self:MoneyText(cost))
+    return
+  end
+  RepairAllItems()
+  self:Print("repaired for %s", self:MoneyText(cost))
+end
+
 MF:On("MERCHANT_SHOW", function(self)
   merchantOpen = true
   refreshWindow()
   if self:Disabled() or IsModifierKeyDown() then return end
-  C_Timer.After(0.3, function() self:SellItems(false) end) -- let the merchant window settle
+  -- let the merchant window settle; repair after selling, with that money too
+  C_Timer.After(0.3, function() self:SellItems(false, function() self:Repair() end) end)
 end)
 
 MF:On("MERCHANT_CLOSED", function(self)

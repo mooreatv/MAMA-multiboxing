@@ -53,7 +53,7 @@ local SECTIONS = {
       }
     }
   }, {
-    "Follow and trade", {
+    "Follow, trade and merchants", {
       {
         "macro", "Maintain the MAMA macro",
         "Create a per character MAMA macro (a starter for your class) and keep its /follow and /assist lines " ..
@@ -62,6 +62,12 @@ local SECTIONS = {
         "autoTrade", "Auto fill trades with mats",
         "When trading with a team member, put in the mats their professions use (cloth to the tailor, ore to the " ..
           "miner...). Which mats: the Trade page below this one."
+      }
+    }, {
+      {
+        "autoRepair", "Auto repair at merchants",
+        "Repair all your gear when you open a merchant that can repair (after selling your sell list, /mama " ..
+          "vendor). Off by default: early on, the money is better spent on training."
       }
     }
   }, {
@@ -117,12 +123,14 @@ local function layout(panel, anchor, sections)
   local prev = anchor
   for _, section in ipairs(sections) do
     local header = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    header:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -16)
+    header:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -14)
     header:SetText(section[1])
     prev = header
     for i = 2, #section do
       local row = section[i]
-      local left = checkbox(panel, row[1], "TOPLEFT", prev, "BOTTOMLEFT", 0, prev == header and -4 or -2)
+      -- rows touch: the 32px checkbox art has its own padding (the main page must fit the ~600px Settings area,
+      -- about one row left; split options into another page like Trade when it doesn't)
+      local left = checkbox(panel, row[1], "TOPLEFT", prev, "BOTTOMLEFT", 0, prev == header and -2 or 0)
       if row[2] then checkbox(panel, row[2], "TOPLEFT", left, "TOPLEFT", COLUMN, 0) end
       prev = left
     end
@@ -147,7 +155,7 @@ end
 local function sendButton(panel, anchor)
   local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
   b:SetSize(180, 24)
-  b:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -16)
+  b:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -10)
   b:SetText("Send settings to team")
   b:SetScript("OnClick", function() MF:SendSettings() end)
   b:SetScript("OnEnter", function(btn)
