@@ -11,8 +11,8 @@
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
 -- Trade: opening a trade with a team member puts the mats their professions use in the trade window (cloth to the
--- tailor, ore to the miner...), unless we use them too (see GivesTo; the "Mama: give mats" button gives those anyway).
--- The trade itself is still accepted by hand.
+-- tailor, ore to the miner, dusts to the enchanter...), unless we use them too (see GivesTo; the "Mama: give mats"
+-- button gives those anyway). The trade itself is still accepted by hand.
 local _, MF = ...
 
 local P = MF.PROF
@@ -20,7 +20,7 @@ local TRADE_SLOTS = 6 -- the 7th trade slot is "will not be traded"
 
 -- Item class / subclass numbers (Enum.ItemTradeGoodsSubclass doesn't exist on Forever).
 local TRADEGOODS, RECIPE, WEAPON, ARMOR = 7, 9, 2, 4
-local PARTS, EXPLOSIVES, DEVICES, CLOTH, LEATHER, METAL_STONE, COOKING, HERB, ENCHANTING = 1, 2, 3, 5, 6, 7, 8, 9, 12
+local PARTS, EXPLOSIVES, DEVICES, CLOTH, LEATHER, METAL_STONE, COOKING, HERB = 1, 2, 3, 5, 6, 7, 8, 9
 
 -- Ores share Metal & Stone with bars and stones: they go to the miner to smelt.
 local ORES = {
@@ -34,6 +34,42 @@ local ORES = {
   [10620] = true, -- Thorium
   [11370] = true, -- Dark Iron
   [18562] = true -- Elementium
+}
+
+-- What disenchanting gives. The Enchanting subclass also has what enchanters make (oils, rods...): those stay put.
+local ENCHANTING_MATS = {
+  [10940] = true, -- Strange Dust
+  [11083] = true, -- Soul Dust
+  [11137] = true, -- Vision Dust
+  [11176] = true, -- Dream Dust
+  [16204] = true, -- Illusion Dust
+  [10938] = true, -- Lesser Magic Essence
+  [10939] = true, -- Greater Magic Essence
+  [10998] = true, -- Lesser Astral Essence
+  [11082] = true, -- Greater Astral Essence
+  [11134] = true, -- Lesser Mystic Essence
+  [11135] = true, -- Greater Mystic Essence
+  [11174] = true, -- Lesser Nether Essence
+  [11175] = true, -- Greater Nether Essence
+  [16202] = true, -- Lesser Eternal Essence
+  [16203] = true, -- Greater Eternal Essence
+  [10978] = true, -- Small Glimmering Shard
+  [11084] = true, -- Large Glimmering Shard
+  [11138] = true, -- Small Glowing Shard
+  [11139] = true, -- Large Glowing Shard
+  [11177] = true, -- Small Radiant Shard
+  [11178] = true, -- Large Radiant Shard
+  [14343] = true, -- Small Brilliant Shard
+  [14344] = true, -- Large Brilliant Shard
+  [20725] = true -- Nexus Crystal
+}
+
+-- Greens that can't be disenchanted: the wands enchanters make.
+local NO_DISENCHANT = {
+  [11287] = true, -- Lesser Magic Wand
+  [11288] = true, -- Greater Magic Wand
+  [11289] = true, -- Lesser Mystic Wand
+  [11290] = true -- Greater Mystic Wand
 }
 
 -- Recipe subclass -> profession.
@@ -62,9 +98,10 @@ MF.tradeCategories = {
     function(it) return it.class == TRADEGOODS and it.sub == METAL_STONE and not ORES[it.id] end,
     {P.BLACKSMITHING, P.ENGINEERING}
   }, {"herbs", "herbs", true, tradeGoods(HERB), {P.ALCHEMY}},
-  {"enchanting", "enchanting mats", true, tradeGoods(ENCHANTING), {P.ENCHANTING}}, {
+  {"enchanting", "dusts, essences and shards", true, function(it) return ENCHANTING_MATS[it.id] end, {P.ENCHANTING}}, {
     "greens", "BoE greens (to disenchant)", true,
-    function(it) return (it.class == WEAPON or it.class == ARMOR) and it.quality == 2 end, {P.ENCHANTING}
+    function(it) return (it.class == WEAPON or it.class == ARMOR) and it.quality == 2 and not NO_DISENCHANT[it.id] end,
+    {P.ENCHANTING}
   }, {
     "parts", "engineering parts", true,
     function(it) return it.class == TRADEGOODS and (it.sub == PARTS or it.sub == EXPLOSIVES or it.sub == DEVICES) end,
