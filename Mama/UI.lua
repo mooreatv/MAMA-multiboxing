@@ -81,7 +81,7 @@ function MamaForever:ShowTokenDialog(mode, note)
       if ok then
         f:Hide()
       else
-        MamaForever:Print("%s", err)
+        MamaForever:Error("%s", err)
         f.text:SetText(help .. "\n|cFFFF4040" .. err:gsub("^%l", string.upper) .. "|r")
         box:HighlightText()
       end

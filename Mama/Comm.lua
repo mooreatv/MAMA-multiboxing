@@ -529,7 +529,7 @@ MF:AddCommand("token", function(self, rest)
     self:ShowTokenDialog("copy")
   elseif rest ~= "" then
     local ok, err = self:AcceptToken(rest)
-    if not ok then self:Print("%s", err) end
+    if not ok then self:Error("%s", err) end
   elseif self.db.slot == 1 and self:Token() then
     self:ClaimToken()
     self:ShowTokenDialog("copy")
