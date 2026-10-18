@@ -19,6 +19,7 @@ Comm.lua
 Actions.lua
 Professions.lua
 Trade.lua
+Vendor.lua
 Dialogs.lua
 Alerts.lua
 Stats.lua

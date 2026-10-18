@@ -265,6 +265,20 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   release), `PLAYER_UNGHOST`, `PLAYER_ENTERING_WORLD`, `PLAYER_CONTROL_GAINED` (taxi landing, also after stuns).
   No message to the team needed.
 
+## Vendor sell list (2026-10-18, verified in game: selling, greys, drop, sync)
+- `Vendor.lua`: `db.vendor` = {items = {[itemID] = true}, greys}. On `MERCHANT_SHOW` (not disabled, no modifier held,
+  0.3s later) sells every bag stack that is listed or grey (quality 0), skipping `hasNoValue`/locked ones, with
+  `C_Container.UseContainerItem` every 0.15s; stops on `MERCHANT_CLOSED` (using an item without a merchant would
+  equip/eat it). Prints the count and value (`GetItemInfo` sell price).
+- Window (`/mama vendor`, "Mama: sell list" button above `MerchantFrame`): greys checkbox, drop items (cursor item via
+  `GetCursorInfo` on `OnReceiveDrag`/click), Ctrl+Right click on a bag item while the window is shown (post hook of
+  `HandleModifiedItemClick` + `GetMouseButtonClicked`: modified bag clicks go to `OnModifiedClick`, never use/sell;
+  shift is split stack/chat link, alt is taken by AuctionDB), an edit box taking an ID/name/link, scrollable rows with
+  an X to remove, "Sell now", "Send list to team". `C_Item.GetItemQualityColor` returns r, g, b, hex: don't pass it
+  straight to `SetTextColor` (hex as alpha errors).
+- Sync (`SendTeam(payload, true)`: group + online whispers): `V;+;id`, `V;-;id`, `V;g;0|1` on each change;
+  `V;=;i/n;greys;id,...` (20 IDs per chunk) replaces the receivers' list once all n chunks arrived (60s).
+
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
 - Global inventory: per character bags/bank contents saved and shared across the team.
