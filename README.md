@@ -11,6 +11,7 @@ It lets all your windows of the same team:
 - **follow and assist** whoever is the lead, with one key or one macro,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
+- **sell** the same junk at every vendor (a team wide sell list, greys optional),
 - be managed from a small **team status window** (invite, disband, party/raid, target, ...),
 - mark a member **away** for a while (Alt+Left click its status window row, or `/mama away`): no invites, follow
   alerts or quest/dialog sync, still trades and forwards whispers.
@@ -117,6 +118,15 @@ Pick the kinds in Options > AddOns > Mama-forever > Trade (or `/mama trade list`
 `/mama trade off` turns the auto fill off (the button still works). "Send settings to team" (on both options pages)
 copies this window's options and trade kinds to the rest of the group.
 
+### Selling at vendors
+
+Opening a merchant sells the items on your **sell list**, and every grey item if you tick that box (hold Shift, Ctrl
+or Alt while opening it to sell nothing). Edit the list with `/mama vendor` or the "Mama: sell list" button above the
+merchant window: drop items from your bags on it, or shift-click an item (or type its ID) in its box; the X on a row
+removes it. Every addition, removal and the greys box are sent to the team members online, so all windows sell the
+same things; "Send list to team" replaces their whole list with yours (e.g. for a window that was offline).
+`/mama vendor add|remove <item>`, `greys [on|off]`, `list`, `sync` and `sell` do the same from the chat line.
+
 ### Alerts to the lead
 
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
@@ -162,14 +172,14 @@ forwarding keep working.
 
 **Turning Mama off for one character** (e.g. one that is sometimes part of another team): `/mama disable`, the
 *Turn Mama off/on* key binding or Ctrl+Middle click on the status window. That character then sends and reads no
-team messages and does no team automation (auto accept invites/quests, quest sharing, loot, trade fill, alerts); the
-status window title shows "disabled" in red. Its slot and token setup are kept, and it is remembered for that
-character until `/mama enable` turns it back on.
+team messages and does no team automation (auto accept invites/quests, quest sharing, loot, trade fill, vendor
+selling, alerts); the status window title shows "disabled" in red. Its slot and token setup are kept, and it is
+remembered for that character until `/mama enable` turns it back on.
 
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
 mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.

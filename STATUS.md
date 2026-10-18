@@ -265,6 +265,18 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   release), `PLAYER_UNGHOST`, `PLAYER_ENTERING_WORLD`, `PLAYER_CONTROL_GAINED` (taxi landing, also after stuns).
   No message to the team needed.
 
+## Vendor sell list (2026-10-18, not verified in game yet)
+- `Vendor.lua`: `db.vendor` = {items = {[itemID] = true}, greys}. On `MERCHANT_SHOW` (not disabled, no modifier held,
+  0.3s later) sells every bag stack that is listed or grey (quality 0), skipping `hasNoValue`/locked ones, with
+  `C_Container.UseContainerItem` every 0.15s; stops on `MERCHANT_CLOSED` (using an item without a merchant would
+  equip/eat it). Prints the count and value (`GetItemInfo` sell price).
+- Window (`/mama vendor`, "Mama: sell list" button above `MerchantFrame`): greys checkbox, drop items (cursor item via
+  `GetCursorInfo` on `OnReceiveDrag`/click), an edit box taking an ID/name/link (shift-click goes through
+  `ChatFrameUtil.InsertLink` on 1.60.1, post hooked when the box has the focus; `ChatEdit_InsertLink` is only a
+  deprecated alias), scrollable rows with an X to remove, "Sell now", "Send list to team".
+- Sync (`SendTeam(payload, true)`: group + online whispers): `V;+;id`, `V;-;id`, `V;g;0|1` on each change;
+  `V;=;i/n;greys;id,...` (20 IDs per chunk) replaces the receivers' list once all n chunks arrived (60s).
+
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
 - Global inventory: per character bags/bank contents saved and shared across the team.
