@@ -258,8 +258,8 @@ end
 MF.messageHandlers.D = function(self, sender, rest)
   local verb, npc, id, text = rest:match("^(%a+);(%d+);(%d+);(.*)$")
   if not verb or not receivers[verb] then return end
-  if not self.db.autoDialog or sender ~= self:GetLead() then
-    self:Debug("dialog: ignoring %s from %s (disabled or not the lead)", verb, sender)
+  if not self.db.autoDialog or sender ~= self:GetLead() or self:IsAway() then
+    self:Debug("dialog: ignoring %s from %s (disabled, not the lead or we're away)", verb, sender)
     return
   end
   table.insert(pending, {

@@ -128,6 +128,7 @@ MF:On("ADDON_LOADED", function(self, name)
   s.team = s.team or {} -- set of full names ("First Last") allowed to auto-invite us
   s.slots = s.slots or {} -- slot number -> character full name ("First Last"), learned from the team handshake
   s.disabled = s.disabled or {} -- set of character full names with Mama turned off (see MF:Disabled)
+  s.away = s.away or {} -- set of team members' full names doing their own thing for now (see MF:IsAway)
   self.db = s
   self:LoadLog()
 end)

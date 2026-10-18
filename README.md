@@ -120,6 +120,8 @@ copies this window's options and trade kinds to the rest of the group.
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
   then gets out of follow range (stuck behind a tree or a wall), the lead's window gets a raid warning and a sound.
   Same when a follow key or the MAMA macro doesn't start following out of combat (too far, out of sight...).
+  Only for windows that were near the lead in the last 2 minutes, and never while the lead is dead, a ghost or on a
+  flight, nor right after it came back to life, released, landed or went through a loading screen.
 - **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
   name to answer). GM whispers are tagged `<GM>` with a raid warning and the GM sound. If the whisper can't be read
   (chat lockdown), the lead is still told to look at that window.
@@ -129,7 +131,7 @@ Both are on by default (Options > Alerts to the lead).
 ### Status window
 
 One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
-`*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
+blue grey is away (left out of the title count), `*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
 line is the team's gold; hover it for the gold and bag slots of every character of this faction you've played with
 Mama, alts included (last known values). Hover the title for all the shortcuts:
 
@@ -146,7 +148,15 @@ Mama, alts included (last known values). Hover the title for all the shortcuts:
 | Alt+Right | mark the team complete (forget slots that aren't here) |
 | Mouse wheel / drag title | resize / move |
 
-On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu.
+On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu,
+Alt+Left marks it away or back (see below).
+
+**Away team members** (one doing its own thing for a while, in the group or not): Alt+Left click its row,
+`/mama away 3 4` (slots) or `/mama away Full Name`, and `/mama back 3|Full Name|all`. It's shown on every window and
+remembered until it's back. An away member isn't invited (clicking its row still does), doesn't keep the team from
+being complete (free for all loot, `/mama complete` keeps its slot), sends no follow alerts, and its window leaves
+quests (accept, share, abandon) and the lead's dialogs and popups alone. Trade fill, gold and bag stats and whisper
+forwarding keep working.
 
 **Turning Mama off for one character** (e.g. one that is sometimes part of another team): `/mama disable`, the
 *Turn Mama off/on* key binding or Ctrl+Middle click on the status window. That character then sends and reads no
@@ -156,7 +166,7 @@ character until `/mama enable` turns it back on.
 
 ## Commands and options
 
-`/mama help` lists everything: `s`, `token`, `lead`, `team`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
+`/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
 `macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
 mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper

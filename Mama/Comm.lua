@@ -376,6 +376,8 @@ function MF:HandleInfo(sender, slot, name, flag)
         self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them")
       end
     end
+    -- the away members too, they may have changed while it was offline (empty list: nobody is away)
+    self:SendWhisper(name, "X;" .. table.concat(self:AwayNames(), ","), "relaying away members")
   end
 end
 

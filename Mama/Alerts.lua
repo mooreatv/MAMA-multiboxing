@@ -13,6 +13,8 @@
 -- Alerts sent from the other windows to the lead's:
 -- "F;subzone": we stopped following out of combat and the lead got away (stuck behind something).
 -- "F;subzone;1": a /follow (key, MAMA macro) didn't start following out of combat (too far, not visible...).
+-- Neither is sent when the lead wasn't in sight lately (we're elsewhere), is dead, a ghost or on a taxi, nor by an
+-- away member; the lead drops them while it's dead or flying and for a bit after it's back, landed or teleported.
 -- "W;i/n;flag;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255
 -- bytes), flag "GM" or "". "W;0/0;flag;;" when the whisper was secret (chat lockdown).
 local _, MF = ...
@@ -21,6 +23,8 @@ local WATCH = 10 -- seconds after follow ends during which the lead getting out 
 local SPAM = 15 -- seconds between two follow warnings from the same window
 local START = 1 -- seconds for a /follow to start following
 local CHUNK = 120 -- bytes of whisper text per message (fits in 255 with the signature, names and "T;Name;" wrap)
+local NEAR = 120 -- seconds since the lead was last in sight (about 100 yards) for a follow problem to be worth a warning
+local QUIET = 20 -- lead: seconds after coming back to life, releasing, landing or a loading screen without warnings
 
 local function lead(self)
   local l = self:GetLead()
@@ -36,6 +40,24 @@ local function stopWatch()
   watch = nil
 end
 
+-- The lead died, released (ghost at the graveyard) or flies: no point warning that we don't follow it.
+local function gone(unit) return UnitIsDeadOrGhost(unit) or UnitOnTaxi(unit) end
+
+local nearLead, nearAt = nil, -NEAR -- the lead whose sight we track, last GetTime() it was in sight
+local function noteNear(self)
+  local l = lead(self)
+  if l ~= nearLead then nearLead, nearAt = l, -NEAR end
+  local unit = l and self.roster[l]
+  if unit and (following or UnitIsVisible(unit)) then nearAt = GetTime() end
+end
+
+local function nearby(self)
+  noteNear(self)
+  return GetTime() - nearAt < NEAR
+end
+
+MF:Listen("LOGIN", function(self) C_Timer.NewTicker(3, function() noteNear(self) end) end)
+
 MF:On("AUTOFOLLOW_BEGIN", function()
   following = true
   begins = begins + 1
@@ -49,12 +71,18 @@ local lastTry = -SPAM
 hooksecurefunc("FollowUnit", function(who)
   local self = MF
   local l = lead(self)
-  if not (self.db.followWarn and l) or self:Disabled() or busy() then return end
+  if not (self.db.followWarn and l) or self:Disabled() or self:IsAway() or busy() then return end
   who = who and who ~= "" and who or "target"
   if who == self.myName or UnitIsUnit(who, "player") then return end
   local before = begins
   C_Timer.After(START, function()
-    if begins ~= before or following or busy() or UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then return end
+    if begins ~= before or following or busy() or gone("player") then return end
+    local unit = self.roster[l]
+    if not nearby(self) or (unit and gone(unit)) then
+      self:Debug("/follow %s didn't start following, not telling %s: %s", who, l,
+                 unit and gone(unit) and "they're dead or flying" or "they weren't in sight lately")
+      return
+    end
     if GetTime() - lastTry < SPAM then return end
     lastTry = GetTime()
     self:Debug("/follow %s didn't start following, telling %s", who, l)
@@ -69,12 +97,12 @@ MF:On("AUTOFOLLOW_END", function(self)
   following = false
   stopWatch()
   local l = lead(self)
-  if not (self.db.followWarn and was and l and self.roster[l]) or busy(self.roster[l]) then return end
+  if not (self.db.followWarn and was and l and self.roster[l]) or self:IsAway() or busy(self.roster[l]) then return end
   local ticks = 0
   watch = C_Timer.NewTicker(1, function()
     ticks = ticks + 1
     local unit = self.roster[l]
-    if following or not unit or ticks > WATCH or busy(unit) or UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then
+    if following or not unit or ticks > WATCH or busy(unit) or gone("player") or gone(unit) then
       stopWatch()
       return
     end
@@ -86,10 +114,19 @@ MF:On("AUTOFOLLOW_END", function(self)
   end)
 end)
 
+local quietUntil = 0
+for _, ev in ipairs({"PLAYER_ALIVE", "PLAYER_UNGHOST", "PLAYER_ENTERING_WORLD", "PLAYER_CONTROL_GAINED"}) do
+  MF:On(ev, function() quietUntil = GetTime() + QUIET end)
+end
+
 local lastWarn = {}
 MF.messageHandlers.F = function(self, sender, rest)
   local slot = self:SlotOf(sender)
-  if not slot or GetTime() - (lastWarn[sender] or -SPAM) < SPAM then return end
+  if not slot or self:IsAway(sender) or GetTime() - (lastWarn[sender] or -SPAM) < SPAM then return end
+  if gone("player") or GetTime() < quietUntil then
+    self:Debug("follow warning from %s dropped: we're dead, flying, or just back, landed or teleported", sender)
+    return
+  end
   lastWarn[sender] = GetTime()
   local zone, start = rest:match("^([^;]*);?(.*)$")
   local where = zone ~= "" and (" near " .. zone) or ""

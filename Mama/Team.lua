@@ -70,7 +70,13 @@ local function groupState(self)
   if mates < n then return nil end
   local expected = 0
   for s in pairs(self.db.slots) do if s > expected then expected = s end end
-  return (expected >= 2 and mates >= expected) and "team" or "partial"
+  if expected < 2 then return "partial" end
+  -- away members don't hold back a complete team
+  for s = 1, expected do
+    local name = self.db.slots[s]
+    if not (name and (name == self.myName or self.roster[name] or self:IsAway(name))) then return "partial" end
+  end
+  return "team"
 end
 
 function MF:UpdateLoot()
@@ -185,12 +191,97 @@ MF:AddCommand("team", function(self, rest)
   self:Print("team (%d): %s", #names, table.concat(names, ", "))
 end, "team [list|add [name]|remove name|clear] - characters we auto-accept invites from")
 
--- Drop the slots above `n` (nil: above the highest slot that is actually present) so a team that is complete stops waiting.
+-- Away: a team member doing its own thing for a while, grouped or not. It keeps its slot, trading, stats and whisper
+-- forwarding, but isn't invited, doesn't hold back a complete team, sends no follow alerts and leaves quests and the
+-- lead's dialogs alone. Saved, and synced with "X;Name,Name" (every away slot holder, empty for none).
+function MF:IsAway(name)
+  name = name or self.myName
+  return name and self.db.away[name] or false
+end
+
+function MF:AwayNames()
+  local names = {}
+  for _, n in pairs(self.db.slots) do if self.db.away[n] then names[#names + 1] = n end end
+  table.sort(names)
+  return names
+end
+
+local function setAway(self, name, on, by)
+  on = on or nil
+  if self.db.away[name] == on then return false end
+  self.db.away[name] = on
+  self:Print("%s%s is %s", by and (by .. " says ") or "", name,
+             on and "away (not invited, no follow alerts, quests and dialogs left alone)" or "back")
+  return true
+end
+
+local function changeAway(self, names, on)
+  local changed = false
+  for _, n in ipairs(names) do if setAway(self, n, on) then changed = true end end
+  if not changed then return end
+  self:Fire("TEAM_CHANGED")
+  self:SendTeam("X;" .. table.concat(self:AwayNames(), ","))
+end
+
+function MF:ToggleAway(name) changeAway(self, {name}, not self:IsAway(name)) end
+
+MF.messageHandlers.X = function(self, sender, rest)
+  local list = {}
+  for n in rest:gmatch("[^,]+") do list[n] = true end
+  local changed = false
+  for _, n in pairs(self.db.slots) do if setAway(self, n, list[n], sender) then changed = true end end
+  for n in pairs(list) do if setAway(self, n, true, sender) then changed = true end end -- not known to us yet
+  if changed then self:Fire("TEAM_CHANGED") end
+end
+
+-- "3 4" (slots) or "Full Name".
+local function awayTargets(self, rest)
+  if not rest:match("^[%d%s]+$") then return {rest} end
+  local names = {}
+  for d in rest:gmatch("%d+") do
+    local n = self.db.slots[tonumber(d)]
+    if n then
+      names[#names + 1] = n
+    else
+      self:Print("slot %s is empty", d)
+    end
+  end
+  return names
+end
+
+local function printAway(self)
+  local names = self:AwayNames()
+  self:Print("away: %s", #names > 0 and table.concat(names, ", ") or "(nobody)")
+end
+
+MF:AddCommand("away", function(self, rest)
+  if rest ~= "" then changeAway(self, awayTargets(self, rest), true) end
+  printAway(self)
+end, "away [N ...|Full Name] - team member doing its own thing: not invited, no follow alerts, no quest or dialog" ..
+                " sync (still trades and forwards whispers); no argument: list")
+
+MF:AddCommand("back", function(self, rest)
+  local names
+  if rest:lower() == "all" then
+    names = {}
+    for n in pairs(self.db.away) do names[#names + 1] = n end
+  elseif rest ~= "" then
+    names = awayTargets(self, rest)
+  else
+    self:Print("usage: /mama back N ...|Full Name|all")
+    return
+  end
+  changeAway(self, names, false)
+  printAway(self)
+end, "back N ...|Full Name|all - away team members are back")
+
+-- Drop the slots above `n` (nil: above the highest slot that is actually present, away members count as present) so a
+-- team that is complete stops waiting.
 function MF:TrimTeam(n)
   if not n then
     n = 0
     for s, name in pairs(self.db.slots) do
-      if s > n and (name == self.myName or self.online[name] or self.roster[name]) then n = s end
+      if s > n and (name == self.myName or self.online[name] or self.roster[name] or self:IsAway(name)) then n = s end
     end
     n = math.max(n, self.db.slot)
   end
@@ -272,7 +363,7 @@ local function processInvites(tries)
 end
 
 -- onlyOnline: just the ones we heard from this session (automatic invites; offline ones would only error).
--- quiet: no message when nobody is missing.
+-- quiet: no message when nobody is missing. Away members are skipped (clicking their status row invites them).
 function MF:InviteMissing(onlyOnline, quiet)
   if inviteQueue then return end -- already running
   inviteQueue = {}
@@ -282,9 +373,8 @@ function MF:InviteMissing(onlyOnline, quiet)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
     local recent = onlyOnline and invitedAt[n] and GetTime() - invitedAt[n] < INVITE_AGAIN
-    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) and not recent then
-      inviteQueue[#inviteQueue + 1] = n
-    end
+    if n ~= self.myName and not self.roster[n] and (self.online[n] or not onlyOnline) and not recent and
+      not self:IsAway(n) then inviteQueue[#inviteQueue + 1] = n end
   end
   if #inviteQueue == 0 then
     inviteQueue = nil
@@ -315,7 +405,7 @@ function MF:ScheduleInvites()
     invitePending = false
     local missing = false
     for _, n in pairs(self.db.slots) do
-      if n ~= self.myName and not self.roster[n] and self.online[n] then missing = true end
+      if n ~= self.myName and not self.roster[n] and self.online[n] and not self:IsAway(n) then missing = true end
     end
     if missing then self:InviteMissing(true) end
   end)
