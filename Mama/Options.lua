@@ -237,7 +237,7 @@ end)
 -- run the same addon version; a length mismatch (different versions) is reported and ignored.
 function MF:SendSettings()
   if not IsInGroup() then
-    self:Print("settings are sent to the group: invite the team first")
+    self:Error("settings are sent to the group: invite the team first")
     return
   end
   local o, c = {}, {}
@@ -250,7 +250,7 @@ end
 MF.messageHandlers.O = function(self, sender, rest)
   local o, c = rest:match("^([01]*);([01]*)$")
   if not o or #o ~= #SYNCED or #c ~= #self.tradeCategories then
-    self:Print("ignoring settings from %s: not the same Mama version as this window", sender)
+    self:Error("ignoring settings from %s: not the same Mama version as this window", sender)
     return
   end
   local changed = {}

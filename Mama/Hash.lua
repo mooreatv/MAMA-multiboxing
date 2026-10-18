@@ -112,7 +112,7 @@ function MF:HashSelfTest()
                self:Hmac("Jefe", "what do ya want for nothing?") ==
                "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
   if not ok then
-    self:Print("|cFFFF0000error:|r SHA-256 self test failed, team messages won't verify (/mama bug)")
+    self:Error("SHA-256 self test failed, team messages won't verify (/mama bug)")
     return false
   end
   -- only run timing loop if debug is on:

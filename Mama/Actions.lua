@@ -123,7 +123,7 @@ function MF:CreateMamaMacro(target)
         "then edit it as you like (Mama only changes the /follow and /assist lines)", MACRO_NAME)
   elseif not createFailed then
     createFailed = true
-    self:Print("couldn't create the %s macro (character macros full?): %s", MACRO_NAME, tostring(err))
+    self:Error("couldn't create the %s macro (character macros full?): %s", MACRO_NAME, tostring(err))
   end
   return ok and err ~= nil
 end
@@ -321,7 +321,7 @@ MF:AddCommand("macro", function(self, rest)
   local setting = rest:lower()
   if setting == "reset" then
     if InCombatLockdown() then
-      self:Print("can't change macros in combat")
+      self:Error("can't change macros in combat")
     else
       self:ResetMacro()
     end

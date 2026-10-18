@@ -88,7 +88,7 @@ end
 function MF:AddVendorItem(id)
   local name, link, _, _, _, _, _, _, _, _, price = C_Item.GetItemInfo(id)
   if name and price == 0 then -- not cached yet: added anyway
-    self:Print("%s can't be sold to a vendor", link)
+    self:Error("%s can't be sold to a vendor", link)
     return
   end
   self:ChangeVendorList({id}, true)
@@ -185,7 +185,7 @@ end
 function MF:SellItems(manual, done)
   endSale(self)
   if not merchantOpen then
-    if manual then self:Print("talk to a merchant first") end
+    if manual then self:Error("talk to a merchant first") end
     return
   end
   local list = toSell(self)
@@ -221,7 +221,7 @@ function MF:Repair()
   local cost, needed = GetRepairAllCost()
   if not needed or cost == 0 then return end
   if cost > GetMoney() then
-    self:Print("not enough money to repair everything (%s)", self:MoneyText(cost))
+    self:Error("not enough money to repair everything (%s)", self:MoneyText(cost))
     return
   end
   RepairAllItems()
@@ -381,7 +381,7 @@ local function build()
       edit:SetText("")
       edit:ClearFocus()
     elseif text ~= "" then
-      MF:Print("unknown item %q: type its ID, or drop the item on this window", text)
+      MF:Error("unknown item %q: type its ID, or drop the item on this window", text)
     end
   end
   edit:SetScript("OnEnterPressed", add)
@@ -461,7 +461,7 @@ MF:AddCommand("vendor", function(self, rest)
   elseif cmd == "add" or cmd == "remove" then
     local id = toItemID(arg)
     if not id then
-      self:Print("unknown item %q: use its ID or shift-click it", arg)
+      self:Error("unknown item %q: use its ID or shift-click it", arg)
     elseif cmd == "add" then
       self:AddVendorItem(id)
     else

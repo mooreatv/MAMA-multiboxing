@@ -63,6 +63,12 @@ function MF:Print(msg, ...)
   print(self.prefix .. msg)
 end
 
+-- Print in red, for something the user has to fix.
+function MF:Error(msg, ...)
+  if select("#", ...) > 0 then msg = msg:format(...) end
+  self:Print("|cFFFF4040%s|r", msg)
+end
+
 function MF:Debug(msg, ...)
   if select("#", ...) > 0 then msg = msg:format(...) end
   record("[debug] " .. msg)

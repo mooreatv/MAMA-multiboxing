@@ -316,7 +316,7 @@ function MF:RecordMember(slot, name)
   if name == self.myName then return end
   if slot < 1 or slot > self.maxSlot then return end
   if slot == self.db.slot then
-    self:Print("|cFFFF0000warning:|r %s also claims our slot %d, each window needs its own slot", name, slot)
+    self:Error("%s also claims our slot %d, each window needs its own slot", name, slot)
     return
   end
   local slots = self.db.slots
@@ -464,6 +464,19 @@ function MF:AcceptToken(text)
   return true
 end
 
+-- Slot 1: make a token, or point the existing one's master at this character (same team id and secret, so the
+-- other windows keep verifying our messages; they need the refreshed token to know their new master).
+function MF:ClaimToken()
+  local tok = self:Token()
+  if not tok then
+    self:SetToken(self:MakeToken(self.myName))
+  elseif tok.master ~= self.myName then
+    local body = ("%s:%s:%s:"):format(tok.team, tok.secret, self.myName)
+    self:SetToken(body .. checkChar(body))
+    self:Print("token refreshed: team master is now %s", self.myName)
+  end
+end
+
 function MF:SetSlot(n)
   self.db.slot = n
   self:RememberTeam()
@@ -476,7 +489,7 @@ function MF:SetSlot(n)
   self:SetOwnSlot()
   self:Fire("TEAM_CHANGED")
   if n == 1 then
-    if not tok then self:SetToken(self:MakeToken(self.myName)) end
+    self:ClaimToken()
     self:SetOwnSlot()
     self:Print(
       "this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
@@ -491,6 +504,8 @@ function MF:SetSlot(n)
     self:Fire('TEAM_CHANGED')
     if tok then
       self:Announce(true)
+      -- the kept token may be an older team's (e.g. from another character of this account): offer to replace it
+      self:ShowTokenDialog("paste", ("Current team master: %s (Escape keeps it)."):format(tok.master))
     else
       self:ShowTokenDialog("paste")
     end
@@ -500,7 +515,7 @@ end
 MF:AddCommand("s", function(self, rest)
   local n = tonumber(rest)
   if not n or n < 0 or n > self.maxSlot or n ~= math.floor(n) then
-    self:Print("use /mama s N with N from 0 to %d (0 turns it off); %q is not valid", self.maxSlot, rest)
+    self:Error("use /mama s N with N from 0 to %d (0 turns it off); %q is not valid", self.maxSlot, rest)
     return
   end
   self:SetSlot(n)
@@ -514,15 +529,9 @@ MF:AddCommand("token", function(self, rest)
     self:ShowTokenDialog("copy")
   elseif rest ~= "" then
     local ok, err = self:AcceptToken(rest)
-    if not ok then self:Print("%s", err) end
+    if not ok then self:Error("%s", err) end
   elseif self.db.slot == 1 and self:Token() then
-    local tok = self:Token()
-    if tok.master ~= self.myName then
-      -- keep team id and secret, just point the master at this character
-      local body = ("%s:%s:%s:"):format(tok.team, tok.secret, self.myName)
-      self:SetToken(body .. checkChar(body))
-      self:Print("token refreshed: team master is now %s", self.myName)
-    end
+    self:ClaimToken()
     self:ShowTokenDialog("copy")
   else
     self:ShowTokenDialog("paste")
