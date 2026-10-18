@@ -255,6 +255,12 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   pick, whoever made it. The follow-up quest offered after a turn in is not sent (the record is cleared).
   The `QUEST_DETAIL` check runs before the auto accept (`MF:On(event, fn, true)`): `AcceptQuest()` makes
   `GetQuestID()` return 0 for the handlers after it (seen in game).
+- Quest greeting (`QUEST_GREETING`, `QuestFrameGreetingPanel`: NPCs with only quests, e.g. Master Gadrin after
+  "Report to Sen'jin Village" offering 3 quests): recorded the same way (`GetActiveQuestID(i)`,
+  `GetAvailableQuestInfo(i)` 5th return = questID); receivers pick by index (`SelectActiveQuest(i)`/
+  `SelectAvailableQuest(i)`) after matching the questID. The lead's shares didn't reach the others there (likely busy: their greeting was open).
+- RestedXP also calls `GetQuestReward` with no reward dialog open (lead sent `qr` for a quest twice, no `QUEST_COMPLETE`):
+  `qr` is only sent between `QUEST_COMPLETE` and `QUEST_FINISHED` (cleared next frame).
 - Receivers: a `qp`/`qr` while our gossip lists that active quest opens it (`SelectActiveQuest`), then continues the
   progress page; once per pending choice, and not when an earlier pending `qc`/`qp` for it does it already.
 
