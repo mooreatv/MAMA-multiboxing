@@ -491,6 +491,8 @@ function MF:SetSlot(n)
     self:Fire('TEAM_CHANGED')
     if tok then
       self:Announce(true)
+      -- the kept token may be an older team's (e.g. from another character of this account): offer to replace it
+      self:ShowTokenDialog("paste", ("Current team master: %s (Escape keeps it)."):format(tok.master))
     else
       self:ShowTokenDialog("paste")
     end

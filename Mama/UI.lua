@@ -22,7 +22,7 @@ local dialog
 local function GetDialog()
   if dialog then return dialog end
   local f = CreateFrame("Frame", "MamaForeverTokenDialog", UIParent, "BasicFrameTemplateWithInset")
-  f:SetSize(420, 130)
+  f:SetSize(420, 150)
   f:SetPoint("CENTER", 0, 150)
   f:SetFrameStrata("DIALOG")
   f:EnableMouse(true)
@@ -48,32 +48,42 @@ local function GetDialog()
   return f
 end
 
-function MamaForever:ShowTokenDialog(mode)
+-- note: optional extra line under the instructions (paste mode).
+function MamaForever:ShowTokenDialog(mode, note)
   local f = GetDialog()
   local e = f.edit
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
     f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")
     local token = self:TokenText()
+    local function selectAll(box) box:HighlightText() end
     e:SetScript("OnTextChanged", function(box, user)
       if user then
         box:SetText(token)
         box:HighlightText()
       end -- read only
     end)
+    -- a click would otherwise drop the selection and Ctrl-C would copy nothing
+    e:SetScript("OnMouseUp", selectAll)
+    e:SetScript("OnEditFocusGained", selectAll)
     e:SetScript("OnEnterPressed", function() f:Hide() end)
     e:SetText(token)
     e:HighlightText()
   else
     f.title:SetText("Mama-forever: paste team token")
-    f.text:SetText("Ctrl-V the token copied from slot 1 (|cFF99E5FF/mama token|r there), then Enter.")
+    local help = "Ctrl-V the token copied from slot 1 (|cFF99E5FF/mama token|r there), then Enter."
+    f.text:SetText(note and help .. "\n" .. note or help)
     e:SetScript("OnTextChanged", nil)
+    e:SetScript("OnMouseUp", nil)
+    e:SetScript("OnEditFocusGained", nil)
     e:SetScript("OnEnterPressed", function(box)
       local ok, err = MamaForever:AcceptToken(box:GetText())
       if ok then
         f:Hide()
       else
         MamaForever:Print("%s", err)
+        f.text:SetText(help .. "\n|cFFFF4040" .. err .. "|r")
+        box:HighlightText()
       end
     end)
     e:SetText("")
