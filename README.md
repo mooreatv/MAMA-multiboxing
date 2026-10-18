@@ -122,8 +122,8 @@ copies this window's options and trade kinds to the rest of the group.
 
 Opening a merchant sells the items on your **sell list**, and every grey item if you tick that box (hold Shift, Ctrl
 or Alt while opening it to sell nothing). Edit the list with `/mama vendor` or the "Mama: sell list" button above the
-merchant window: drop items from your bags on it, or shift-click an item (or type its ID) in its box; the X on a row
-removes it. Every addition, removal and the greys box are sent to the team members online, so all windows sell the
+merchant window: drop items from your bags on it, Ctrl+Right click them in your bags while it's open, or type an
+item's name or ID in its box; the X on a row removes it. Every addition, removal and the greys box are sent to the team members online, so all windows sell the
 same things; "Send list to team" replaces their whole list with yours (e.g. for a window that was offline).
 `/mama vendor add|remove <item>`, `greys [on|off]`, `list`, `sync` and `sell` do the same from the chat line.
 

@@ -12,7 +12,8 @@
    ]] --
 -- Vendor: opening a merchant sells the items on the sell list, and every grey item when that box is ticked (hold
 -- Shift, Ctrl or Alt while opening it to sell nothing). The list is edited in the /mama vendor window (also the
--- "Mama: sell list" button above the merchant window): drop items on it, or shift-click one / type its ID in its box.
+-- "Mama: sell list" button above the merchant window): drop items on it, Ctrl+Right click them in the bags while it
+-- is shown, or type a name / ID in its box.
 -- Each change goes to the team: "V;+;id" added, "V;-;id" removed, "V;g;0|1" greys. "Send list to team" sends the
 -- whole list as "V;=;i/n;greys;id,id,..." chunks, which replace the receivers' list once every chunk arrived.
 local _, MF = ...
@@ -290,7 +291,8 @@ local function refreshRows()
     r.icon:SetTexture(C_Item.GetItemIconByID(id))
     r.name:SetText(name or ("item " .. id))
     if quality then
-      r.name:SetTextColor(C_Item.GetItemQualityColor(quality))
+      local cr, cg, cb = C_Item.GetItemQualityColor(quality) -- 4th value is the hex string, not an alpha
+      r.name:SetTextColor(cr, cg, cb)
     else
       r.name:SetTextColor(1, 1, 1)
     end
@@ -344,7 +346,8 @@ local function build()
   hint:SetPoint("TOPLEFT", 20, -66)
   hint:SetPoint("RIGHT", -20, 0)
   hint:SetJustifyH("LEFT")
-  hint:SetText("Drop items from your bags on this window, or shift-click an item (or type its ID) in this box:")
+  hint:SetText("Drop items from your bags on this window, Ctrl+Right click them in your bags, or type an item's " ..
+                 "name or ID in this box:")
 
   local edit = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
   edit:SetSize(200, 20)
@@ -358,21 +361,12 @@ local function build()
       edit:SetText("")
       edit:ClearFocus()
     elseif text ~= "" then
-      MF:Print("unknown item %q: type its ID, or shift-click the item", text)
+      MF:Print("unknown item %q: type its ID, or drop the item on this window", text)
     end
   end
   edit:SetScript("OnEnterPressed", add)
   edit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  -- shift-click on an item (bags, chat link...) while the box has the focus: same as typing it
-  if ChatFrameUtil and ChatFrameUtil.InsertLink then
-    hooksecurefunc(ChatFrameUtil, "InsertLink", function(link)
-      if link and edit:HasFocus() then
-        edit:SetText(link)
-        add()
-      end
-    end)
-  end
-  local addButton = button(f, "Add", 70, "Add the item in the box (ID or shift-clicked item).", add)
+  local addButton = button(f, "Add", 70, "Add the item in the box (name or ID).", add)
   addButton:SetPoint("LEFT", edit, "RIGHT", 8, 0)
 
   local inset = CreateFrame("Frame", nil, f, "BackdropTemplate")
@@ -423,6 +417,15 @@ MF:On("GET_ITEM_INFO_RECEIVED", function()
 end)
 
 MF:Listen("LOGIN", function(self)
+  -- Ctrl+Right click on a bag item while the window is shown adds it. Modified bag clicks never use (sell) the item,
+  -- they go through HandleModifiedItemClick (Ctrl alone also previews gear in the dressing room).
+  hooksecurefunc("HandleModifiedItemClick", function(link)
+    if not (frame and frame:IsShown() and IsControlKeyDown() and GetMouseButtonClicked() == "RightButton") then
+      return
+    end
+    local id = link and tonumber(link:match("item:(%d+)"))
+    if id then self:AddVendorItem(id) end
+  end)
   if not MerchantFrame then return end
   local b = button(MerchantFrame, "Mama: sell list", 120,
                    "Items sold every time you open a merchant (and greys, if ticked), synced with the team.",
