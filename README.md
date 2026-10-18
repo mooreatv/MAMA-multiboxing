@@ -111,7 +111,7 @@ anyway (e.g. a blacksmith's spare bars to an engineer):
 | ore | miner (to smelt) |
 | bars and stones | blacksmith or engineer |
 | herbs | alchemist |
-| enchanting mats, BoE greens | enchanter (to disenchant) |
+| dusts, essences and shards, BoE greens (to disenchant) | enchanter |
 | engineering parts | engineer |
 | recipes and patterns | whoever has that profession |
 | raw meat and fish | cook (off by default) |

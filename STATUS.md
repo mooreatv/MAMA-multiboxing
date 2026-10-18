@@ -204,6 +204,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   sent to the team when a 25 point step changes, `Q;` asks. Saved in `db.profs[faction][name]`.
 - `Trade.lua`: on `TRADE_SHOW` with a team member, fills up to 6 stacks the partner can use and we can't (or they are
   the team's best holder); the "Mama: give mats" button also gives mats we could use (`MF:GivesTo`). Verified in game.
+  Tradegoods/Enchanting also holds enchanter products (mana oils were sent to the enchanter): the category is now an
+  ID list of dusts, essences and shards (`ENCHANTING_MATS`). No API says whether an item can be disenchanted: the
+  crafted wands (not disenchantable) are excluded from greens by ID (`NO_DISENCHANT`).
 - Options: sections, 2 checkboxes per row; Trade subcategory page (`Settings.RegisterCanvasLayoutSubcategory`) with
   one checkbox per category; "Send settings to team" sends `O;<0/1 per option>;<0/1 per trade category>` on the group channel
   (positional, same addon version assumed; length mismatch is reported and ignored).
