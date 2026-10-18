@@ -22,7 +22,7 @@ local dialog
 local function GetDialog()
   if dialog then return dialog end
   local f = CreateFrame("Frame", "MamaForeverTokenDialog", UIParent, "BasicFrameTemplateWithInset")
-  f:SetSize(420, 150)
+  f:SetSize(420, 130)
   f:SetPoint("CENTER", 0, 150)
   f:SetFrameStrata("DIALOG")
   f:EnableMouse(true)
@@ -82,7 +82,7 @@ function MamaForever:ShowTokenDialog(mode, note)
         f:Hide()
       else
         MamaForever:Print("%s", err)
-        f.text:SetText(help .. "\n|cFFFF4040" .. err .. "|r")
+        f.text:SetText(help .. "\n|cFFFF4040" .. err:gsub("^%l", string.upper) .. "|r")
         box:HighlightText()
       end
     end)
