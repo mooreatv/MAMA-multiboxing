@@ -338,12 +338,12 @@ local function processInvites(tries)
     else
       if inviteCount >= 5 and not IsInRaid() then
         if not MF.db.autoRaid then
-          MF:Print("group is full: turn on auto raid (/mama options) to invite more than 5")
+          MF:Error("group is full: turn on auto raid (/mama options) to invite more than 5")
           inviteQueue = nil
           return
         end
         if tries > 20 then
-          MF:Print("giving up inviting: couldn't convert to a raid (are the characters too low level?)")
+          MF:Error("giving up inviting: couldn't convert to a raid (are the characters too low level?)")
           inviteQueue = nil
           return
         end

@@ -153,7 +153,7 @@ local waitingFor -- partner whose professions we asked for, to fill once they an
 function MF:FillTrade(manual)
   if not partner then return end
   if partner == self.myName or not self:SlotOf(partner) then
-    if manual then self:Print("%s isn't on the team", tostring(partner)) end
+    if manual then self:Error("%s isn't on the team", tostring(partner)) end
     return
   end
   if not self:ProfessionsOf(partner) then
@@ -250,7 +250,7 @@ MF:AddCommand("trade", function(self, rest)
         return
       end
     end
-    self:Print("unknown category %q", key)
+    self:Error("unknown category %q", key)
   end
   for _, c in ipairs(self.tradeCategories) do
     self:Print("  %s (%s): %s", c[1], c[2], self:TradeCategoryOn(c[1], c[3]) and "on" or "off")

@@ -316,7 +316,7 @@ function MF:RecordMember(slot, name)
   if name == self.myName then return end
   if slot < 1 or slot > self.maxSlot then return end
   if slot == self.db.slot then
-    self:Print("|cFFFF0000warning:|r %s also claims our slot %d, each window needs its own slot", name, slot)
+    self:Error("%s also claims our slot %d, each window needs its own slot", name, slot)
     return
   end
   local slots = self.db.slots
@@ -515,7 +515,7 @@ end
 MF:AddCommand("s", function(self, rest)
   local n = tonumber(rest)
   if not n or n < 0 or n > self.maxSlot or n ~= math.floor(n) then
-    self:Print("use /mama s N with N from 0 to %d (0 turns it off); %q is not valid", self.maxSlot, rest)
+    self:Error("use /mama s N with N from 0 to %d (0 turns it off); %q is not valid", self.maxSlot, rest)
     return
   end
   self:SetSlot(n)
