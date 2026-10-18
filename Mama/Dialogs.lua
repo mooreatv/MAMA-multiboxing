@@ -123,38 +123,45 @@ local function gossipOption(self, id, text)
   return false
 end
 
--- noShare: the quest gets accepted here too because we mirror the lead, so it must not be shared again (Actions.lua).
-local function questPick(listFn, selectFn, noShare)
-  return function(self, id)
-    if not shown("GossipFrame") then return false end
-    for _, q in ipairs(C_GossipInfo[listFn]() or {}) do
-      if q.questID == id then
-        self:Debug("dialog: %s(%d) '%s'", selectFn, id, clean(q.title))
-        if noShare then self.noShare[id] = true end
-        C_GossipInfo[selectFn](id)
-        return true
+-- Open quest id (active: to turn in, else to pick up) from the gossip or the quest greeting (NPCs with only quests,
+-- listed by index) we have open; false when it isn't offered there. A quest picked up because we mirror the lead must
+-- not be shared again (noShare, Actions.lua).
+local function openQuest(self, id, active)
+  local index
+  if shown("GossipFrame") then
+    for _, q in ipairs((active and C_GossipInfo.GetActiveQuests or C_GossipInfo.GetAvailableQuests)() or {}) do
+      if q.questID == id then index = 0 end
+    end
+  elseif shown("QuestFrameGreetingPanel") then
+    for i = 1, active and GetNumActiveQuests() or GetNumAvailableQuests() do
+      if active and GetActiveQuestID(i) == id or not active and select(5, GetAvailableQuestInfo(i)) == id then
+        index = i
       end
     end
-    return false
   end
+  if not index then return false end
+  self:Debug("dialog: opening quest %d (%s, %s)", id, active and "active" or "available",
+             index > 0 and "greeting index " .. index or "gossip")
+  if not active then self.noShare[id] = true end
+  if index == 0 then
+    (active and C_GossipInfo.SelectActiveQuest or C_GossipInfo.SelectAvailableQuest)(id)
+  else
+    (active and SelectActiveQuest or SelectAvailableQuest)(index)
+  end
+  return true
 end
 
--- Our gossip still shows the quest the lead is turning in (its qc came before our dialog opened, or never came): open it
--- ourselves, once per pending choice and unless an earlier pending choice is already doing it.
+local function questPick(active) return function(self, id) return openQuest(self, id, active) end end
+
+-- Our dialog still lists the quest the lead is turning in (its qc came before our dialog opened, or never came): open
+-- it ourselves, once per pending choice and unless an earlier pending choice is already doing it.
 local function openActive(self, id, p)
-  if p.opened or not shown("GossipFrame") then return end
+  if p.opened then return end
   for _, o in ipairs(pending) do
     if o == p then break end
     if o.id == id and (o.verb == "qc" or o.verb == "qp") then return end
   end
-  for _, q in ipairs(C_GossipInfo.GetActiveQuests() or {}) do
-    if q.questID == id then
-      p.opened = true
-      self:Debug("dialog: opening quest %d to turn it in like the lead", id)
-      C_GossipInfo.SelectActiveQuest(id)
-      return
-    end
-  end
+  p.opened = openQuest(self, id, true)
 end
 
 local function questContinue(self, id, _, p)
@@ -243,8 +250,8 @@ end
 
 local receivers = {
   go = gossipOption,
-  qa = questPick("GetAvailableQuests", "SelectAvailableQuest", true),
-  qc = questPick("GetActiveQuests", "SelectActiveQuest"),
+  qa = questPick(false),
+  qc = questPick(true),
   qp = questContinue,
   qr = questReward,
   tx = taxi,
@@ -373,6 +380,7 @@ MF:On("QUEST_COMPLETE", function(self)
   currentNpc()
   if reward.questID ~= GetQuestID() then reward.picked = 0 end
   reward.questID = GetQuestID()
+  reward.open = true
   reward.items = {}
   for i = 1, GetNumQuestChoices() do
     reward.items[i] = tonumber((GetQuestItemLink("choice", i) or ""):match("item:(%d+)")) or 0
@@ -383,6 +391,10 @@ MF:On("QUEST_COMPLETE", function(self)
   self:Debug("dialog: quest %d offers %d reward choices", reward.questID, #reward.items)
   retry(self)
 end)
+-- Next frame: the GetQuestReward hook runs after the call, which may already have closed the dialog.
+MF:On("QUEST_FINISHED", function()
+  C_Timer.After(0, function() if not shown("QuestFrameRewardPanel") then reward.open = false end end)
+end)
 MF:On("TAXIMAP_OPENED", function(self)
   currentNpc()
   wipe(taxiNames)
@@ -390,11 +402,12 @@ MF:On("TAXIMAP_OPENED", function(self)
   retry(self)
 end)
 
--- A quest picked in the lead's gossip is noticed from the quest dialog it opens rather than with hooks: a quest addon
--- may call a C_GossipInfo function it kept a reference to before our hooks were in (RestedXP's auto turn in does).
+-- A quest picked in the lead's gossip or quest greeting is noticed from the quest dialog it opens rather than with
+-- hooks: a quest addon may call a function it kept a reference to before our hooks were in (RestedXP's auto turn in
+-- does, with C_GossipInfo.SelectActiveQuest).
 local GOSSIP_QUEST_SECONDS = 2 -- the quest dialog opens right after the gossip closes
-local gossipVerbs = {} -- questID -> verb ("qa" available, "qc" active) in the gossip we have (or just had) open
-local gossipClosedAt -- nil while the gossip is open
+local gossipVerbs = {} -- questID -> verb ("qa" available, "qc" active) in the gossip/greeting we have (or just had) open
+local gossipClosedAt -- nil while the gossip/greeting is open
 
 MF:On("GOSSIP_SHOW", function()
   wipe(gossipVerbs)
@@ -403,6 +416,25 @@ MF:On("GOSSIP_SHOW", function()
   for _, q in ipairs(C_GossipInfo.GetActiveQuests() or {}) do gossipVerbs[q.questID] = "qc" end
 end)
 MF:On("GOSSIP_CLOSED", function() gossipClosedAt = GetTime() end)
+
+-- Quest greeting: the quest frame listing an NPC's quests (instead of a gossip), with quests picked by index.
+MF:On("QUEST_GREETING", function(self)
+  currentNpc()
+  wipe(gossipVerbs)
+  gossipClosedAt = nil
+  for i = 1, GetNumAvailableQuests() do
+    local id = select(5, GetAvailableQuestInfo(i))
+    if id then gossipVerbs[id] = "qa" end
+  end
+  for i = 1, GetNumActiveQuests() do
+    local id = GetActiveQuestID(i)
+    if id then gossipVerbs[id] = "qc" end
+  end
+  self:Debug("dialog: quest greeting with %d available and %d active quests", GetNumAvailableQuests(),
+             GetNumActiveQuests())
+  retry(self)
+end)
+MF:On("QUEST_FINISHED", function() if not shown("GossipFrame") then gossipClosedAt = gossipClosedAt or GetTime() end end)
 
 local function questOpened(self)
   local id = GetQuestID()
@@ -442,6 +474,10 @@ MF:Listen("LOGIN", function(self)
   end
   hooksecurefunc("GetQuestReward", function(choice)
     if reward.questID == 0 then return end
+    if not reward.open then -- a quest addon calling it blindly (seen with RestedXP)
+      self:Debug("dialog: GetQuestReward(%s) with no quest reward dialog open: not mirrored", tostring(choice))
+      return
+    end
     send(self, "qr", reward.questID, tostring(choice and choice > 0 and reward.items[choice] or 0))
   end)
   hooksecurefunc("TakeTaxiNode", function(index)
