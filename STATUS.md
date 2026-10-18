@@ -288,6 +288,10 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   sale ends (0.5s later, for its money), `CanMerchantRepair()` -> `GetRepairAllCost()` -> `RepairAllItems()` (own
   money, not guild) when affordable. Same skips as selling (disabled character, modifier held). Verified in game.
 - Options page: 5 sections, 10 rows fill most of the ~600px Settings canvas (920x724 panel); about one more row fits.
+- "Mama: vendor items" trade button (left of "Mama: give mats", `MF:GiveVendorItems`): the same stacks minus bound
+  ones (`MF:VendorTradeStacks`), full slots first (unstackable or full stack: `GetItemInfo` 8th value = max stack; uncached
+  counts as partial), then partial stacks,
+  into the free trade slots (`putInTrade`, shared with the mats fill). Any trade partner. Unverified in game.
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).

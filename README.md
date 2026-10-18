@@ -129,6 +129,10 @@ item's name or ID in its box; the X on a row removes it. Every addition, removal
 same things; "Send list to team" replaces their whole list with yours (e.g. for a window that was offline).
 `/mama vendor add|remove <item>`, `greys [on|off]`, `list`, `sync` and `sell` do the same from the chat line.
 
+Bags full? Open a trade with the team member who has the most free bag slots (status window) and click the "Mama:
+vendor items" button above the trade window: it puts 6 of the items you'd sell (sell list and greys, partial stacks
+last) in the trade, for them to sell at the next merchant.
+
 **Auto repair** (Options, off by default: early on, the money is better spent on training than on repairing gear
 you'll soon replace): after selling, a merchant that can repair fixes all your gear, if you have the money.
 
