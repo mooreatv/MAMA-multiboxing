@@ -53,7 +53,7 @@ local SECTIONS = {
       }
     }
   }, {
-    "Follow and trade", {
+    "Follow, trade and merchants", {
       {
         "macro", "Maintain the MAMA macro",
         "Create a per character MAMA macro (a starter for your class) and keep its /follow and /assist lines " ..
@@ -62,6 +62,12 @@ local SECTIONS = {
         "autoTrade", "Auto fill trades with mats",
         "When trading with a team member, put in the mats their professions use (cloth to the tailor, ore to the " ..
           "miner...). Which mats: the Trade page below this one."
+      }
+    }, {
+      {
+        "autoRepair", "Auto repair at merchants",
+        "Repair all your gear when you open a merchant that can repair (after selling your sell list, /mama " ..
+          "vendor). Off by default: early on, the money is better spent on training."
       }
     }
   }, {

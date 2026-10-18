@@ -38,6 +38,7 @@ MF.defaults = {
   autoRaid = true,
   autoFFA = true,
   autoTrade = true,
+  autoRepair = false,
   followWarn = true,
   forwardWhispers = true,
   compact = false,

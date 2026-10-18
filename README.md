@@ -127,6 +127,9 @@ item's name or ID in its box; the X on a row removes it. Every addition, removal
 same things; "Send list to team" replaces their whole list with yours (e.g. for a window that was offline).
 `/mama vendor add|remove <item>`, `greys [on|off]`, `list`, `sync` and `sell` do the same from the chat line.
 
+**Auto repair** (Options, off by default: early on, the money is better spent on training than on repairing gear
+you'll soon replace): after selling, a merchant that can repair fixes all your gear, if you have the money.
+
 ### Alerts to the lead
 
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
@@ -181,7 +184,7 @@ remembered for that character until `/mama enable` turns it back on.
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
 `macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, MAMA macro, follow broken warning, whisper
+mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
