@@ -123,12 +123,14 @@ local function layout(panel, anchor, sections)
   local prev = anchor
   for _, section in ipairs(sections) do
     local header = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    header:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -16)
+    header:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -10)
     header:SetText(section[1])
     prev = header
     for i = 2, #section do
       local row = section[i]
-      local left = checkbox(panel, row[1], "TOPLEFT", prev, "BOTTOMLEFT", 0, prev == header and -4 or -2)
+      -- rows overlap a bit: the 32px checkbox art has its own padding (the main page must fit the ~600px Settings
+      -- area; split options into another page like Trade when it doesn't)
+      local left = checkbox(panel, row[1], "TOPLEFT", prev, "BOTTOMLEFT", 0, prev == header and -2 or 2)
       if row[2] then checkbox(panel, row[2], "TOPLEFT", left, "TOPLEFT", COLUMN, 0) end
       prev = left
     end
@@ -153,7 +155,7 @@ end
 local function sendButton(panel, anchor)
   local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
   b:SetSize(180, 24)
-  b:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -16)
+  b:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -10)
   b:SetText("Send settings to team")
   b:SetScript("OnClick", function() MF:SendSettings() end)
   b:SetScript("OnEnter", function(btn)
