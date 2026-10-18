@@ -139,8 +139,29 @@ local function questPick(listFn, selectFn, noShare)
   end
 end
 
-local function questContinue(self, id)
-  if not shown("QuestFrameProgressPanel") or GetQuestID() ~= id then return false end
+-- Our gossip still shows the quest the lead is turning in (its qc came before our dialog opened, or never came): open it
+-- ourselves, once per pending choice and unless an earlier pending choice is already doing it.
+local function openActive(self, id, p)
+  if p.opened or not shown("GossipFrame") then return end
+  for _, o in ipairs(pending) do
+    if o == p then break end
+    if o.id == id and (o.verb == "qc" or o.verb == "qp") then return end
+  end
+  for _, q in ipairs(C_GossipInfo.GetActiveQuests() or {}) do
+    if q.questID == id then
+      p.opened = true
+      self:Debug("dialog: opening quest %d to turn it in like the lead", id)
+      C_GossipInfo.SelectActiveQuest(id)
+      return
+    end
+  end
+end
+
+local function questContinue(self, id, _, p)
+  if not shown("QuestFrameProgressPanel") or GetQuestID() ~= id then
+    openActive(self, id, p)
+    return false
+  end
   if not IsQuestCompletable() then
     self:Print("not continuing quest %d: it can't be completed on this window yet", id)
     return true
@@ -150,8 +171,16 @@ local function questContinue(self, id)
   return true
 end
 
-local function questReward(self, id, text)
-  if not shown("QuestFrameRewardPanel") or GetQuestID() ~= id then return false end
+local function questReward(self, id, text, p)
+  if not shown("QuestFrameRewardPanel") or GetQuestID() ~= id then
+    -- the lead is past the gossip and progress pages: catch up through them
+    if not p.continued and shown("QuestFrameProgressPanel") and GetQuestID() == id then
+      p.continued = true
+      return questContinue(self, id, nil, p) and not IsQuestCompletable()
+    end
+    openActive(self, id, p)
+    return false
+  end
   local want, choice = tonumber(text) or 0, 0
   local picked = reward.picked or 0
   if picked == 0 and _G.QuestInfoFrame and (_G.QuestInfoFrame.itemChoice or 0) > 0 then
@@ -237,7 +266,7 @@ local function run(self)
       local npc = currentNpc()
       if anyNpc[p.verb] or (npc and (p.npc == 0 or npc == 0 or p.npc == npc)) then
         mirroring = true
-        local ok, handled = pcall(receivers[p.verb], self, p.id, p.text)
+        local ok, handled = pcall(receivers[p.verb], self, p.id, p.text, p)
         mirroring = false
         if not ok then
           self:Debug("dialog: error mirroring %s: %s", p.verb, tostring(handled))
@@ -361,7 +390,35 @@ MF:On("TAXIMAP_OPENED", function(self)
   retry(self)
 end)
 
--- The lead's choices, noticed with secure hooks right after the Blizzard UI made them.
+-- A quest picked in the lead's gossip is noticed from the quest dialog it opens rather than with hooks: a quest addon
+-- may call a C_GossipInfo function it kept a reference to before our hooks were in (RestedXP's auto turn in does).
+local GOSSIP_QUEST_SECONDS = 2 -- the quest dialog opens right after the gossip closes
+local gossipVerbs = {} -- questID -> verb ("qa" available, "qc" active) in the gossip we have (or just had) open
+local gossipClosedAt -- nil while the gossip is open
+
+MF:On("GOSSIP_SHOW", function()
+  wipe(gossipVerbs)
+  gossipClosedAt = nil
+  for _, q in ipairs(C_GossipInfo.GetAvailableQuests() or {}) do gossipVerbs[q.questID] = "qa" end
+  for _, q in ipairs(C_GossipInfo.GetActiveQuests() or {}) do gossipVerbs[q.questID] = "qc" end
+end)
+MF:On("GOSSIP_CLOSED", function() gossipClosedAt = GetTime() end)
+
+local function questOpened(self)
+  local id = GetQuestID()
+  local verb = gossipVerbs[id]
+  local recent = not gossipClosedAt or GetTime() - gossipClosedAt < GOSSIP_QUEST_SECONDS
+  wipe(gossipVerbs) -- only the first quest dialog comes from the gossip (not the follow-up offered after a turn in)
+  if not iAmLead(self) then return end
+  self:Debug("dialog: quest %s opened (gossip pick: %s, gossip closed %s)", tostring(id), tostring(verb),
+             gossipClosedAt and ("%.1fs ago"):format(GetTime() - gossipClosedAt) or "no")
+  if verb and recent then send(self, verb, id, "") end
+end
+MF:On("QUEST_DETAIL", questOpened, true) -- before the auto accept (Actions.lua), which clears GetQuestID()
+MF:On("QUEST_PROGRESS", questOpened)
+MF:On("QUEST_COMPLETE", questOpened)
+
+-- The lead's other choices, noticed with secure hooks right after the Blizzard UI made them.
 MF:Listen("LOGIN", function(self)
   -- The options are read from the cache: the dialog may already be closed (flight master) when the hook runs.
   hooksecurefunc(C_GossipInfo, "SelectOption", function(id)
@@ -377,8 +434,6 @@ MF:Listen("LOGIN", function(self)
       sendGossipIndex(self, index)
     end)
   end
-  hooksecurefunc(C_GossipInfo, "SelectAvailableQuest", function(id) send(self, "qa", id, "") end)
-  hooksecurefunc(C_GossipInfo, "SelectActiveQuest", function(id) send(self, "qc", id, "") end)
   hooksecurefunc("CompleteQuest",
                  function() if shown("QuestFrameProgressPanel") then send(self, "qp", GetQuestID(), "") end end)
   if _G.QuestInfoItem_OnClick then
