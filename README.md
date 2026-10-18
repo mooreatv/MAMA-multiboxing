@@ -36,8 +36,9 @@ Do this once per window/character:
 
 The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
 only messages signed with that secret are accepted as team commands. Characters that exchange the token
-are added to the trusted team and their group invites are auto accepted. `/mama token` shows it again,
-`/mama token new` (slot 1) makes a new one. `/mama team add [Full Name]` can separately trust a name for auto-accepting
+are added to the trusted team and their group invites are auto accepted. `/mama token` shows it again.
+`/mama token new` (slot 1) makes a new secret: only for a leaked token or a separate team, as every other window then
+needs the new one. `/mama team add [Full Name]` can separately trust a name for auto-accepting
 that character's group invites; it does not pair that character, assign it a slot, or give it the token needed to
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
@@ -49,8 +50,8 @@ the others accept automatically. If slot 1 logs in first, those invites find nob
 other windows' announces reach slot 1, which can take minutes when the server's chat lags. If that happens, left click
 the status window on slot 1 (or `/mama invite`, or the *Invite team* key) once everyone is logged in.
 
-**New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` then
-`/mama token` and copy it (`/mama token new` for a brand new team). On each other window, `/mama s N` (or
+**New team or new master** (other characters, or another character as slot 1): on the new slot 1, `/mama s 1` and copy
+the token it shows (same secret, this character as master). On each other window, `/mama s N` (or
 `/mama token`, or Ctrl+Right on the status window) and paste it in the dialog, which names the current master (Escape
 keeps it); `/mama token <paste>` works too. Pasting a token makes that window forget the previous team and talk to the
 new master right away.

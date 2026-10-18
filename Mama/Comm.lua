@@ -464,6 +464,19 @@ function MF:AcceptToken(text)
   return true
 end
 
+-- Slot 1: make a token, or point the existing one's master at this character (same team id and secret, so the
+-- other windows keep verifying our messages; they need the refreshed token to know their new master).
+function MF:ClaimToken()
+  local tok = self:Token()
+  if not tok then
+    self:SetToken(self:MakeToken(self.myName))
+  elseif tok.master ~= self.myName then
+    local body = ("%s:%s:%s:"):format(tok.team, tok.secret, self.myName)
+    self:SetToken(body .. checkChar(body))
+    self:Print("token refreshed: team master is now %s", self.myName)
+  end
+end
+
 function MF:SetSlot(n)
   self.db.slot = n
   self:RememberTeam()
@@ -476,7 +489,7 @@ function MF:SetSlot(n)
   self:SetOwnSlot()
   self:Fire("TEAM_CHANGED")
   if n == 1 then
-    if not tok then self:SetToken(self:MakeToken(self.myName)) end
+    self:ClaimToken()
     self:SetOwnSlot()
     self:Print(
       "this window is slot 1 (team master). Copy the token (Ctrl-C), then paste it in the other windows after /mama s N")
@@ -518,13 +531,7 @@ MF:AddCommand("token", function(self, rest)
     local ok, err = self:AcceptToken(rest)
     if not ok then self:Print("%s", err) end
   elseif self.db.slot == 1 and self:Token() then
-    local tok = self:Token()
-    if tok.master ~= self.myName then
-      -- keep team id and secret, just point the master at this character
-      local body = ("%s:%s:%s:"):format(tok.team, tok.secret, self.myName)
-      self:SetToken(body .. checkChar(body))
-      self:Print("token refreshed: team master is now %s", self.myName)
-    end
+    self:ClaimToken()
     self:ShowTokenDialog("copy")
   else
     self:ShowTokenDialog("paste")

@@ -124,6 +124,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 
 ## Implemented and verified in-game (Forever beta, 2-3 windows)
 - One-time pairing: `/mama s N` shows a copy/paste token dialog (`teamId:secret:MasterName:` + checksum); `/mama token [new|<token>]`.
+  `/mama s 1` (like `/mama token` on slot 1, `MF:ClaimToken`) keeps team id + secret but makes this character the token's master.
   `/mama s N` (N > 1) shows the paste dialog even with a token kept (may be an older team's, inherited by a new character);
   the copy box reselects all on click/focus (a click dropped the selection, Ctrl-C then copied nothing); paste errors show in the dialog.
   Signed, timestamped addon messages (WHISPER to master/team + PARTY/RAID + GUILD); payloads `I;slot;name;flag`, `A;questID`, `L;name`, `Z;count`.
