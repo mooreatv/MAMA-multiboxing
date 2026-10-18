@@ -252,7 +252,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 
 ## Away members and quieter follow alerts (2026-10-17, verified in game)
 - `db.away` (saved set of full names, `MF:IsAway(name)`, `ToggleAway`, `/mama away N ...|Name`, `/mama back
-  N ...|Name|all`, Alt+Middle on a status row; header Alt+Middle never disbands). Synced with `X;Name,Name` (every
+  N ...|Name|all`, Alt+Left on a status row; on the header it still resends our info). Synced with `X;Name,Name` (every
   away slot holder, empty = none) sent with `SendTeam` on change; receivers set every slot holder from the list. The
   master also whispers `X;list` to a member asking (`HandleInfo` relay), so one offline at the change catches up.
 - Away effects: skipped by `InviteMissing`/`ScheduleInvites` (row click still invites), counts as present in

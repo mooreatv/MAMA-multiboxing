@@ -12,7 +12,7 @@
    ]] --
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
 -- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet,
--- blue grey = away (Alt+middle click on its row toggles it), left out of the header count.
+-- blue grey = away (Alt+left click on its row toggles it), left out of the header count.
 -- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's).
 -- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
 -- token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the title).
@@ -27,11 +27,11 @@ local pendingRefresh
 local TIP = table.concat({
   "|cFF99E5FFLeft click|r invite the team",
   "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)", "|cFF99E5FFRight click|r options",
-  "|cFF99E5FFAlt middle|r on a row: that member is away/back (no invites, follow alerts, quest or dialog sync)",
   "|cFF99E5FFShift left|r toggle party/raid", "|cFF99E5FFShift right|r toggle compact view",
   "|cFF99E5FFShift middle|r identify this window (big slot number)",
   "|cFF99E5FFCtrl middle|r turn Mama off/on for this character", "|cFF99E5FFCtrl left|r toggle auto invite",
   "|cFF99E5FFCtrl right|r show/paste the team token", "|cFF99E5FFAlt left|r resend our info to the team",
+  "|cFF99E5FFAlt left|r on a row: that member is away/back (no invites, follow alerts, quest or dialog sync)",
   "|cFF99E5FFAlt right|r team is complete (forget slots that aren't here)",
   "|cFF99E5FFMousewheel|r resize, |cFF99E5FFdrag|r the header to move",
   "On a row: left click targets (or invites if not in group), right click unit menu."
@@ -131,7 +131,7 @@ local function WindowClick(button)
       MF:ToggleDisabled()
     elseif shift then
       MF:Identify()
-    elseif not alt then -- Alt+middle is away on a row, never a disband
+    else
       MF:Disband()
     end
   end
@@ -265,7 +265,7 @@ local function GetRow(i)
   b:SetScript("PreClick", function(self, button, down)
     if down then return end
     local modified = IsControlKeyDown() or IsShiftKeyDown() or IsAltKeyDown()
-    if button == "MiddleButton" and IsAltKeyDown() then
+    if button == "LeftButton" and IsAltKeyDown() then
       if self.fullName then MF:ToggleAway(self.fullName) end
     elseif modified or button == "MiddleButton" then
       WindowClick(button)
@@ -291,7 +291,7 @@ local function GetRow(i)
     else
       GameTooltip:AddLine("Run |cFF99E5FF/mama s " .. self.slot .. "|r in that window", 1, 1, 1)
     end
-    if self.fullName then GameTooltip:AddLine("|cFF99E5FFAlt middle click|r away/back", 1, 1, 1) end
+    if self.fullName then GameTooltip:AddLine("|cFF99E5FFAlt left click|r away/back", 1, 1, 1) end
     GameTooltip:AddLine("Other clicks: see the header tooltip", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)

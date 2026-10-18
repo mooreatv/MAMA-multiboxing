@@ -149,9 +149,9 @@ Mama, alts included (last known values). Hover the title for all the shortcuts:
 | Mouse wheel / drag title | resize / move |
 
 On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu,
-Alt+Middle marks it away or back (see below).
+Alt+Left marks it away or back (see below).
 
-**Away team members** (one doing its own thing for a while, in the group or not): Alt+Middle click its row,
+**Away team members** (one doing its own thing for a while, in the group or not): Alt+Left click its row,
 `/mama away 3 4` (slots) or `/mama away Full Name`, and `/mama back 3|Full Name|all`. It's shown on every window and
 remembered until it's back. An away member isn't invited (clicking its row still does), doesn't keep the team from
 being complete (free for all loot, `/mama complete` keeps its slot), sends no follow alerts, and its window leaves
