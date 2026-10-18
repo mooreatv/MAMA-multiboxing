@@ -12,7 +12,7 @@
    ]] --
 -- Trade: opening a trade with a team member puts the mats their professions use in the trade window (cloth to the
 -- tailor, ore to the miner...), unless we use them too (see GivesTo; the "Mama: give mats" button gives those anyway).
--- The trade itself is still accepted by hand.
+-- The trade itself is still accepted by hand. The "Mama: vendor items" button gives the items we'd sell at a vendor.
 local _, MF = ...
 
 local P = MF.PROF
@@ -150,6 +150,25 @@ end
 local partner -- full name of the current trade partner, nil when no trade is open
 local waitingFor -- partner whose professions we asked for, to fill once they answer
 
+-- Puts bag stacks ({bag, slot}) in the free trade slots, in order. Returns the ones put.
+local function putInTrade(self, stacks)
+  local put, tslot = {}, 1
+  for _, m in ipairs(stacks) do
+    while tslot <= TRADE_SLOTS and GetTradePlayerItemInfo(tslot) do tslot = tslot + 1 end
+    if tslot > TRADE_SLOTS then break end
+    ClearCursor()
+    C_Container.PickupContainerItem(m.bag, m.slot)
+    if not CursorHasItem() then
+      self:Debug("couldn't pick up bag %d slot %d", m.bag, m.slot)
+    else
+      ClickTradeButton(tslot)
+      ClearCursor()
+      put[#put + 1] = m
+    end
+  end
+  return put
+end
+
 function MF:FillTrade(manual)
   if not partner then return end
   if partner == self.myName or not self:SlotOf(partner) then
@@ -172,28 +191,31 @@ function MF:FillTrade(manual)
     if manual then self:Print("nothing for %s (%s)", partner, self:ProfessionsText(partner)) end
     return
   end
-  local given, labels, seen = 0, {}, {}
-  local tslot = 1
-  for _, m in ipairs(mats) do
-    while tslot <= TRADE_SLOTS and GetTradePlayerItemInfo(tslot) do tslot = tslot + 1 end
-    if tslot > TRADE_SLOTS then break end
-    ClearCursor()
-    C_Container.PickupContainerItem(m.bag, m.slot)
-    if not CursorHasItem() then
-      self:Debug("couldn't pick up bag %d slot %d", m.bag, m.slot)
-    else
-      ClickTradeButton(tslot)
-      ClearCursor()
-      given = given + 1
-      if not seen[m.label] then
-        seen[m.label] = true
-        labels[#labels + 1] = m.label
-      end
+  local put, labels, seen = putInTrade(self, mats), {}, {}
+  for _, m in ipairs(put) do
+    if not seen[m.label] then
+      seen[m.label] = true
+      labels[#labels + 1] = m.label
     end
   end
-  local left = #mats - given
-  if given > 0 then self:Print("trade: %d stacks for %s (%s)", given, partner, table.concat(labels, ", ")) end
+  local left = #mats - #put
+  if #put > 0 then self:Print("trade: %d stacks for %s (%s)", #put, partner, table.concat(labels, ", ")) end
   if left > 0 then self:Print("%d more stacks for %s: trade again after this one", left, partner) end
+end
+
+-- The "Mama: vendor items" button: the sell list (and grey) items, e.g. to the team member with the most free bag
+-- slots, who sells them at the next merchant (same sell list).
+function MF:GiveVendorItems()
+  if not partner then return end
+  local stacks = self:VendorTradeStacks()
+  if #stacks == 0 then
+    self:Print("no tradable items to sell (sell list: /mama vendor)")
+    return
+  end
+  local put = putInTrade(self, stacks)
+  local left = #stacks - #put
+  if #put > 0 then self:Print("trade: %d items to sell for %s", #put, partner) end
+  if left > 0 then self:Print("%d more items to sell: trade again after this one", left) end
 end
 
 MF:On("TRADE_SHOW", function(self)
@@ -232,6 +254,19 @@ MF:Listen("LOGIN", function(self)
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
   self.tradeButton = b
+  local v = CreateFrame("Button", nil, TradeFrame, "UIPanelButtonTemplate")
+  v:SetSize(130, 22)
+  v:SetPoint("RIGHT", b, "LEFT", -4, 0)
+  v:SetText("Mama: vendor items")
+  v:SetScript("OnClick", function() self:GiveVendorItems() end)
+  v:SetScript("OnEnter", function(btn)
+    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Give vendor items")
+    GameTooltip:AddLine("Put the items you sell at vendors (sell list and greys, unstackable ones first) in the " ..
+                          "trade, e.g. for the team member with the most free bag slots to sell them.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  v:SetScript("OnLeave", GameTooltip_Hide)
 end)
 
 MF:AddCommand("trade", function(self, rest)

@@ -166,7 +166,7 @@ local function endSale(self)
   sale = nil
 end
 
--- Bag stacks to sell: {bag, slot, id} of the listed and grey items the merchant pays for.
+-- Bag stacks to sell: {bag, slot, id, bound} of the listed and grey items the merchant pays for.
 local function toSell(self)
   local v, list = self:VendorList(), {}
   for bag = 0, NUM_BAG_SLOTS or 4 do
@@ -174,11 +174,25 @@ local function toSell(self)
       local info = C_Container.GetContainerItemInfo(bag, slot)
       if info and not info.isLocked and not info.hasNoValue and
         (v.items[info.itemID] or (v.greys and info.quality == POOR)) then
-        list[#list + 1] = {bag = bag, slot = slot, id = info.itemID}
+        list[#list + 1] = {bag = bag, slot = slot, id = info.itemID, bound = info.isBound}
       end
     end
   end
   return list
+end
+
+-- The tradable ones, for the "Mama: vendor items" trade button: unstackable items (gear) first, then stacks.
+function MF:VendorTradeStacks()
+  local single, stacks = {}, {}
+  for _, it in ipairs(toSell(self)) do
+    if not it.bound then
+      local maxStack = select(8, C_Item.GetItemInfo(it.id))
+      local list = maxStack == 1 and single or stacks
+      list[#list + 1] = it
+    end
+  end
+  for _, it in ipairs(stacks) do single[#single + 1] = it end
+  return single
 end
 
 -- done: called once everything is sold (or there was nothing to sell), unless the merchant was closed first.
