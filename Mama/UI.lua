@@ -44,8 +44,29 @@ local function GetDialog()
   e:SetMaxLetters(200)
   e:SetScript("OnEscapePressed", function() f:Hide() end)
   f.edit = e
+  -- copy mode: saves the token for the other accounts of this PC (written at /reload or logout, see MF:ShareToken)
+  local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  b:SetSize(80, 22)
+  b:SetPoint("BOTTOMRIGHT", -12, 20)
+  b:SetText("Reload")
+  b:SetScript("OnClick", ReloadUI)
+  f.reload = b
   dialog = f
   return f
+end
+
+-- withReload: narrower edit box, with the Reload button on its right.
+local function layout(f, withReload)
+  local e = f.edit
+  e:ClearAllPoints()
+  if withReload then
+    e:SetSize(290, 24)
+    e:SetPoint("BOTTOMLEFT", 22, 20)
+  else
+    e:SetSize(380, 24)
+    e:SetPoint("BOTTOM", 0, 20)
+  end
+  f.reload:SetShown(withReload)
 end
 
 -- note: optional extra line under the instructions (paste mode).
@@ -53,10 +74,13 @@ function MamaForever:ShowTokenDialog(mode, note)
   local f = GetDialog()
   local e = f.edit
   e:SetNumeric(false)
+  local onPC = self:CanShareToken()
+  layout(f, mode == "copy" and onPC)
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
-    f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter. " ..
-                     "Or /reload here: other accounts on this PC get it when they log in.")
+    local help = "Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter."
+    if onPC then help = help .. " Or Reload here: other accounts on this PC get it when they log in." end
+    f.text:SetText(help)
     local token = self:TokenText()
     local function selectAll(box) box:HighlightText() end
     e:SetScript("OnTextChanged", function(box, user)
@@ -115,6 +139,7 @@ function MamaForever:ShowSlotDialog()
   e:SetScript("OnMouseUp", nil)
   e:SetScript("OnEditFocusGained", nil)
   e:SetNumeric(true)
+  layout(f, false)
   e:SetScript("OnEnterPressed", function(box)
     local n = tonumber(box:GetText())
     if not n or n < 1 or n > self.maxSlot then

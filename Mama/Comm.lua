@@ -89,6 +89,8 @@ local function shared()
   return type(sv) == "table" and sv or nil -- never create it: the console's ADDON_LOADED would reset it
 end
 
+function MF:CanShareToken() return shared() ~= nil end
+
 function MF:ShareToken()
   local sv = shared()
   if sv and self.db.token then sv.Mama = {token = self.db.token, faction = self.db.tokenFaction} end
