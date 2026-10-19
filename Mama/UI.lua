@@ -22,7 +22,7 @@ local dialog
 local function GetDialog()
   if dialog then return dialog end
   local f = CreateFrame("Frame", "MamaForeverTokenDialog", UIParent, "BasicFrameTemplateWithInset")
-  f:SetSize(420, 130)
+  f:SetSize(420, 145)
   f:SetPoint("CENTER", 0, 150)
   f:SetFrameStrata("DIALOG")
   f:EnableMouse(true)
@@ -44,17 +44,43 @@ local function GetDialog()
   e:SetMaxLetters(200)
   e:SetScript("OnEscapePressed", function() f:Hide() end)
   f.edit = e
+  -- copy mode: saves the token for the other accounts of this PC (written at /reload or logout, see MF:ShareToken)
+  local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  b:SetSize(80, 22)
+  b:SetPoint("BOTTOMRIGHT", -12, 20)
+  b:SetText("Reload")
+  b:SetScript("OnClick", ReloadUI)
+  f.reload = b
   dialog = f
   return f
+end
+
+-- withReload: narrower edit box, with the Reload button on its right.
+local function layout(f, withReload)
+  local e = f.edit
+  e:ClearAllPoints()
+  if withReload then
+    e:SetSize(290, 24)
+    e:SetPoint("BOTTOMLEFT", 22, 20)
+  else
+    e:SetSize(380, 24)
+    e:SetPoint("BOTTOM", 0, 20)
+  end
+  f.reload:SetShown(withReload)
 end
 
 -- note: optional extra line under the instructions (paste mode).
 function MamaForever:ShowTokenDialog(mode, note)
   local f = GetDialog()
   local e = f.edit
+  e:SetNumeric(false)
+  local onPC = self:CanShareToken()
+  layout(f, mode == "copy" and onPC)
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
-    f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")
+    local help = "Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter."
+    if onPC then help = help .. " Or Reload here: other accounts on this PC get it when they log in." end
+    f.text:SetText(help)
     local token = self:TokenText()
     local function selectAll(box) box:HighlightText() end
     e:SetScript("OnTextChanged", function(box, user)
@@ -88,6 +114,44 @@ function MamaForever:ShowTokenDialog(mode, note)
     end)
     e:SetText("")
   end
+  f:Show()
+  e:SetFocus()
+end
+
+-- Asked at login when this PC has a team token and this window has no slot yet (see MF:UseSharedToken).
+-- Escape or the close button: not asked again until the next login or /reload.
+function MamaForever:ShowSlotDialog()
+  local f = GetDialog()
+  local e = f.edit
+  local tok = self:Token()
+  if not tok then return end
+  local guess = 1
+  if tok.master ~= self.myName then
+    guess = 2
+    while self.db.slots[guess] do guess = guess + 1 end
+  end
+  f.title:SetText("Mama-forever: this window's slot")
+  local help = ("Team token found on this PC (master %s). Slot number of this window, then Enter.\n" ..
+                 "Escape: not now (|cFF99E5FF/mama s N|r later, |cFF99E5FF/mama s 0|r: never ask this character)."):format(
+                 tok.master)
+  f.text:SetText(help)
+  e:SetScript("OnTextChanged", nil)
+  e:SetScript("OnMouseUp", nil)
+  e:SetScript("OnEditFocusGained", nil)
+  e:SetNumeric(true)
+  layout(f, false)
+  e:SetScript("OnEnterPressed", function(box)
+    local n = tonumber(box:GetText())
+    if not n or n < 1 or n > self.maxSlot then
+      f.text:SetText(("%s\n|cFFFF4040Type a slot from 1 to %d.|r"):format(help, self.maxSlot))
+      box:HighlightText()
+      return
+    end
+    f:Hide()
+    self:SetSlot(n, true)
+  end)
+  e:SetText(tostring(guess))
+  e:HighlightText()
   f:Show()
   e:SetFocus()
 end

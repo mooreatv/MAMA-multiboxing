@@ -29,6 +29,7 @@ read_globals = {
   "PlaySound",
   "RaidNotice_AddMessage",
   "RaidWarningFrame",
+  "ReloadUI",
   "SOUNDKIT",
   "time",
   "UnitAffectingCombat",

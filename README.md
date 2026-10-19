@@ -7,7 +7,7 @@ no other addon needed. It is the successor of MAMA + DynamicBoxer + MoLib, rewri
 
 It lets all your windows of the same team:
 
-- find each other and form a group automatically (one-time setup per window),
+- find each other and form a group automatically (one-time setup: on one PC, just type a slot number per window),
 - **follow and assist** whoever is the lead, with one key or one macro,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
@@ -26,13 +26,36 @@ needed), then **restart the game** (a `/reload` isn't enough the first time, key
 
 ## One-time setup
 
-Do this once per window/character:
+Each character needs two things, once:
 
-1. In the first window: `/mama s 1`. A dialog shows the team **token**: press Ctrl-C, then Enter.
+- a **slot** number: its place in the team. Slot 1 is the master window (it invites the others); 2, 3... set the
+  follow train order.
+- the team **token**: a shared secret made by slot 1, so your windows trust each other's messages (and nobody else's).
+
+There are two ways to set them up.
+
+**A. Recommended when all your accounts play on this PC: start with one window.** Nothing to copy or paste.
+
+1. Start the game in **one window only** and log in the character that will be slot 1. (Also a good moment to set
+   what every window shares on this PC: graphics settings, max foreground/background frame rates, UI scale...)
+2. Type `/mama s 1`. A dialog shows the token: click its **Reload** button. That saves the token on this PC for all its
+   WoW accounts (and saves your settings). Exiting the game works too.
+3. Start the other windows and log in. Each one says "using the team token saved on this PC" and asks for its slot,
+   with a suggested number: change it if needed, then Enter. If that slot already belongs to another team member who
+   is online, the window picks the next free slot by itself and tells you (`/mama s N` changes it later).
+
+Escape in that slot dialog skips it until the next `/reload` or login; `/mama s 0` on a character stops asking for it
+(for a character that isn't part of the team).
+
+**B. All windows already running, or windows on several PCs:** copy/paste the token.
+
+1. In the first window: `/mama s 1`. A dialog shows the team token: press Ctrl-C, then Enter.
 2. In the second window: `/mama s 2`, press Ctrl-V in the dialog and Enter ("token accepted").
 3. Same for the third window with `/mama s 3`, and so on (up to 40).
-4. `/reload` (or just keep playing): the windows announce themselves to each other, the status window appears,
-   and slot 1 invites everybody (switching to a raid above 5 characters).
+
+Either way the windows then find each other, the status window appears, and slot 1 invites everybody (switching to
+a raid above 5 characters). New characters later: on a PC with a saved token, just log them in and answer the slot
+dialog; otherwise `/mama s N` and paste the token (`/mama token` on slot 1 shows it again).
 
 The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
 only messages signed with that secret are accepted as team commands. Characters that exchange the token

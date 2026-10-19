@@ -311,6 +311,26 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   counts as partial), then partial stacks,
   into the free trade slots (`putInTrade`, shared with the mats fill). Any trade partner. Unverified in game.
 
+## Token shared by the accounts of one PC (2026-10-18, verified in game: sharing, slot dialog, move on clash, Reload)
+- `Blizzard_Console_SavedVars` (Blizzard_Console's `## SavedVariablesMachine`, still in 1.60.1) is one table per PC:
+  verified in game that an extra key survives /reload, logout and another character. Like DynamicBoxer's `DB.GSV`.
+  Each client reads it at login and writes its whole copy at /reload/logout: last writer wins. Never created by us
+  (the console's ADDON_LOADED would reset a table without `version`).
+- `sv.Mama = {token, faction}` (`MF:ShareToken`): written by every `SetToken(text)` (slot 1 claim, `token new`, paste)
+  and at login when ours is set and the PC has none. At login (`MF:UseSharedToken`, not when disabled) a character
+  without a token takes the PC's (master's faction kept). A different PC token is never replaced at login (several
+  teams on one PC).
+- Slot dialog (`ShowSlotDialog`, UI.lua token dialog frame, numeric) 2s after login when the PC has a token, our slot
+  is 0 and `chars[me].slotOff` isn't set (explicit `/mama s 0`). Prefilled with 1 (token master) or the lowest slot
+  >= 2 not in `db.slots`. Enter -> `SetSlot(n, true)` (no paste dialog); Escape/close: not again until /reload.
+- First setup: slot 1 `/mama s 1`, `/reload`, then the other accounts log in and confirm their slot. Verified in game
+  (3 accounts, 2 Battle.net accounts: the table is per PC, not per Battle.net account).
+- Slot clashes (`RecordMember(slot, name, sender)`, returns whether recorded): a character not on our slot map can't
+  take the slot of a member heard from this session (ignored, and the master doesn't relay it); map members move
+  freely. A claim of our own slot by a newcomer is only logged (debug): the master's answer relays the holder to it.
+  When the master (token's master) says our slot is someone else's and our slot came from the login dialog
+  (`MF.slotPicked`, this session), we move to the lowest free slot >= 2; otherwise the usual error.
+
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
 - Global inventory: per character bags/bank contents saved and shared across the team.
