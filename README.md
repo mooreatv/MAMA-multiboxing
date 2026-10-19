@@ -32,8 +32,8 @@ Each window gets a slot number (1 = the master window) and the team **token**, o
 
 1. Start only the first window. A good time to also set what every window will share: max foreground and background
    frame rates, graphics settings, UI scale...
-2. `/mama s 1` (Enter to close the token dialog), then `/reload` or exit the game: the token is saved for every
-   account of this PC (and the settings are saved).
+2. `/mama s 1`, then the dialog's *Reload* button (or exit the game): the token is saved for every account of this PC
+   (and the settings are saved).
 3. Start and log in the other windows: each picks up the token and asks for its slot number, prefilled with a guess;
    type it if needed and Enter. A guess that turns out to be another online member's slot moves to the next free one.
    Escape skips it until the next `/reload` (`/mama s 0` stops asking for that character).
