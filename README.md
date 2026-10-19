@@ -26,18 +26,26 @@ needed), then **restart the game** (a `/reload` isn't enough the first time, key
 
 ## One-time setup
 
-Do this once per window/character:
+Each window gets a slot number (1 = the master window) and the team **token**, once per character. Two ways:
 
-1. In the first window: `/mama s 1`. A dialog shows the team **token**: press Ctrl-C, then Enter.
+**A. First window alone, then the others (all accounts on one PC, recommended).** No copy/paste.
+
+1. Start only the first window. A good time to also set what every window will share: max foreground and background
+   frame rates, graphics settings, UI scale...
+2. `/mama s 1` (Enter to close the token dialog), then `/reload` or exit the game: the token is saved for every
+   account of this PC (and the settings are saved).
+3. Start and log in the other windows: each picks up the token and asks for its slot number, prefilled with a guess;
+   type it if needed and Enter. A guess that turns out to be another online member's slot moves to the next free one.
+   Escape skips it until the next `/reload` (`/mama s 0` stops asking for that character).
+
+**B. All windows at once (or windows on several PCs):** copy/paste the token.
+
+1. In the first window: `/mama s 1`. A dialog shows the team token: press Ctrl-C, then Enter.
 2. In the second window: `/mama s 2`, press Ctrl-V in the dialog and Enter ("token accepted").
 3. Same for the third window with `/mama s 3`, and so on (up to 40).
-4. `/reload` (or just keep playing): the windows announce themselves to each other, the status window appears,
-   and slot 1 invites everybody (switching to a raid above 5 characters).
 
-**All accounts on one PC:** no copy/paste needed. In the first window `/mama s 1`, then `/reload` (the token is saved
-for every account of this PC at /reload or logout). Then log in the other windows (or `/reload` the ones already in
-game): each picks up the token and asks for its slot number; type it and Enter. Escape skips it until the next
-`/reload` (`/mama s 0` stops asking for that character).
+Either way the windows then announce themselves to each other, the status window appears, and slot 1 invites
+everybody (switching to a raid above 5 characters).
 
 The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
 only messages signed with that secret are accepted as team commands. Characters that exchange the token
