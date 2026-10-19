@@ -78,6 +78,45 @@ function MF:SetToken(text)
   self.db.token = text
   self.db.tokenFaction = text and self.faction or nil
   self:RememberTeam()
+  if text then self:ShareToken() end
+end
+
+-- The token is also kept machine wide (Blizzard's console saved variables are per PC, not per account): a window of
+-- another account on this PC without a token picks it up at login. Each client reads that table at login and writes
+-- its own copy at /reload or logout (last writer wins), so slot 1 must /reload once for the others to see it.
+local function shared()
+  local sv = _G.Blizzard_Console_SavedVars
+  return type(sv) == "table" and sv or nil -- never create it: the console's ADDON_LOADED would reset it
+end
+
+function MF:ShareToken()
+  local sv = shared()
+  if sv and self.db.token then sv.Mama = {token = self.db.token, faction = self.db.tokenFaction} end
+end
+
+-- Returns the token saved on this PC and its master's faction, nil when there is none (or it's not valid).
+function MF:SharedToken()
+  local sv = shared()
+  local m = sv and type(sv.Mama) == "table" and sv.Mama
+  if m and self:ParseToken(m.token) then return m.token, m.faction end
+end
+
+-- At login (not when Mama is off for this character): no token yet -> take this PC's; ours and none saved on the PC
+-- -> save it (a window that loaded before the token existed and logs out last would otherwise wipe it). A different
+-- token on the PC is left alone (several teams on one PC: only pasting or /mama s 1 switches it).
+-- Returns true when there's a token on this PC (so a window without a slot can be asked for one).
+function MF:UseSharedToken()
+  local token, faction = self:SharedToken()
+  if not token then
+    self:ShareToken()
+    return false
+  end
+  if not self:Token() then
+    self.db.token, self.db.tokenFaction = token, faction
+    self:RememberTeam()
+    self:Print("using the team token saved on this PC (team master %s)", self:Token().master)
+  end
+  return true
 end
 
 function MF:TokenText() return self.db.token or "" end
@@ -431,8 +470,13 @@ end
 MF:Listen("LOGIN", function(self)
   C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
   self:HashSelfTest()
+  local onPC = not self:Disabled() and self:UseSharedToken()
   self:SetOwnSlot()
   C_Timer.After(5, function() self:Announce() end)
+  local c = self.db.chars[self.myName]
+  if onPC and self.db.slot == 0 and not c.slotOff then
+    C_Timer.After(2, function() if self.db.slot == 0 then self:ShowSlotDialog() end end)
+  end
 end)
 
 MF:On("GROUP_ROSTER_UPDATE", function(self)
@@ -477,9 +521,11 @@ function MF:ClaimToken()
   end
 end
 
-function MF:SetSlot(n)
+-- fromPrompt: chosen in the slot dialog shown at login, with the token saved on this PC (no need to paste one).
+function MF:SetSlot(n, fromPrompt)
   self.db.slot = n
   self:RememberTeam()
+  self.db.chars[self.myName].slotOff = n == 0 or nil -- an explicit /mama s 0: don't ask for a slot at login
   if n == 0 then
     self:SetOwnSlot()
     self:Print("slot cleared, team features are off in this window")
@@ -505,7 +551,9 @@ function MF:SetSlot(n)
     if tok then
       self:Announce(true)
       -- the kept token may be an older team's (e.g. from another character of this account): offer to replace it
-      self:ShowTokenDialog("paste", ("Current team master: %s (Escape keeps it)."):format(tok.master))
+      if not fromPrompt then
+        self:ShowTokenDialog("paste", ("Current team master: %s (Escape keeps it)."):format(tok.master))
+      end
     else
       self:ShowTokenDialog("paste")
     end

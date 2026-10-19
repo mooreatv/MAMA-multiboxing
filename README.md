@@ -34,6 +34,11 @@ Do this once per window/character:
 4. `/reload` (or just keep playing): the windows announce themselves to each other, the status window appears,
    and slot 1 invites everybody (switching to a raid above 5 characters).
 
+**All accounts on one PC:** no copy/paste needed. In the first window `/mama s 1`, then `/reload` (the token is saved
+for every account of this PC at /reload or logout). Then log in the other windows (or `/reload` the ones already in
+game): each picks up the token and asks for its slot number; type it and Enter. Escape skips it until the next
+`/reload` (`/mama s 0` stops asking for that character).
+
 The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
 only messages signed with that secret are accepted as team commands. Characters that exchange the token
 are added to the trusted team and their group invites are auto accepted. `/mama token` shows it again.

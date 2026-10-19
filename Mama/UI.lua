@@ -22,7 +22,7 @@ local dialog
 local function GetDialog()
   if dialog then return dialog end
   local f = CreateFrame("Frame", "MamaForeverTokenDialog", UIParent, "BasicFrameTemplateWithInset")
-  f:SetSize(420, 130)
+  f:SetSize(420, 145)
   f:SetPoint("CENTER", 0, 150)
   f:SetFrameStrata("DIALOG")
   f:EnableMouse(true)
@@ -52,9 +52,11 @@ end
 function MamaForever:ShowTokenDialog(mode, note)
   local f = GetDialog()
   local e = f.edit
+  e:SetNumeric(false)
   if mode == "copy" then
     f.title:SetText("Mama-forever: team token (slot 1)")
-    f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter.")
+    f.text:SetText("Ctrl-C to copy this token, then Enter. In each other window: /mama s N and Ctrl-V it, Enter. " ..
+                     "Or /reload here: other accounts on this PC get it when they log in.")
     local token = self:TokenText()
     local function selectAll(box) box:HighlightText() end
     e:SetScript("OnTextChanged", function(box, user)
@@ -88,6 +90,43 @@ function MamaForever:ShowTokenDialog(mode, note)
     end)
     e:SetText("")
   end
+  f:Show()
+  e:SetFocus()
+end
+
+-- Asked at login when this PC has a team token and this window has no slot yet (see MF:UseSharedToken).
+-- Escape or the close button: not asked again until the next login or /reload.
+function MamaForever:ShowSlotDialog()
+  local f = GetDialog()
+  local e = f.edit
+  local tok = self:Token()
+  if not tok then return end
+  local guess = 1
+  if tok.master ~= self.myName then
+    guess = 2
+    while self.db.slots[guess] do guess = guess + 1 end
+  end
+  f.title:SetText("Mama-forever: this window's slot")
+  local help = ("Team token found on this PC (master %s). Slot number of this window, then Enter.\n" ..
+                 "Escape: not now (|cFF99E5FF/mama s N|r later, |cFF99E5FF/mama s 0|r: never ask this character)."):format(
+                 tok.master)
+  f.text:SetText(help)
+  e:SetScript("OnTextChanged", nil)
+  e:SetScript("OnMouseUp", nil)
+  e:SetScript("OnEditFocusGained", nil)
+  e:SetNumeric(true)
+  e:SetScript("OnEnterPressed", function(box)
+    local n = tonumber(box:GetText())
+    if not n or n < 1 or n > self.maxSlot then
+      f.text:SetText(("%s\n|cFFFF4040Type a slot from 1 to %d.|r"):format(help, self.maxSlot))
+      box:HighlightText()
+      return
+    end
+    f:Hide()
+    self:SetSlot(n, true)
+  end)
+  e:SetText(tostring(guess))
+  e:HighlightText()
   f:Show()
   e:SetFocus()
 end
