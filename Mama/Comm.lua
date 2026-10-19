@@ -351,14 +351,37 @@ function MF:SetOwnSlot()
   if self.db.slot > 0 then slots[self.db.slot] = self.myName end
 end
 
-function MF:RecordMember(slot, name)
-  if name == self.myName then return end
-  if slot < 1 or slot > self.maxSlot then return end
-  if slot == self.db.slot then
-    self:Error("%s also claims our slot %d, each window needs its own slot", name, slot)
-    return
-  end
+-- Returns true when recorded. sender: who told us (name itself, or the master relaying it).
+function MF:RecordMember(slot, name, sender)
+  if name == self.myName then return false end
+  if slot < 1 or slot > self.maxSlot then return false end
   local slots = self.db.slots
+  if slot == self.db.slot then
+    local tok = self:Token()
+    local fromMaster = tok and sender == tok.master
+    if fromMaster and self.slotPicked then
+      -- Our slot was only a guess from the login dialog and the master says who holds it: move to a free one.
+      local free = 2
+      while free == slot or (slots[free] and slots[free] ~= self.myName) do free = free + 1 end
+      self:Print("slot %d is already %s's: this window moves to slot %d (/mama s N to change it)", slot, name, free)
+      self:SetSlot(free, true)
+      return self:RecordMember(slot, name, sender)
+    end
+    if fromMaster or self:SlotOf(name) then
+      self:Error("%s also claims our slot %d, each window needs its own slot", name, slot)
+    else -- a newcomer: the master's answer tells it the slot is taken
+      self:Debug("%s also claims our slot %d: left to the master", name, slot)
+    end
+    return false
+  end
+  -- A character not on our team map doesn't take the slot of a member we heard from this session (e.g. a new window
+  -- that typed the same slot): the master's answer tells it who holds that slot, and a guessed slot moves (above).
+  -- Members already on the map may move freely (swapping two slots).
+  local holder = slots[slot]
+  if holder and holder ~= name and self.online[holder] and not self:SlotOf(name) then
+    self:Debug("%s claims slot %d, held by %s: ignored", name, slot, holder)
+    return false
+  end
   local changed = slots[slot] ~= name
   for s, n in pairs(slots) do
     if n == name and s ~= slot then
@@ -377,6 +400,7 @@ function MF:RecordMember(slot, name)
     self:Print("slot %d is %s", slot, name)
     self:Fire("TEAM_CHANGED")
   end
+  return true
 end
 
 -- A member keeps re-announcing until our answer reaches it, which can take minutes when whispers lag: answer the same
@@ -386,7 +410,7 @@ local answered = {} -- name -> {at = GetTime(), slot = slot} of our last answer 
 
 function MF:HandleInfo(sender, slot, name, flag)
   local direct = sender == name -- otherwise it's relayed by the master
-  self:RecordMember(slot, name)
+  local recorded = self:RecordMember(slot, name, sender)
   if not direct then return end
   local isNew = not self.online[name]
   if isNew then
@@ -411,7 +435,7 @@ function MF:HandleInfo(sender, slot, name, flag)
   if self:IsMaster() and asking then
     for s, n in pairs(self.db.slots) do
       if n ~= name and n ~= self.myName then
-        if self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name) end
+        if recorded and self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name) end
         self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them")
       end
     end
@@ -526,6 +550,7 @@ function MF:SetSlot(n, fromPrompt)
   self.db.slot = n
   self:RememberTeam()
   self.db.chars[self.myName].slotOff = n == 0 or nil -- an explicit /mama s 0: don't ask for a slot at login
+  self.slotPicked = fromPrompt -- a guess: moves when the master says another member holds it (see RecordMember)
   if n == 0 then
     self:SetOwnSlot()
     self:Print("slot cleared, team features are off in this window")

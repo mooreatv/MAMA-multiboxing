@@ -323,7 +323,13 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Slot dialog (`ShowSlotDialog`, UI.lua token dialog frame, numeric) 2s after login when the PC has a token, our slot
   is 0 and `chars[me].slotOff` isn't set (explicit `/mama s 0`). Prefilled with 1 (token master) or the lowest slot
   >= 2 not in `db.slots`. Enter -> `SetSlot(n, true)` (no paste dialog); Escape/close: not again until /reload.
-- First setup: slot 1 `/mama s 1`, `/reload`, then the other accounts log in and confirm their slot.
+- First setup: slot 1 `/mama s 1`, `/reload`, then the other accounts log in and confirm their slot. Verified in game
+  (3 accounts, 2 Battle.net accounts: the table is per PC, not per Battle.net account).
+- Slot clashes (`RecordMember(slot, name, sender)`, returns whether recorded): a character not on our slot map can't
+  take the slot of a member heard from this session (ignored, and the master doesn't relay it); map members move
+  freely. A claim of our own slot by a newcomer is only logged (debug): the master's answer relays the holder to it.
+  When the master (token's master) says our slot is someone else's and our slot came from the login dialog
+  (`MF.slotPicked`, this session), we move to the lowest free slot >= 2; otherwise the usual error.
 
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
