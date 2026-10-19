@@ -311,7 +311,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   counts as partial), then partial stacks,
   into the free trade slots (`putInTrade`, shared with the mats fill). Any trade partner. Unverified in game.
 
-## Token shared by the accounts of one PC (2026-10-18, unverified in game)
+## Token shared by the accounts of one PC (2026-10-18, verified in game: sharing, slot dialog, move on clash, Reload)
 - `Blizzard_Console_SavedVars` (Blizzard_Console's `## SavedVariablesMachine`, still in 1.60.1) is one table per PC:
   verified in game that an extra key survives /reload, logout and another character. Like DynamicBoxer's `DB.GSV`.
   Each client reads it at login and writes its whole copy at /reload/logout: last writer wins. Never created by us
