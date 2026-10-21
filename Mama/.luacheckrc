@@ -72,6 +72,7 @@ read_globals = {
   "GetTime",
   "GetUnitName",
   "hooksecurefunc",
+  "InCinematic",
   "InCombatLockdown",
   "IsAltKeyDown",
   "issecretvalue",

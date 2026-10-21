@@ -493,6 +493,8 @@ function MF:SendTeam(payload, onlineOnly)
   if anyGrouped then self:SendGroup(payload) end
 end
 
+local function askSlot(self) if self.db.slot == 0 and not InCinematic() then self:ShowSlotDialog() end end
+
 MF:Listen("LOGIN", function(self)
   C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
   self:HashSelfTest()
@@ -501,8 +503,16 @@ MF:Listen("LOGIN", function(self)
   C_Timer.After(5, function() self:Announce() end)
   local c = self.db.chars[self.myName]
   if onPC and self.db.slot == 0 and not c.slotOff then
-    C_Timer.After(2, function() if self.db.slot == 0 then self:ShowSlotDialog() end end)
+    self.askSlotAfterCinematic = true
+    C_Timer.After(2, function() askSlot(self) end)
   end
+end)
+
+-- A new character's intro cinematic closes open windows (the slot dialog too): ask (again) once it's over.
+MF:On("CINEMATIC_STOP", function(self)
+  if not self.askSlotAfterCinematic then return end
+  self.askSlotAfterCinematic = nil
+  C_Timer.After(1, function() askSlot(self) end)
 end)
 
 MF:On("GROUP_ROSTER_UPDATE", function(self)

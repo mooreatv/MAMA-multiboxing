@@ -323,6 +323,8 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
 - Slot dialog (`ShowSlotDialog`, UI.lua token dialog frame, numeric) 2s after login when the PC has a token, our slot
   is 0 and `chars[me].slotOff` isn't set (explicit `/mama s 0`). Prefilled with 1 (token master) or the lowest slot
   >= 2 not in `db.slots`. Enter -> `SetSlot(n, true)` (no paste dialog); Escape/close: not again until /reload.
+  A new character's intro cinematic closes open windows: not shown while `InCinematic()`, and asked again 1s after
+  the first `CINEMATIC_STOP` of the session (the 2s timer can fire during the loading screen, before it starts).
 - First setup: slot 1 `/mama s 1`, `/reload`, then the other accounts log in and confirm their slot. Verified in game
   (3 accounts, 2 Battle.net accounts: the table is per PC, not per Battle.net account).
 - Slot clashes (`RecordMember(slot, name, sender)`, returns whether recorded): a character not on our slot map can't
