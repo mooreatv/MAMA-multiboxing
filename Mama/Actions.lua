@@ -7,13 +7,13 @@ local MACRO_NAME = "MAMA"
 local MACRO_ICON = 132171 -- numeric file ID only; set at creation so users can pick their own later
 local DYNAMIC_ICON = 134400 -- question mark: the client shows the #showtooltip spell's icon
 
--- Starting point of each class's MAMA macro (the user edits it from there): pet = also send the pet,
--- noStartAttack = no /startattack (melee auto attack cancels Auto Shot). Stages = spells to /cast; while the macro is
+-- Starting point of each class's MAMA macro (the user edits it from there): pet = also send the pet. All get
+-- /startattack (hunters too: melee in range, doesn't stop Auto Shot). Stages = spells to /cast; while the macro is
 -- an untouched starter it moves to the last stage whose `known` spell IDs (rank 1) are all learned. "!" keeps spamming
 -- from toggling Auto Shot off; "#" lines are ignored by the client.
 local STARTERS = {
   DRUID = {{"Wrath"}},
-  HUNTER = {pet = true, noStartAttack = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = {1978}}},
+  HUNTER = {pet = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = {1978}}},
   MAGE = {{"Fireball"}},
   PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = {20271}}},
   PRIEST = {{"Smite"}},
@@ -60,9 +60,8 @@ local function starterMacro(target, stage)
   local last = spells[#spells]
   local lines = {
     "#showtooltip" .. tooltip(spells), "/follow " .. target, "/assist " .. target,
-    "/stopmacro [help][dead][noexists][noharm]"
+    "/stopmacro [help][dead][noexists][noharm]", "/startattack"
   }
-  if not starter.noStartAttack then lines[#lines + 1] = "/startattack" end
   if starter.pet then lines[#lines + 1] = "/petattack" end
   for _, spell in ipairs(spells) do lines[#lines + 1] = "/cast " .. spell end
   if spells.hint then lines[#lines + 1] = spells.hint end
