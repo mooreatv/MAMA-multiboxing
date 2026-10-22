@@ -1,5 +1,5 @@
 -- New character setup: at a level 1 character's first login, sets up what a new character always needs (action
--- bars 2-5, A/D turn and Q/E strafe, autoloot, the MAMA macro on button 1, Classic Edit Mode layout). Each step only
+-- bars 2-5, A/D turn and Q/E strafe, Mama keys, autoloot, the MAMA macro on button 1, Classic Edit Mode layout). Each step only
 -- changes a setting still at its new character default, so nothing the user customized is undone.
 local _, MF = ...
 
@@ -41,6 +41,28 @@ local function swapKeys(done)
   for key, actions in pairs(SWAP) do SetBinding(key, actions[2]) end
   SaveBindings(GetCurrentBindingSet())
   done[#done + 1] = "A/D turn and Q/E strafe"
+end
+
+-- Bindings.xml defaults are ignored (https://github.com/Stanzilla/WoWUIBugs/issues/12), so they are set here: each
+-- only when the key is free and the binding has no key yet.
+local MAMA_KEYS = {
+  {"ALT-F", "CLICK MamaFollow:LeftButton"}, {"ALT-T", "CLICK MamaTrain:LeftButton"}, {"ALT-L", "MAMA_LEAD"}
+}
+
+local function mamaKeys(done)
+  local set = {}
+  for _, k in ipairs(MAMA_KEYS) do
+    local key, command = k[1], k[2]
+    local current, bound = GetBindingAction(key), GetBindingKey(command)
+    MF:Debug("setup: key %s is %s, %s is on %s", key, tostring(current), command, tostring(bound))
+    if (current or "") == "" and not bound then
+      SetBinding(key, command)
+      set[#set + 1] = (key:gsub("ALT%-", "Alt-"))
+    end
+  end
+  if #set == 0 then return end
+  SaveBindings(GetCurrentBindingSet())
+  done[#done + 1] = table.concat(set, "/") .. " keys"
 end
 
 local function autoloot(done)
@@ -123,6 +145,7 @@ function MF:NewCharSetup(force)
   local done = {}
   showBars(done)
   swapKeys(done)
+  mamaKeys(done)
   autoloot(done)
   local placed = placeMacro(done)
   classicLayout(done)
@@ -149,5 +172,5 @@ MF:AddCommand("setup", function(self, rest)
   if arg == "on" or arg == "off" then self.db.autoSetup = arg == "on" end
   self:Print("new character setup (at a level 1 character's first login) is now %s", tostring(self.db.autoSetup))
 end, "setup [on|off|now] - show or set whether a level 1 character's first login turns on bars 2-5, swaps A/D " ..
-                "(turn) and Q/E (strafe), autoloot, puts the MAMA macro on 1 and picks the Classic layout, " ..
-                "each only if still at its default; now does it on this character")
+                "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead), autoloot, puts the MAMA macro " ..
+                "on 1 and picks the Classic layout, each only if still at its default; now does it on this character")

@@ -96,7 +96,8 @@ Follow and assist are protected actions that must come from a key press or your 
 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
   *Follow train + assist lead* (each slot follows the previous slot; the lead stops following),
-  *Make me lead*, *Invite team*, *Disband team*, *Identify slot*.
+  *Make me lead*, *Invite team*, *Disband team*, *Identify slot*. New characters get Alt-F (follow + assist),
+  Alt-T (train) and Alt-L (make me lead) when these keys are free (see New characters below).
 - **The MAMA macro**: Mama-forever creates a per character macro called `MAMA` with a starter for your class
   (follow and assist the lead, attack, send the pet, cast a basic spell) and keeps its `/follow` and `/assist` lines
   pointed at the current lead. Open the macro window (`/macro`, character tab), drag `MAMA` to an action bar once
@@ -108,7 +109,8 @@ Follow and assist are protected actions that must come from a key press or your 
 
 ### New characters
 
-A level 1 character's first login with Mama sets up, once: action bars 2-5 shown, A/D turn and Q/E strafe, autoloot,
+A level 1 character's first login with Mama sets up, once: action bars 2-5 shown, A/D turn and Q/E strafe,
+Alt-F/Alt-T/Alt-L for the follow, train and make me lead keys, autoloot,
 the `MAMA` macro on button 1 (what was there moves to the button above it) and the Classic Edit Mode layout (the rest
 of the Modern choice, like high resolution characters, is kept). Each one only if it is still at the new character
 default: bars you turned off, your own key bindings or a custom layout are left alone. `/mama setup off` turns it off,

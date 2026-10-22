@@ -132,6 +132,7 @@ read_globals = {
   "EditModePresetLayoutManager",
   "GetActionInfo",
   "GetBindingAction",
+  "GetBindingKey",
   "GetCurrentBindingSet",
   "HasAction",
   "PickupAction",
