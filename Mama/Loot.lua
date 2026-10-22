@@ -20,7 +20,7 @@
 local _, MF = ...
 
 local MASTER = Enum.LootMethod.Masterlooter
-local ARMOR, WEAPON = 4, 2
+local ARMOR, WEAPON, QUEST_CLASS = 4, 2, 12
 local BOP, QUEST = 1, 4 -- C_Item.GetItemInfo bindType
 local POOR = 0
 local MAX_CANDIDATES = 40
@@ -92,18 +92,19 @@ local function fitText(it, f)
   if f == 0 then return "can't use" end
 end
 
--- Loot window slot -> {link, id, class, sub, equipLoc, quality, minLevel, bindType (nil: not cached), quest}.
+-- Loot window slot -> {link, name, id, class, sub, equipLoc, quality, minLevel, bindType (nil: not cached), quest}.
 local function slotItem(slot)
   if GetLootSlotType(slot) ~= Enum.LootSlotType.Item then return end
   local link = GetLootSlotLink(slot)
   if not link then return end
-  local _, _, quantity, _, quality, _, isQuestItem = GetLootSlotInfo(slot)
+  local _, name, quantity, _, quality, _, isQuestItem = GetLootSlotInfo(slot)
   local id, _, _, equipLoc, _, class, sub = C_Item.GetItemInfoInstant(link)
   local _, _, _, _, minLevel, _, _, _, _, _, _, _, _, bindType = C_Item.GetItemInfo(link)
   if not bindType then C_Item.RequestLoadItemDataByID(id) end
   return {
     slot = slot,
     link = link,
+    name = name,
     count = quantity or 1,
     id = id,
     class = class,
@@ -112,7 +113,7 @@ local function slotItem(slot)
     quality = quality or 1,
     minLevel = minLevel,
     bindType = bindType,
-    quest = isQuestItem or bindType == QUEST
+    quest = isQuestItem or bindType == QUEST or class == QUEST_CLASS
   }
 end
 
@@ -235,11 +236,118 @@ function MF:LootRecipient(it, cands)
   return mostFree(self, team), sell and "to sell, most bag space" or "most bag space"
 end
 
+-- Quest items: there's no API for other characters' quest progress, so each window tells the group its unfinished
+-- item objectives with its level and xp: "N;level;xp;have/need/Item name~have/need/Item name". Sent when they change
+-- (quest item looted, quest accepted or turned in), on level up and when the group changes: the xp is as of then, not
+-- updated after every kill.
+local needs = {} -- name -> {level, xp, items = {[item name] = {have, need}}}, this session's group
+
+-- "Gnoll Paw: 3/8" or "3/8 Gnoll Paw" -> "Gnoll Paw"
+local function objectiveItem(text)
+  local name = text:gsub("%s*:?%s*%d+%s*/%s*%d+%s*", "", 1)
+  return name ~= "" and name or nil
+end
+
+local function ownNeeds(self)
+  local items = {}
+  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    local info = C_QuestLog.GetInfo(i)
+    if info and not info.isHeader then
+      for _, o in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
+        local name = o.type == "item" and objectiveItem(o.text or "")
+        if name and o.numFulfilled < o.numRequired then
+          items[name] = {have = o.numFulfilled, need = o.numRequired}
+        end
+      end
+    end
+  end
+  local n = {level = UnitLevel("player"), xp = UnitXP("player"), items = items}
+  needs[self.myName] = n
+  return n
+end
+
+local MAX_NEEDS = 160 -- characters of objectives in one message (addon messages are 255 bytes, signature included)
+
+local function encodeNeeds(self, n)
+  local parts = {}
+  for name, w in pairs(n.items) do parts[#parts + 1] = ("%d/%d/%s"):format(w.have, w.need, name) end
+  table.sort(parts)
+  local text = table.concat(parts, "~")
+  while #text > MAX_NEEDS do
+    self:Debug("too many quest items to send, dropping %s", parts[#parts])
+    parts[#parts] = nil
+    text = table.concat(parts, "~")
+  end
+  return text
+end
+
+local lastNeeds -- objectives last sent (xp alone changing isn't worth a message)
+local needsPending, needsForce
+local function sendNeeds(self, force)
+  needsForce = needsForce or force
+  if needsPending or not self.myName then return end
+  needsPending = true
+  C_Timer.After(1, function()
+    needsPending = false
+    local n = ownNeeds(self)
+    local items = encodeNeeds(self, n)
+    if (items ~= lastNeeds or needsForce) and IsInGroup() then
+      self:SendGroup(("N;%d;%d;%s"):format(n.level, n.xp, items))
+    end
+    lastNeeds, needsForce = items, false
+  end)
+end
+
+MF:On("QUEST_LOG_UPDATE", function(self) sendNeeds(self) end)
+MF:On("PLAYER_LEVEL_UP", function(self) sendNeeds(self, true) end)
+MF:On("GROUP_ROSTER_UPDATE", function(self) sendNeeds(self, true) end)
+MF:Listen("LOGIN", function(self) sendNeeds(self, true) end)
+
+MF.messageHandlers.N = function(self, sender, rest)
+  local level, xp, list = rest:match("^(%d+);(%d+);(.*)$")
+  if not level then return end
+  local items = {}
+  for have, need, name in list:gmatch("(%d+)/(%d+)/([^~]+)") do
+    items[name] = {have = tonumber(have), need = tonumber(need)}
+  end
+  needs[sender] = {level = tonumber(level), xp = tonumber(xp), items = items}
+  self:Debug("quest items of %s (level %s, %s xp): %s", sender, level, xp, list)
+end
+
+local function wanted(name, item)
+  local w = needs[name] and needs[name].items[item]
+  return w and w.have < w.need and w or nil
+end
+
+-- Furthest behind in xp first, then us (the looter), then slot order.
+local function behind(self, a, b)
+  local na, nb = needs[a.name], needs[b.name]
+  if na.level ~= nb.level then return na.level < nb.level end
+  if na.xp ~= nb.xp then return na.xp < nb.xp end
+  if a.name == self.myName or b.name == self.myName then return a.name == self.myName end
+  return bySlot(a, b)
+end
+
+-- The candidate who still needs this quest item and is furthest behind in xp (so they finish the quest first), and
+-- the reason. nil: nobody needs it (or we haven't heard what they need).
+function MF:QuestItemRecipient(it, cands)
+  if not needs[self.myName] then ownNeeds(self) end -- kept up to date by QUEST_LOG_UPDATE (and our counts in between)
+  local best
+  for _, c in ipairs(cands) do if wanted(c.name, it.name) and (not best or behind(self, c, best)) then best = c end end
+  if not best then return end
+  local w = wanted(best.name, it.name)
+  return best, ("quest %d/%d, furthest behind"):format(w.have, w.need)
+end
+
 -- What the picker shows next to each candidate.
 local function noteFor(self, it, m)
   local parts = {}
   if m.class then
     parts[1] = ("%s %d"):format(LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[m.class] or m.class, m.level)
+  end
+  if it.quest then
+    local w = wanted(m.name, it.name)
+    parts[#parts + 1] = w and ("quest %d/%d"):format(w.have, w.need) or "doesn't need it"
   end
   local f = fit(it, m.class or "", m.level)
   if f then parts[#parts + 1] = fitText(it, f) end
@@ -294,9 +402,9 @@ function MF:DistributeLoot(tries)
   local threshold = GetLootThreshold()
   for slot = 1, GetNumLootItems() do
     local it = slotItem(slot)
-    if it and not it.quest and it.quality >= threshold then
+    if it and (it.quest or it.quality >= threshold) then
       items[#items + 1] = it
-      if not it.bindType then uncached = true end
+      if not it.bindType and not it.quest then uncached = true end
     end
   end
   if uncached and tries < 3 then
@@ -309,7 +417,16 @@ function MF:DistributeLoot(tries)
     local cands = candidates(self, it.slot)
     self:Debug("loot slot %d %s bind %s, %d candidates", it.slot, it.link, tostring(it.bindType), #cands)
     if #cands > 0 then
-      if not it.bindType or it.bindType == BOP then
+      if it.quest then
+        local m, why = self:QuestItemRecipient(it, cands)
+        if m then
+          queue[#queue + 1] = {it = it, m = m, why = why}
+          local w = wanted(m.name, it.name) -- counted now: the next slot may hold the same item
+          w.have = w.have + it.count
+        else
+          self:Print("loot: nobody needs %s for a quest, left in the loot", it.link)
+        end
+      elseif not it.bindType or it.bindType == BOP then
         picks[#picks + 1] = it
       else
         local m, why, key = self:LootRecipient(it, cands)
@@ -446,7 +563,12 @@ showPick = function(self)
     return
   end
   f.it = it
-  local suggested, why = self:LootRecipient(it, cands)
+  local suggested, why
+  if it.quest then
+    suggested, why = self:QuestItemRecipient(it, cands)
+  else
+    suggested, why = self:LootRecipient(it, cands)
+  end
   table.sort(cands, function(a, b)
     if a == suggested or b == suggested then return a == suggested end
     if (a.slot ~= nil) ~= (b.slot ~= nil) then return a.slot ~= nil end

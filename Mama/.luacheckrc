@@ -156,4 +156,5 @@ read_globals = {
   "RAID_CLASS_COLORS",
   "SetLootThreshold",
   "UnitName",
+  "UnitXP",
 }
