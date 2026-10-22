@@ -108,7 +108,8 @@ function MF:UpdateLoot()
     if act and (not formed or hadStrangers) and cur ~= (self.db.masterLoot and MASTER or FFA) then
       if self.db.masterLoot then
         local lead = self:GetLead() or self.myName
-        self:Print("setting master loot to %s (%s)", lead, why) -- Loot.lua lowers the threshold to greys
+        -- Loot.lua lowers the threshold to greys
+        self:Print("setting master loot to %s (%s); free for all instead: /mama loot off (or /mama options)", lead, why)
         C_PartyInfo.SetLootMethod(MASTER, lead)
       else
         self:Print("setting loot to free for all (%s)", why)

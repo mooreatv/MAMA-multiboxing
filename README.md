@@ -172,8 +172,8 @@ you'll soon replace): after selling, a merchant that can repair fixes all your g
 
 ### Master loot
 
-Turn on "Master loot auto distribution" (Options, off by default): with "Set team loot" on, the full team then gets
-master loot by the lead instead of free for all (or pick master looter in the group menu yourself). The threshold goes
+With "Master loot auto distribution" and "Set team loot" on (the default, see Options), the full team gets master loot
+by the lead (or pick master looter in the group menu yourself); `/mama loot off` for free for all instead. The threshold goes
 down to greys (once: raise it again if you want), and the master looter's window gives each item to the team member
 who uses it:
 
