@@ -10,7 +10,8 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
--- Stats: each window tells the team its gold and free bag slots ("G;copper;free;slots"), whispered once to each team
+-- Stats: each window tells the team its gold, free bag slots and xp in its level ("G;copper;free;slots;xp", the xp is
+-- for quest loot and only as of the last money/bag change, e.g. a quest turn-in), whispered once to each team
 -- member we first hear from directly and sent again (debounced) when they change. Remembered per faction across
 -- sessions, so characters not logged in (alts) still count, with their last known values.
 local _, MF = ...
@@ -37,12 +38,12 @@ local function refreshOwn(self)
       free = free + (f or 0)
     end
   end
-  local s = {money = GetMoney(), free = free, slots = slots, t = time()}
+  local s = {money = GetMoney(), free = free, slots = slots, xp = UnitXP("player"), t = time()}
   self:TeamStats()[self.myName] = s
   return s
 end
 
-local function payload(s) return ("G;%d;%d;%d"):format(s.money, s.free, s.slots) end
+local function payload(s) return ("G;%d;%d;%d;%d"):format(s.money, s.free, s.slots, s.xp) end
 
 local lastSent
 
@@ -57,9 +58,15 @@ function MF:SendStats(to, why)
 end
 
 MF.messageHandlers.G = function(self, sender, rest)
-  local money, free, slots = rest:match("^(%d+);(%d+);(%d+)$")
+  local money, free, slots, xp = rest:match("^(%d+);(%d+);(%d+);?(%d*)$")
   if not money then return end
-  self:TeamStats()[sender] = {money = tonumber(money), free = tonumber(free), slots = tonumber(slots), t = time()}
+  self:TeamStats()[sender] = {
+    money = tonumber(money),
+    free = tonumber(free),
+    slots = tonumber(slots),
+    xp = tonumber(xp),
+    t = time()
+  }
   self:Fire("STATS", sender)
 end
 

@@ -236,117 +236,73 @@ function MF:LootRecipient(it, cands)
   return mostFree(self, team), sell and "to sell, most bag space" or "most bag space"
 end
 
--- Quest items: there's no API for other characters' quest progress, so each window tells the group its unfinished
--- item objectives with its level and xp: "N;level;xp;have/need/Item name~have/need/Item name". Sent when they change
--- (quest item looted, quest accepted or turned in), on level up and when the group changes: the xp is as of then, not
--- updated after every kill.
-local needs = {} -- name -> {level, xp, items = {[item name] = {have, need}}}, this session's group
+-- Quest items: who still needs one comes from the quests' party progress (what the quest tracker's tooltip shows:
+-- a first name line, then that character's objectives), for the quests in our own log.
 
--- "Gnoll Paw: 3/8" or "3/8 Gnoll Paw" -> "Gnoll Paw"
+-- "Tough Wolf Meat: 3/8", "- 3/8 Tough Wolf Meat" -> "Tough Wolf Meat"
 local function objectiveItem(text)
-  local name = text:gsub("%s*:?%s*%d+%s*/%s*%d+%s*", "", 1)
+  local name = text:gsub("%s*:?%s*%d+%s*/%s*%d+%s*", "", 1):gsub("^[%s%-]+", ""):gsub("%s+$", "")
   return name ~= "" and name or nil
 end
 
-local function ownNeeds(self)
-  local items = {}
+-- Full name -> {have, need} for the group members (us included) on a quest needing this item, not done with it yet;
+-- and whether any quest of our log has that item (if not, we can't know who needs it).
+function MF:QuestNeeds(item)
+  local byName, needs, known = unitsByName(self), {}, false
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
     local info = C_QuestLog.GetInfo(i)
-    if info and not info.isHeader then
-      for _, o in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
-        local name = o.type == "item" and objectiveItem(o.text or "")
-        if name and o.numFulfilled < o.numRequired then
-          items[name] = {have = o.numFulfilled, need = o.numRequired}
+    local data = info and not info.isHeader and C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
+    local who
+    for _, line in ipairs(data and data.lines or {}) do
+      local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+      local have, need = text:match("(%d+)%s*/%s*(%d+)")
+      if not have then
+        who = byName[text] and self:FullName(byName[text])
+      elseif objectiveItem(text) == item then
+        known = true
+        if who and tonumber(have) < tonumber(need) then
+          needs[who] = {have = tonumber(have), need = tonumber(need)}
         end
       end
     end
   end
-  local n = {level = UnitLevel("player"), xp = UnitXP("player"), items = items}
-  needs[self.myName] = n
-  return n
+  return needs, known
 end
 
-local MAX_NEEDS = 160 -- characters of objectives in one message (addon messages are 255 bytes, signature included)
-
-local function encodeNeeds(self, n)
-  local parts = {}
-  for name, w in pairs(n.items) do parts[#parts + 1] = ("%d/%d/%s"):format(w.have, w.need, name) end
-  table.sort(parts)
-  local text = table.concat(parts, "~")
-  while #text > MAX_NEEDS do
-    self:Debug("too many quest items to send, dropping %s", parts[#parts])
-    parts[#parts] = nil
-    text = table.concat(parts, "~")
-  end
-  return text
+-- xp in the current level: ours, the others' from their stats (sent after money/bag changes, turn-ins included).
+local function xpOf(self, name)
+  if name == self.myName then return UnitXP("player") end
+  local s = self:StatsOf(name)
+  return s and s.xp or 0
 end
 
-local lastNeeds -- objectives last sent (xp alone changing isn't worth a message)
-local needsPending, needsForce
-local function sendNeeds(self, force)
-  needsForce = needsForce or force
-  if needsPending or not self.myName then return end
-  needsPending = true
-  C_Timer.After(1, function()
-    needsPending = false
-    local n = ownNeeds(self)
-    local items = encodeNeeds(self, n)
-    if (items ~= lastNeeds or needsForce) and IsInGroup() then
-      self:SendGroup(("N;%d;%d;%s"):format(n.level, n.xp, items))
-    end
-    lastNeeds, needsForce = items, false
-  end)
-end
-
-MF:On("QUEST_LOG_UPDATE", function(self) sendNeeds(self) end)
-MF:On("PLAYER_LEVEL_UP", function(self) sendNeeds(self, true) end)
-MF:On("GROUP_ROSTER_UPDATE", function(self) sendNeeds(self, true) end)
-MF:Listen("LOGIN", function(self) sendNeeds(self, true) end)
-
-MF.messageHandlers.N = function(self, sender, rest)
-  local level, xp, list = rest:match("^(%d+);(%d+);(.*)$")
-  if not level then return end
-  local items = {}
-  for have, need, name in list:gmatch("(%d+)/(%d+)/([^~]+)") do
-    items[name] = {have = tonumber(have), need = tonumber(need)}
-  end
-  needs[sender] = {level = tonumber(level), xp = tonumber(xp), items = items}
-  self:Debug("quest items of %s (level %s, %s xp): %s", sender, level, xp, list)
-end
-
-local function wanted(name, item)
-  local w = needs[name] and needs[name].items[item]
-  return w and w.have < w.need and w or nil
-end
-
--- Furthest behind in xp first, then us (the looter), then slot order.
+-- Furthest behind first (level, then xp), then us (the looter), then slot order.
 local function behind(self, a, b)
-  local na, nb = needs[a.name], needs[b.name]
-  if na.level ~= nb.level then return na.level < nb.level end
-  if na.xp ~= nb.xp then return na.xp < nb.xp end
+  if a.level ~= b.level then return a.level < b.level end
+  local xa, xb = xpOf(self, a.name), xpOf(self, b.name)
+  if xa ~= xb then return xa < xb end
   if a.name == self.myName or b.name == self.myName then return a.name == self.myName end
   return bySlot(a, b)
 end
 
--- The candidate who still needs this quest item and is furthest behind in xp (so they finish the quest first), and
--- the reason. nil: nobody needs it (or we haven't heard what they need).
-function MF:QuestItemRecipient(it, cands)
-  if not needs[self.myName] then ownNeeds(self) end -- kept up to date by QUEST_LOG_UPDATE (and our counts in between)
+-- The candidate who still needs this quest item and is furthest behind (so they finish the quest first), and the
+-- reason. nil: nobody needs it. needs: from QuestNeeds.
+function MF:QuestItemRecipient(cands, needs)
   local best
-  for _, c in ipairs(cands) do if wanted(c.name, it.name) and (not best or behind(self, c, best)) then best = c end end
+  for _, c in ipairs(cands) do if needs[c.name] and (not best or behind(self, c, best)) then best = c end end
   if not best then return end
-  local w = wanted(best.name, it.name)
+  local w = needs[best.name]
   return best, ("quest %d/%d, furthest behind"):format(w.have, w.need)
 end
 
--- What the picker shows next to each candidate.
-local function noteFor(self, it, m)
+-- What the picker shows next to each candidate (needs: QuestNeeds for a quest item).
+local function noteFor(self, it, m, needs)
   local parts = {}
   if m.class then
     parts[1] = ("%s %d"):format(LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[m.class] or m.class, m.level)
   end
-  if it.quest then
-    local w = wanted(m.name, it.name)
+  if needs then
+    local w = needs[m.name]
     parts[#parts + 1] = w and ("quest %d/%d"):format(w.have, w.need) or "doesn't need it"
   end
   local f = fit(it, m.class or "", m.level)
@@ -413,16 +369,25 @@ function MF:DistributeLoot(tries)
   end
   wipe(queue)
   wipe(picks)
+  local questNeeds = {} -- item name -> QuestNeeds, counting what we give now (the next slot may hold the same item)
   for _, it in ipairs(items) do
     local cands = candidates(self, it.slot)
     self:Debug("loot slot %d %s bind %s, %d candidates", it.slot, it.link, tostring(it.bindType), #cands)
     if #cands > 0 then
       if it.quest then
-        local m, why = self:QuestItemRecipient(it, cands)
+        if not questNeeds[it.name] then questNeeds[it.name] = {self:QuestNeeds(it.name)} end
+        local needs, known = questNeeds[it.name][1], questNeeds[it.name][2]
+        local list = {}
+        for n, w in pairs(needs) do list[#list + 1] = ("%s %d/%d"):format(n, w.have, w.need) end
+        self:Debug("quest item %s: in our quests %s, needed by %s", it.name, tostring(known), table.concat(list, ", "))
+        local m, why = self:QuestItemRecipient(cands, needs)
         if m then
           queue[#queue + 1] = {it = it, m = m, why = why}
-          local w = wanted(m.name, it.name) -- counted now: the next slot may hold the same item
+          local w = needs[m.name]
           w.have = w.have + it.count
+          if w.have >= w.need then needs[m.name] = nil end
+        elseif not known then
+          picks[#picks + 1] = it -- not one of our quests: who needs it is unknown, ask
         else
           self:Print("loot: nobody needs %s for a quest, left in the loot", it.link)
         end
@@ -564,8 +529,9 @@ showPick = function(self)
   end
   f.it = it
   local suggested, why
-  if it.quest then
-    suggested, why = self:QuestItemRecipient(it, cands)
+  local needs = it.quest and self:QuestNeeds(it.name)
+  if needs then
+    suggested, why = self:QuestItemRecipient(cands, needs)
   else
     suggested, why = self:LootRecipient(it, cands)
   end
@@ -580,7 +546,7 @@ showPick = function(self)
     local r = getRow(f, i)
     local color = m.class and RAID_CLASS_COLORS[m.class]
     r.name:SetText(color and color:WrapTextInColorCode(m.name) or m.name)
-    local note = noteFor(self, it, m)
+    local note = noteFor(self, it, m, needs)
     if m == suggested then note = "|cFF99E5FFsuggested: " .. why .. "|r, " .. note end
     r.note:SetText(note)
     r.mark:SetShown(m == suggested)

@@ -157,4 +157,5 @@ read_globals = {
   "SetLootThreshold",
   "UnitName",
   "UnitXP",
+  "C_TooltipInfo",
 }
