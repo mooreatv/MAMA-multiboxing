@@ -24,6 +24,7 @@ if MF.version:find("^@") then MF.version = "dev" end
 MF.defaults = {
   debug = false,
   macro = true,
+  autoSetup = true,
   autoQuest = true,
   autoDialog = true,
   autoGossip = true,

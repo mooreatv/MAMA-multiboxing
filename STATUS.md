@@ -333,6 +333,24 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   When the master (token's master) says our slot is someone else's and our slot came from the login dialog
   (`MF.slotPicked`, this session), we move to the lowest free slot >= 2; otherwise the usual error.
 
+## New character setup (2026-10-22, verified in game)
+- `Setup.lua`, option `autoSetup` (default on, `/mama setup [on|off|now]`, no checkbox): 4s after the first login of a
+  level 1 character (`chars[me].setup` not set), out of combat, not disabled. Each step only from the default:
+  bars 2-5 via `Settings.GetSetting("PROXY_SHOW_ACTIONBAR_N"):SetValue(true)` when off (Blizzard_SettingsDefinitions_Frame
+  ActionBars.lua -> `SetActionBarToggles`); keys A/D/Q/E swapped only if exactly STRAFELEFT/STRAFERIGHT/TURNLEFT/TURNRIGHT
+  (`SetBinding`, `SaveBindings(GetCurrentBindingSet())`; bindings are account wide and server saved); `autoLootDefault`
+  0 -> 1 (`C_CVar`); MAMA macro (unless on any slot 1-180, found by `GetActionText(slot)` = macro name: for a
+  macro with `#showtooltip <spell>`, `GetActionInfo` returns "macro" and that spell's ID, not the macro index; seen in
+  game, Blizzard's ActionButton.lua uses it as a spell ID too) on `ActionButton1.action` (warrior stance page), the action
+  there moved to the first free slot 61-72 (bar 2, above button 1; skipped if full) with `PickupAction`/`PlaceAction`;
+  Edit Mode: `C_EditMode.GetLayouts().activeLayout` indexes presets first (`EditModePresetLayoutManager.presetLayoutInfo`,
+  then saved layouts): Modern preset active -> `C_EditMode.SetActiveLayout(Classic preset index)`.
+  Done flag only set once the macro exists (`MF:MamaMacroIndex()`), so a missing macro retries at the next login.
+- Bindings.xml `default` keys are still ignored (WoWUIBugs #12), so setup binds ALT-F (follow), ALT-T (train), ALT-L
+  (`MAMA_LEAD`) with `SetBinding(key, "CLICK MamaTrain:LeftButton")` etc., each only when `GetBindingAction(key)` is
+  empty and `GetBindingKey(command)` is nil. A `/mama train` command can't follow: `FollowUnit` is protected and
+  `/click` from a macro does nothing, so the train stays a key binding.
+
 ## Possible improvements
 - `/mama find <item>`: which character (alts included) has an item, bags and bank (recorded on bank visits).
 - Global inventory: per character bags/bank contents saved and shared across the team.
