@@ -175,7 +175,9 @@ you'll soon replace): after selling, a merchant that can repair fixes all your g
 Pick master looter in the group menu: the threshold goes down to greys (once: raise it again if you want), and the
 master looter's window gives each item to the team member who uses it:
 
-- quest items to whoever still needs them, the one furthest behind in xp first (until done), the looter on a tie,
+- quest items to whoever still needs them, the one furthest behind in xp first (until done), the looter on a tie;
+  quest items that drop once per player (heads...): the looter keeps its copy and the others get a raid warning to
+  loot theirs,
 - mats and recipes to the best profession holder (same kinds as trades),
 - armor to the classes that wear that type (leather to the rogue or druid...), weapons to the classes that can use
   them, taking turns; greens nobody uses to the enchanter,

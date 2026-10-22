@@ -99,7 +99,7 @@ local function slotItem(slot)
   if not link then return end
   local _, name, quantity, _, quality, _, isQuestItem = GetLootSlotInfo(slot)
   local id, _, _, equipLoc, _, class, sub = C_Item.GetItemInfoInstant(link)
-  local _, _, _, _, minLevel, _, _, _, _, _, _, _, _, bindType = C_Item.GetItemInfo(link)
+  local _, _, _, _, minLevel, _, _, maxStack, _, _, _, _, _, bindType = C_Item.GetItemInfo(link)
   if not bindType then C_Item.RequestLoadItemDataByID(id) end
   return {
     slot = slot,
@@ -112,6 +112,7 @@ local function slotItem(slot)
     equipLoc = equipLoc,
     quality = quality or 1,
     minLevel = minLevel,
+    maxStack = maxStack,
     bindType = bindType,
     quest = isQuestItem or bindType == QUEST or class == QUEST_CLASS
   }
@@ -353,11 +354,17 @@ local queue = {} -- automatic gives: {it, m, why, key}
 local picks = {} -- items waiting for a click in the picker
 local picker -- the picker window, built on first use
 
+-- Quest items that don't stack (heads...) drop once per player on the quest: we only see our own copy, the others
+-- have to loot theirs by hand. A guess (nothing in the API tells), good for the usual unique quest drops.
+local function perPlayer(it) return it.quest and it.maxStack == 1 end
+local reminders = {} -- per player quest items given from this loot: who else needs one is told to loot it on close
+
 local function give(self, it, m, why, key)
   if GetLootSlotLink(it.slot) ~= it.link then return false end -- already looted
   self:Print("loot: %s%s to %s%s", it.link, it.count > 1 and ("x" .. it.count) or "", m.name,
              why and (" (" .. why .. ")") or "")
   GiveMasterLoot(it.slot, m.index)
+  if perPlayer(it) then reminders[it.name] = true end
   if key then
     given[key] = given[key] or {}
     given[key][m.name] = (given[key][m.name] or 0) + 1
@@ -405,6 +412,9 @@ function MF:DistributeLoot(tries)
         for n, w in pairs(needs) do list[#list + 1] = ("%s %d/%d"):format(n, w.have, w.need) end
         self:Debug("quest item %s: in our quests %s, needed by %s", it.name, tostring(known), table.concat(list, ", "))
         local m, why = self:QuestItemRecipient(cands, needs)
+        if perPlayer(it) and needs[self.myName] then -- our own copy: the others loot theirs
+          for _, c in ipairs(cands) do if c.name == self.myName then m, why = c, "quest, our own copy" end end
+        end
         if m then
           queue[#queue + 1] = {it = it, m = m, why = why}
           local w = needs[m.name]
@@ -437,12 +447,39 @@ MF:On("LOOT_OPENED", function(self)
   C_Timer.After(0.1, function() self:DistributeLoot() end)
 end)
 
-MF:On("LOOT_CLOSED", function()
+MF:On("LOOT_CLOSED", function(self)
   lootOpen = false
   wipe(queue)
   wipe(picks)
   if picker then picker:Hide() end
+  -- the corpse is free now: whoever still needs one of these loots their own copy
+  for item in pairs(reminders) do
+    self:Debug("reminding the group to loot %s themselves", item)
+    self:SendGroup("R;" .. item)
+  end
+  wipe(reminders)
 end)
+
+local function iNeed(item)
+  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    local info = C_QuestLog.GetInfo(i)
+    if info and not info.isHeader then
+      for _, o in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
+        if not o.finished and objectiveItem(o.text or "") == item then return true end
+      end
+    end
+  end
+  return false
+end
+
+-- "R;Item name": the master looter got its copy of a per player quest item, loot ours if we need it.
+MF.messageHandlers.R = function(self, sender, rest)
+  if rest == "" or self:IsAway() or not iNeed(rest) then return end
+  local msg = ("Loot %s from the corpse (%s got theirs)"):format(rest, sender)
+  self:Print("|cFFFF4040%s|r", msg)
+  RaidNotice_AddMessage(RaidWarningFrame, msg, ChatTypeInfo.RAID_WARNING)
+  PlaySound(SOUNDKIT.RAID_WARNING)
+end
 
 MF:On("LOOT_SLOT_CLEARED", function(self, slot)
   if picker and picker:IsShown() and picker.it and picker.it.slot == slot then showPick(self) end
