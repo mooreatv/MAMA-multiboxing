@@ -14,7 +14,8 @@
 -- master loot is picked in the group menu, the leader lowers the threshold to greys once. The master looter's window
 -- then gives each item to the team member who uses it: mats and recipes to the best profession holder (trade
 -- categories), armor to the classes that wear that type, weapons to the classes that can use them (taking turns),
--- greens nobody uses to the enchanter, the rest (greys, sell list...) to the most free bag slots. BoP items wait in a
+-- greens nobody uses to the enchanter, the rest (greys, sell list...) where the same item stacks (the looter's partial
+-- stacks, else who got that item last while they have room), else to the most free bag slots. BoP items wait in a
 -- picker, suggestion first: there may be other candidates, or the enchanter should disenchant it. Clicking an item in
 -- the loot window shows the picker too (when the client doesn't show its own candidate list).
 local _, MF = ...
@@ -187,6 +188,57 @@ local function mostFree(self, team)
   return best
 end
 
+-- Stacking: no addon messages (nor waiting) to learn what the others hold. We know our own bags; for the others, each
+-- item ID remembers who got it last (db.lootKeepers) and how many this session (the room left in that stack).
+local stacked = {} -- item ID -> {name, count}: given to the current keeper this session
+
+-- Our bags: room left in the stacks of this item, free general purpose slots.
+local function ownRoom(it)
+  local room, free, maxStack = 0, 0, it.maxStack or 1
+  for bag = 0, NUM_BAG_SLOTS or 4 do
+    local f, family = C_Container.GetContainerNumFreeSlots(bag)
+    if (family or 0) == 0 then free = free + (f or 0) end
+    for s = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+      local info = C_Container.GetContainerItemInfo(bag, s)
+      if info and info.itemID == it.id then room = room + math.max(maxStack - info.stackCount, 0) end
+    end
+  end
+  return room, free
+end
+
+-- Room left in the stack m got this session (0: unknown or full).
+local function keptRoom(it, m)
+  local s, maxStack = stacked[it.id], it.maxStack or 1
+  if not s or s.name ~= m.name then return 0 end
+  return (maxStack - s.count % maxStack) % maxStack
+end
+
+-- Whether m can take the item: room in a stack of it or a free bag slot (others' unknown bags: yes).
+local function hasRoom(self, it, m)
+  if m.name == self.myName then
+    local room, free = ownRoom(it)
+    return room >= it.count or free > 0
+  end
+  return keptRoom(it, m) >= it.count or freeSlots(self, m.name) ~= 0
+end
+
+-- Stackable items: to who got the last ones while that stack has room, then the looter's partial stacks, then who
+-- got the last ones while they have a free slot.
+local function stackHolder(self, it, team)
+  local keeper = self.db.lootKeepers and self.db.lootKeepers[it.id]
+  local me, kept
+  for _, m in ipairs(team) do
+    if m.name == self.myName then me = m end
+    if m.name == keeper then kept = m end
+  end
+  if kept and kept ~= me and keptRoom(it, kept) >= it.count then return kept, "stacks with the last ones" end
+  if me then
+    local room, free = ownRoom(it)
+    if room > 0 and (room >= it.count or free > 0) then return me, "stacks with ours" end
+  end
+  if kept and hasRoom(self, it, kept) then return kept, "with the last ones" end
+end
+
 local function canDisenchant(self, it)
   return (it.class == WEAPON or it.class == ARMOR) and it.quality >= 2 and it.quality <= 4 and
            not self.NO_DISENCHANT[it.id] and self:TradeCategoryOn("greens", true)
@@ -208,8 +260,9 @@ function MF:LootRecipient(it, cands)
     local key, label, default, match, to = c[1], c[2], c[3], c[4], c[5]
     if key ~= "greens" and match(it) then
       if not self:TradeCategoryOn(key, default) then break end
-      local best = self:BestHolder(type(to) == "function" and to(it) or to, members)
-      if best then return named(best), label end
+      local best = named(self:BestHolder(type(to) == "function" and to(it) or to, members))
+      if best and hasRoom(self, it, best) then return best, label end
+      if best then self:Debug("loot: no room for %s on %s", it.link, best.name) end
       break
     end
   end
@@ -233,8 +286,11 @@ function MF:LootRecipient(it, cands)
     local enchanter = self:BestHolder({self.PROF.ENCHANTING}, members)
     if enchanter then return named(enchanter), "disenchant" end
   end
+  local m, why
+  if (it.maxStack or 1) > 1 then m, why = stackHolder(self, it, team) end
+  if not m then m, why = mostFree(self, team), "most bag space" end
   local sell = it.quality == POOR or self:VendorList().items[it.id]
-  return mostFree(self, team), sell and "to sell, most bag space" or "most bag space"
+  return m, sell and ("to sell, " .. why) or why
 end
 
 -- Quest items: who still needs one comes from the quests' party progress (what the quest tracker's tooltip shows:
@@ -374,6 +430,16 @@ local function give(self, it, m, why, key, others)
              why and (" (" .. why .. ")") or "")
   GiveMasterLoot(it.slot, m.index)
   if others and #others > 0 then reminders[it.name] = others end
+  if (it.maxStack or 1) > 1 and not it.quest then -- the next ones of this item go to the same stack
+    self.db.lootKeepers = self.db.lootKeepers or {}
+    self.db.lootKeepers[it.id] = m.name
+    local s = stacked[it.id]
+    if not s or s.name ~= m.name then
+      s = {name = m.name, count = 0}
+      stacked[it.id] = s
+    end
+    s.count = s.count + it.count
+  end
   if key then
     given[key] = given[key] or {}
     given[key][m.name] = (given[key][m.name] or 0) + 1
