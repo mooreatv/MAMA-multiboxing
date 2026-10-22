@@ -406,6 +406,10 @@ end
 MF:On("LOOT_OPENED", function(self)
   lootOpen = true
   if not self.db.masterLoot or self:Disabled() or not self:IsMasterLooter() then return end
+  if IsModifierKeyDown() then -- this loot by hand (clicking an item still shows the picker)
+    self:Debug("modifier held: no automatic loot distribution")
+    return
+  end
   C_Timer.After(0.1, function() self:DistributeLoot() end)
 end)
 

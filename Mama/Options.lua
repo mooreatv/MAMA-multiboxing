@@ -29,8 +29,9 @@ local SECTIONS = {
         "masterLoot", "Master loot to who uses it",
         "When you pick master looter in the group menu: threshold down to greys (once, raise it again if you " ..
           "want), and the master looter gives each item to the team member who uses it (mats to the profession, " ..
-          "armor to the class that wears it, junk to the most bag space). Soulbound items wait for a click, the " ..
-          "suggestion first."
+          "armor to the class that wears it, quest items to whoever needs them, junk to the most bag space). " ..
+          "Soulbound items wait for a click, the suggestion first. Hold Shift, Ctrl or Alt while opening the " ..
+          "loot to give it by hand."
       }
     }
   }, {
