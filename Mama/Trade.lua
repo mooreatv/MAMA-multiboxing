@@ -71,6 +71,7 @@ local NO_DISENCHANT = {
   [11289] = true, -- Lesser Mystic Wand
   [11290] = true -- Greater Mystic Wand
 }
+MF.NO_DISENCHANT = NO_DISENCHANT
 
 -- Recipe subclass -> profession.
 local RECIPES = {
@@ -120,11 +121,14 @@ end
 
 -- The team member (us included) who uses these professions best: the first profession anyone on the team has wins,
 -- then the highest rank; ties keep the mats where they are, then go to the lowest slot.
-function MF:BestHolder(profs)
+-- members: name -> slot to choose from (default: the whole team).
+function MF:BestHolder(profs, members)
   local team = self:TeamProfessions()
-  local members = {}
-  for s, name in pairs(self.db.slots) do members[name] = s end
-  members[self.myName] = 0 -- wins ties
+  if not members then
+    members = {}
+    for s, name in pairs(self.db.slots) do members[name] = s end
+    members[self.myName] = 0 -- wins ties
+  end
   for _, prof in ipairs(profs) do
     local best, bestRank, bestSlot
     for name, slot in pairs(members) do

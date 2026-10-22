@@ -24,6 +24,14 @@ local SECTIONS = {
         "autoFFA", "Free for all loot",
         "When you lead a full team group, set loot to free for all (back to group loot if outsiders join)."
       }
+    }, {
+      {
+        "masterLoot", "Master loot to who uses it",
+        "When you pick master looter in the group menu: threshold down to greys (once, raise it again if you " ..
+          "want), and the master looter gives each item to the team member who uses it (mats to the profession, " ..
+          "armor to the class that wears it, junk to the most bag space). Soulbound items wait for a click, the " ..
+          "suggestion first."
+      }
     }
   }, {
     "Quests and dialogs", {

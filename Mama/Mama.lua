@@ -38,6 +38,7 @@ MF.defaults = {
   autoInvite = true,
   autoRaid = true,
   autoFFA = true,
+  masterLoot = true,
   autoTrade = true,
   autoRepair = false,
   followWarn = true,
