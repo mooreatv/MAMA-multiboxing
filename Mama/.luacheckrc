@@ -131,6 +131,7 @@ read_globals = {
   "C_EditMode",
   "EditModePresetLayoutManager",
   "GetActionInfo",
+  "GetActionText",
   "GetBindingAction",
   "GetBindingKey",
   "GetCurrentBindingSet",

@@ -71,11 +71,10 @@ local function autoloot(done)
   done[#done + 1] = "autoloot"
 end
 
+-- By name: for a macro showing a spell (#showtooltip), GetActionInfo's id is that spell's ID, not the macro index.
 local function onBars(macro)
-  for slot = 1, LAST_SLOT do
-    local kind, id = GetActionInfo(slot)
-    if kind == "macro" and id == macro then return slot end
-  end
+  local name = GetMacroInfo(macro)
+  for slot = 1, LAST_SLOT do if GetActionInfo(slot) == "macro" and GetActionText(slot) == name then return slot end end
 end
 
 -- Puts the MAMA macro on button 1 (the slot it uses now: a warrior's stance page), moving what was there to the

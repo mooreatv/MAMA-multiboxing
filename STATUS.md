@@ -339,7 +339,9 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   bars 2-5 via `Settings.GetSetting("PROXY_SHOW_ACTIONBAR_N"):SetValue(true)` when off (Blizzard_SettingsDefinitions_Frame
   ActionBars.lua -> `SetActionBarToggles`); keys A/D/Q/E swapped only if exactly STRAFELEFT/STRAFERIGHT/TURNLEFT/TURNRIGHT
   (`SetBinding`, `SaveBindings(GetCurrentBindingSet())`; bindings are account wide and server saved); `autoLootDefault`
-  0 -> 1 (`C_CVar`); MAMA macro (unless on any slot 1-180) on `ActionButton1.action` (warrior stance page), the action
+  0 -> 1 (`C_CVar`); MAMA macro (unless on any slot 1-180, found by `GetActionText(slot)` = macro name: for a
+  macro with `#showtooltip <spell>`, `GetActionInfo` returns "macro" and that spell's ID, not the macro index; seen in
+  game, Blizzard's ActionButton.lua uses it as a spell ID too) on `ActionButton1.action` (warrior stance page), the action
   there moved to the first free slot 61-72 (bar 2, above button 1; skipped if full) with `PickupAction`/`PlaceAction`;
   Edit Mode: `C_EditMode.GetLayouts().activeLayout` indexes presets first (`EditModePresetLayoutManager.presetLayoutInfo`,
   then saved layouts): Modern preset active -> `C_EditMode.SetActiveLayout(Classic preset index)`.
