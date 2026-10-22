@@ -33,6 +33,8 @@ read_globals = {
   "SOUNDKIT",
   "time",
   "UnitAffectingCombat",
+  "UnitCastingInfo",
+  "UnitChannelInfo",
   "UnitIsDeadOrGhost",
   "UnitOnTaxi",
   "ConfirmAcceptQuest",

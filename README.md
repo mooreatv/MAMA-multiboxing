@@ -173,7 +173,8 @@ you'll soon replace): after selling, a merchant that can repair fixes all your g
 
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
   then gets out of follow range (stuck behind a tree or a wall), the lead's window gets a raid warning and a sound.
-  Same when a follow key or the MAMA macro doesn't start following out of combat (too far, out of sight...).
+  Same when a follow key or the MAMA macro doesn't start following out of combat (too far, out of sight...): not
+  while the lead is fighting, while casting, or in the few seconds after a fight.
   Only for windows that were near the lead in the last 2 minutes, and never while the lead is dead, a ghost or on a
   flight, nor right after it came back to life, released, landed or went through a loading screen.
 - **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
