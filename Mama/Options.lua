@@ -13,20 +13,27 @@
 -- Options panel (Game Menu > Options > AddOns > Mama-forever), also reachable with /mama options.
 local _, MF = ...
 
--- Sections of {key, label, tooltip} rows; each row is laid out on one line, two checkboxes side by side.
+-- "Set team loot (FFA or master)", the one it sets (master loot auto distribution on or off) in blue.
+local function teamLootLabel()
+  local on = "|cFF99E5FF%s|r"
+  local master = MF.db and MF.db.masterLoot
+  return ("Set team loot (%s or %s)"):format(master and "FFA" or on:format("FFA"),
+                                             master and on:format("master") or "master")
+end
+
+-- Sections of {key, label (text or function), tooltip} rows; each row is laid out on one line, two checkboxes side by
+-- side.
 local SECTIONS = {
   {
     "Group", {
       {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
       {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."}
-    }, {
-      {"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}, {
-        "autoFFA", "Set team loot (FFA or master)",
+    }, {{"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}}, {
+      {
+        "autoFFA", teamLootLabel,
         "When you lead a full team group, set loot to free for all, or to master loot by the lead when master loot " ..
           "auto distribution is on (back to group loot if outsiders join). Off: the loot method is left alone."
-      }
-    }, {
-      {
+      }, {
         "masterLoot", "Master loot auto distribution",
         "Master loot for the full team (with \"Set team loot\"), or when you pick master looter in the group menu: " ..
           "threshold down to greys (once, raise it again if you want), and the master looter gives each item to " ..
@@ -109,23 +116,31 @@ end
 
 local checkboxes = {} -- {cb, get} for every checkbox of every panel
 
-local function Refresh() for _, c in ipairs(checkboxes) do c.cb:SetChecked(c.get()) end end
+local function textOf(label) return type(label) == "function" and label() or label end
 
--- o: {label, tooltip, get(), set(value)}; ...: SetPoint arguments.
+local function Refresh()
+  for _, c in ipairs(checkboxes) do
+    c.cb:SetChecked(c.get())
+    c.cb.Text:SetText(textOf(c.label))
+  end
+end
+
+-- o: {label (text or function, for one that depends on other options), tooltip, get(), set(value)}; ...: SetPoint
+-- arguments.
 local function checkbox(panel, o, ...)
   local label, tip, get, set = o[1], o[2], o[3], o[4]
   local cb = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
   cb:SetPoint(...)
-  cb.Text:SetText(label)
+  cb.Text:SetText(textOf(label))
   cb:SetScript("OnClick", function(b) set(b:GetChecked() and true or false) end)
   cb:SetScript("OnEnter", function(b)
     GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
-    GameTooltip:SetText(label)
+    GameTooltip:SetText(textOf(label))
     GameTooltip:AddLine(tip, 1, 1, 1, true)
     GameTooltip:Show()
   end)
   cb:SetScript("OnLeave", GameTooltip_Hide)
-  checkboxes[#checkboxes + 1] = {cb = cb, get = get}
+  checkboxes[#checkboxes + 1] = {cb = cb, get = get, label = label}
   return cb
 end
 
