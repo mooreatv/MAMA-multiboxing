@@ -15,9 +15,9 @@
 -- then gives each item to the team member who uses it: mats and recipes to the best profession holder (trade
 -- categories), armor to the classes that wear that type, weapons to the classes that can use them (taking turns),
 -- greens nobody uses to the enchanter, the rest (greys, sell list...) where the same item stacks (the looter's partial
--- stacks, else who got that item last while they have room), else to the most free bag slots. BoP items wait in a
--- picker, suggestion first: there may be other candidates, or the enchanter should disenchant it. Clicking an item in
--- the loot window shows the picker too (when the client doesn't show its own candidate list).
+-- stacks, else who got that item last while they have room and still hold some), else to the most free bag slots. BoP
+-- items wait in a picker, suggestion first: there may be other candidates, or the enchanter should disenchant it.
+-- Clicking an item in the loot window shows the picker too (when the client doesn't show its own candidate list).
 local _, MF = ...
 
 local MASTER = Enum.LootMethod.Masterlooter
@@ -160,9 +160,11 @@ local function candidates(self, lootSlot)
   return list
 end
 
+local reserved = {} -- name -> bag slots the gives queued for this loot will take (their stats don't show it yet)
+
 local function freeSlots(self, name)
   local s = self:StatsOf(name)
-  return s and s.free or -1
+  return s and math.max(s.free - (reserved[name] or 0), 0) or -1
 end
 
 local given = {} -- rule key -> name -> items given this session: equal candidates take turns
@@ -203,7 +205,7 @@ local function ownRoom(it)
       if info and info.itemID == it.id then room = room + math.max(maxStack - info.stackCount, 0) end
     end
   end
-  return room, free
+  return room, math.max(free - (reserved[MF.myName] or 0), 0)
 end
 
 -- Room left in the stack m got this session (0: unknown or full).
@@ -231,12 +233,60 @@ local function stackHolder(self, it, team)
     if m.name == self.myName then me = m end
     if m.name == keeper then kept = m end
   end
-  if kept and kept ~= me and keptRoom(it, kept) >= it.count then return kept, "stacks with the last ones" end
+  if kept == me then kept = nil end -- our bags are scanned: none left there (traded...) = nothing to stack with
+  if kept and keptRoom(it, kept) >= it.count then return kept, "stacks with the last ones" end
   if me then
     local room, free = ownRoom(it)
     if room > 0 and (room >= it.count or free > 0) then return me, "stacks with ours" end
   end
   if kept and hasRoom(self, it, kept) then return kept, "with the last ones" end
+end
+
+-- Who got the last ones may trade, sell or bank them all: under master loot, each window tells the group the
+-- stackable items no longer in its bags ("K;id,id,..."), and the master looter stops stacking them there.
+local bagCounts -- item ID -> count in our bags, nil until the first scan
+local gone, goneTimer = {}, false
+
+local function bagItems()
+  local counts = {}
+  for bag = 0, NUM_BAG_SLOTS or 4 do
+    for s = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+      local info = C_Container.GetContainerItemInfo(bag, s)
+      if info and info.itemID then counts[info.itemID] = (counts[info.itemID] or 0) + info.stackCount end
+    end
+  end
+  return counts
+end
+
+local function sendGone(self)
+  goneTimer = false
+  local ids = {}
+  for id in pairs(gone) do ids[#ids + 1] = id end
+  wipe(gone)
+  if C_PartyInfo.GetLootMethod() ~= MASTER or self:IsMasterLooter() then return end
+  for i = 1, #ids, 20 do self:SendGroup("K;" .. table.concat(ids, ",", i, math.min(i + 19, #ids))) end
+end
+
+MF:OnTeam("BAG_UPDATE_DELAYED", function(self)
+  local was = bagCounts
+  bagCounts = bagItems()
+  if not was or not IsInGroup() then return end
+  for id in pairs(was) do
+    if not bagCounts[id] and (select(8, C_Item.GetItemInfo(id)) or 2) > 1 then gone[id] = true end
+  end
+  if next(gone) and not goneTimer then
+    goneTimer = true
+    C_Timer.After(2, function() sendGone(self) end) -- selling or trading changes the bags in bursts
+  end
+end)
+
+MF.messageHandlers.K = function(self, sender, rest)
+  local keepers = self.db.lootKeepers or {}
+  for id in rest:gmatch("%d+") do
+    id = tonumber(id)
+    if keepers[id] == sender then keepers[id] = nil end
+    if stacked[id] and stacked[id].name == sender then stacked[id] = nil end
+  end
 end
 
 local function canDisenchant(self, it)
@@ -475,6 +525,16 @@ function MF:DistributeLoot(tries)
   end
   wipe(queue)
   wipe(picks)
+  wipe(reserved)
+  -- quest items first: they get the last free bag slots, the rest then goes to someone else
+  table.sort(items, function(a, b)
+    if a.quest ~= b.quest then return a.quest end
+    return a.slot < b.slot
+  end)
+  local function enqueue(g, stacks) -- stacks: goes on a stack of the same item, no new bag slot
+    if not stacks then reserved[g.m.name] = (reserved[g.m.name] or 0) + 1 end
+    queue[#queue + 1] = g
+  end
   local questNeeds = {} -- item name -> QuestNeeds, counting what we give now (the next slot may hold the same item)
   for _, it in ipairs(items) do
     local cands = candidates(self, it.slot)
@@ -492,10 +552,11 @@ function MF:DistributeLoot(tries)
         end
         if m then
           local w = needs[m.name]
+          local stacks = (it.maxStack or 1) > 1 and w.have > 0
           w.have = w.have + it.count
           if w.have >= w.need then needs[m.name] = nil end
           local others = perPlayer(it) and othersNeeding(self, m, needs) or nil
-          queue[#queue + 1] = {it = it, m = m, why = why, others = others}
+          enqueue({it = it, m = m, why = why, others = others}, stacks)
         elseif not known then
           picks[#picks + 1] = it -- not one of our quests: who needs it is unknown, ask
         else
@@ -505,7 +566,7 @@ function MF:DistributeLoot(tries)
         picks[#picks + 1] = it
       else
         local m, why, key = self:LootRecipient(it, cands)
-        if m then queue[#queue + 1] = {it = it, m = m, why = why, key = key} end
+        if m then enqueue({it = it, m = m, why = why, key = key}, why:find("stacks") ~= nil) end
       end
     end
   end
@@ -533,6 +594,7 @@ MF:On("LOOT_CLOSED", function(self)
   lootOpen = false
   wipe(queue)
   wipe(picks)
+  wipe(reserved)
   if picker then picker:Hide() end
   -- the corpse is free now: one alert, on the lead's window, listing who must loot their own copy of what
   local parts = {}
@@ -553,6 +615,8 @@ end)
 MF.messageHandlers.R = function(self, _, rest)
   if rest ~= "" and self:GetLead() == self.myName then lootAlert(self, rest) end
 end
+
+MF:Listen("STATS", function(_, name) reserved[name] = nil end) -- their bags as of now, our gives included
 
 MF:On("LOOT_SLOT_CLEARED", function(self, slot)
   if picker and picker:IsShown() and picker.it and picker.it.slot == slot then showPick(self) end
