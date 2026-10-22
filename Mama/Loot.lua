@@ -245,26 +245,49 @@ local function objectiveItem(text)
   return name ~= "" and name or nil
 end
 
--- Full name -> {have, need} for the group members (us included) on a quest needing this item, not done with it yet;
--- and whether any quest of our log has that item (if not, we can't know who needs it).
-function MF:QuestNeeds(item)
+local LINE = Enum.TooltipDataLineType or {}
+
+-- Reads quest progress tooltip lines into needs (full name -> {have, need}, for those not done with item yet): a quest
+-- title (our own objectives follow), a first name (that party member's objectives follow), objectives
+-- ("2/8 Tough Wolf Meat"). Returns whether any objective was for item.
+local function readProgress(self, lines, item, needs, byName)
+  local who, known = nil, false
+  for _, line in ipairs(lines or {}) do
+    local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    local have, need = text:match("(%d+)%s*/%s*(%d+)")
+    if line.type ~= nil and line.type == LINE.QuestTitle then
+      who = self.myName
+    elseif not have and byName[text] then
+      who = self:FullName(byName[text])
+    elseif have and objectiveItem(text) == item then
+      known = true
+      if who and tonumber(have) < tonumber(need) then needs[who] = {have = tonumber(have), need = tonumber(need)} end
+    end
+  end
+  return known
+end
+
+-- The unit being looted, for its tooltip (it lists the party's progress on its quests, even ours we don't have).
+local function lootUnit(slot)
+  local guid = GetLootSourceInfo and GetLootSourceInfo(slot)
+  for _, u in ipairs({"softinteract", "mouseover", "target"}) do
+    if UnitExists(u) and UnitIsDead(u) and (not guid or UnitGUID(u) == guid) then return u end
+  end
+end
+
+-- Full name -> {have, need} for the group members (us included) on a quest needing this item, not done with it yet:
+-- from the looted unit's tooltip, and the party progress of the quests in our log. Also returns whether any of those
+-- has the item at all (if not, we can't know who needs it).
+function MF:QuestNeeds(item, slot)
   local byName, needs, known = unitsByName(self), {}, false
+  local u = lootUnit(slot)
+  local data = u and C_TooltipInfo.GetUnit(u)
+  if data and readProgress(self, data.lines, item, needs, byName) then known = true end
+  self:Debug("quest item %s: looted unit %s, on its tooltip %s", item, tostring(u), tostring(known))
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
     local info = C_QuestLog.GetInfo(i)
-    local data = info and not info.isHeader and C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
-    local who
-    for _, line in ipairs(data and data.lines or {}) do
-      local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-      local have, need = text:match("(%d+)%s*/%s*(%d+)")
-      if not have then
-        who = byName[text] and self:FullName(byName[text])
-      elseif objectiveItem(text) == item then
-        known = true
-        if who and tonumber(have) < tonumber(need) then
-          needs[who] = {have = tonumber(have), need = tonumber(need)}
-        end
-      end
-    end
+    data = info and not info.isHeader and C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
+    if data and readProgress(self, data.lines, item, needs, byName) then known = true end
   end
   return needs, known
 end
@@ -295,15 +318,16 @@ function MF:QuestItemRecipient(cands, needs)
   return best, ("quest %d/%d, furthest behind"):format(w.have, w.need)
 end
 
--- What the picker shows next to each candidate (needs: QuestNeeds for a quest item).
-local function noteFor(self, it, m, needs)
+-- What the picker shows next to each candidate (needs, known: QuestNeeds for a quest item).
+local function noteFor(self, it, m, needs, known)
   local parts = {}
   if m.class then
     parts[1] = ("%s %d"):format(LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[m.class] or m.class, m.level)
   end
   if needs then
     local w = needs[m.name]
-    parts[#parts + 1] = w and ("quest %d/%d"):format(w.have, w.need) or "doesn't need it"
+    parts[#parts + 1] = w and ("quest %d/%d"):format(w.have, w.need) or (known and "doesn't need it") or
+                          "quest progress unknown"
   end
   local f = fit(it, m.class or "", m.level)
   if f then parts[#parts + 1] = fitText(it, f) end
@@ -375,7 +399,7 @@ function MF:DistributeLoot(tries)
     self:Debug("loot slot %d %s bind %s, %d candidates", it.slot, it.link, tostring(it.bindType), #cands)
     if #cands > 0 then
       if it.quest then
-        if not questNeeds[it.name] then questNeeds[it.name] = {self:QuestNeeds(it.name)} end
+        if not questNeeds[it.name] then questNeeds[it.name] = {self:QuestNeeds(it.name, it.slot)} end
         local needs, known = questNeeds[it.name][1], questNeeds[it.name][2]
         local list = {}
         for n, w in pairs(needs) do list[#list + 1] = ("%s %d/%d"):format(n, w.have, w.need) end
@@ -532,9 +556,9 @@ showPick = function(self)
     return
   end
   f.it = it
-  local suggested, why
-  local needs = it.quest and self:QuestNeeds(it.name)
-  if needs then
+  local suggested, why, needs, known
+  if it.quest then
+    needs, known = self:QuestNeeds(it.name, it.slot)
     suggested, why = self:QuestItemRecipient(cands, needs)
   else
     suggested, why = self:LootRecipient(it, cands)
@@ -550,7 +574,7 @@ showPick = function(self)
     local r = getRow(f, i)
     local color = m.class and RAID_CLASS_COLORS[m.class]
     r.name:SetText(color and color:WrapTextInColorCode(m.name) or m.name)
-    local note = noteFor(self, it, m, needs)
+    local note = noteFor(self, it, m, needs, known)
     if m == suggested then note = "|cFF99E5FFsuggested: " .. why .. "|r, " .. note end
     r.note:SetText(note)
     r.mark:SetShown(m == suggested)

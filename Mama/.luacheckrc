@@ -158,4 +158,6 @@ read_globals = {
   "UnitName",
   "UnitXP",
   "C_TooltipInfo",
+  "GetLootSourceInfo",
+  "UnitIsDead",
 }
