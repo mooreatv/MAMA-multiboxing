@@ -172,8 +172,10 @@ you'll soon replace): after selling, a merchant that can repair fixes all your g
 
 ### Master loot
 
-Pick master looter in the group menu: the threshold goes down to greys (once: raise it again if you want), and the
-master looter's window gives each item to the team member who uses it:
+Turn on "Master loot auto distribution" (Options, off by default): with "Set team loot" on, the full team then gets
+master loot by the lead instead of free for all (or pick master looter in the group menu yourself). The threshold goes
+down to greys (once: raise it again if you want), and the master looter's window gives each item to the team member
+who uses it:
 
 - quest items to whoever still needs them, the one furthest behind in xp first (until done), the looter on a tie;
   quest items that drop once per player (heads...): the looter keeps its copy and the lead's window gets one raid
@@ -242,7 +244,7 @@ remembered for that character until `/mama enable` turns it back on.
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
 `macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `loot`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, master loot auto distribution, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
+mirror the lead's dialog choices, skip single option dialogs, team loot (free for all or master), master loot auto distribution, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)

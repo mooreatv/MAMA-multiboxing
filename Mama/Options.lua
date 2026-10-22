@@ -21,15 +21,17 @@ local SECTIONS = {
       {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."}
     }, {
       {"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}, {
-        "autoFFA", "Free for all loot",
-        "When you lead a full team group, set loot to free for all (back to group loot if outsiders join)."
+        "autoFFA", "Set team loot (FFA or master)",
+        "When you lead a full team group, set loot to free for all, or to master loot by the lead when master loot " ..
+          "auto distribution is on (back to group loot if outsiders join). Off: the loot method is left alone."
       }
     }, {
       {
         "masterLoot", "Master loot auto distribution",
-        "When you pick master looter in the group menu: threshold down to greys (once, raise it again if you " ..
-          "want), and the master looter gives each item to the team member who uses it (mats to the profession, " ..
-          "armor to the class that wears it, quest items to whoever needs them, junk to the most bag space). " ..
+        "Master loot for the full team (with \"Set team loot\"), or when you pick master looter in the group menu: " ..
+          "threshold down to greys (once, raise it again if you want), and the master looter gives each item to " ..
+          "the team member who uses it (mats to the profession, armor to the class that wears it, quest items " ..
+          "to whoever needs them, junk to the most bag space). " ..
           "Soulbound items wait for a click, the suggestion first. Hold Shift, Ctrl or Alt while opening the " ..
           "loot to give it by hand."
       }

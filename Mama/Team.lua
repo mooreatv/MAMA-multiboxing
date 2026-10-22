@@ -48,10 +48,13 @@ for _, ev in ipairs({"GROUP_ROSTER_UPDATE", "PARTY_LEADER_CHANGED", "UNIT_NAME_U
 end
 MF:Listen("LOGIN", function(self) self:RefreshRoster() end)
 
--- Leader: free for all loot when the whole team first gets grouped, group loot when strangers (characters without a
--- slot) join, free for all again once they're gone. Only those changes of group make up act, so a loot method picked
--- by hand sticks. Every window tracks them (a reload or a new leader doesn't count as a change).
+-- Leader: free for all loot (master loot to the lead with the masterLoot option, see Loot.lua) when the whole team
+-- first gets grouped, group loot when strangers (characters without a slot) join, back again once they're gone. Only
+-- those changes of group make up act, so a loot method picked by hand sticks. Every window tracks them (a reload or a
+-- new leader doesn't count as a change).
 local FFA = Enum.LootMethod.Freeforall -- what C_PartyInfo.GetLootMethod() returns for free for all
+local MASTER = Enum.LootMethod.Masterlooter
+local UNCOMMON = 2
 local lootState -- nil (unknown yet), "solo", "partial" (team members only, not all here), "team" or "strangers"
 local formed, hadStrangers -- the whole team was grouped / strangers were in the group, since we joined it
 
@@ -92,14 +95,25 @@ function MF:UpdateLoot()
   local cur = C_PartyInfo.GetLootMethod()
   if state == "strangers" then
     hadStrangers = true
-    if act and cur == FFA then
+    if act and (cur == FFA or cur == MASTER) then
       self:Print("strangers in the group, switching to group loot")
       C_PartyInfo.SetLootMethod("group")
+      -- no rolls on greys (master loot lowered the threshold); after the method change applies
+      C_Timer.After(1, function()
+        if UnitIsGroupLeader("player") and GetLootThreshold() < UNCOMMON then SetLootThreshold(UNCOMMON) end
+      end)
     end
   elseif state == "team" then
-    if act and (not formed or hadStrangers) and cur ~= FFA then
-      self:Print("setting loot to free for all (%s)", formed and "strangers gone" or "team complete")
-      C_PartyInfo.SetLootMethod("freeforall")
+    local why = formed and "strangers gone" or "team complete"
+    if act and (not formed or hadStrangers) and cur ~= (self.db.masterLoot and MASTER or FFA) then
+      if self.db.masterLoot then
+        local lead = self:GetLead() or self.myName
+        self:Print("setting master loot to %s (%s)", lead, why) -- Loot.lua lowers the threshold to greys
+        C_PartyInfo.SetLootMethod(MASTER, lead)
+      else
+        self:Print("setting loot to free for all (%s)", why)
+        C_PartyInfo.SetLootMethod("freeforall")
+      end
     end
     formed, hadStrangers = true, false
   end
