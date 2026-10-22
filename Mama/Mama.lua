@@ -53,8 +53,9 @@ local MAX_LOG = 100
 local log = {}
 MF.log = log
 
+-- Plain text: no colors (item links use "|cnIQ4:" quality colors) and links reduced to their "[Name]".
 local function record(msg)
-  msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+  msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|cn[^:|]*:", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
   log[#log + 1] = date("%H:%M:%S") .. " " .. msg
   if #log > MAX_LOG then table.remove(log, 1) end
 end
