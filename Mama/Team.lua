@@ -441,7 +441,7 @@ MF:AddCommand("disband", function(self) self:Disband() end,
               "disband - leader: uninvite the team; otherwise leave the group")
 MF:AddCommand("raid", function(self) self:PartyToggle() end, "raid - toggle between party and raid")
 MF:AddCommand("autoinvite", function(self, rest)
-  self.db.autoInvite = self:ParseOnOff(rest, self.db.autoInvite)
+  self:SetOption("autoInvite", self:ParseOnOff(rest, self.db.autoInvite))
   self:Print("slot 1 auto invite is now %s", tostring(self.db.autoInvite))
 end, "autoinvite [on|off] - slot 1 invites team members as they come online")
 

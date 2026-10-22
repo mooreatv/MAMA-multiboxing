@@ -365,7 +365,7 @@ MF:On("PLAYER_REGEN_ENABLED", function(self)
 end)
 
 MF:AddCommand("ui", function(self, rest)
-  self.db.showStatus = self:ParseOnOff(rest, self.db.showStatus)
+  self:SetOption("showStatus", self:ParseOnOff(rest, self.db.showStatus))
   self:Print("status window is now %s", self.db.showStatus and "shown" or "hidden")
   self:RefreshStatus()
 end, "ui [on|off] - show or hide the team status window (hover it for all the mouse shortcuts)")

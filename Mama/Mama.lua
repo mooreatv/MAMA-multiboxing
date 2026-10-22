@@ -201,6 +201,12 @@ function MF:GroupUnits()
   return others
 end
 
+-- For commands: the options page shows the change (OPTION_CHANGED, like its checkboxes).
+function MF:SetOption(key, value)
+  self.db[key] = value
+  self:Fire("OPTION_CHANGED", key)
+end
+
 function MF:ParseOnOff(arg, current)
   arg = (arg or ""):lower()
   if arg == "on" then return true end
@@ -237,7 +243,7 @@ end
 
 MF:AddCommand("help", function(self) self:Help() end, "help - this list")
 MF:AddCommand("debug", function(self, rest)
-  self.db.debug = self:ParseOnOff(rest, self.db.debug)
+  self:SetOption("debug", self:ParseOnOff(rest, self.db.debug))
   self:Print("debug is now %s", tostring(self.db.debug))
 end, "debug [on|off] - toggle debug output")
 MF:AddCommand("enable", function(self, rest) self:SetDisabled(rest:lower() == "off") end,

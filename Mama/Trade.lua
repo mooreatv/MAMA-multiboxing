@@ -313,7 +313,7 @@ end)
 MF:AddCommand("trade", function(self, rest)
   local key, setting = rest:lower():match("^(%S*)%s*(%S*)$")
   if key == "" or key == "on" or key == "off" then
-    if key ~= "" then self.db.autoTrade = key == "on" end
+    if key ~= "" then self:SetOption("autoTrade", key == "on") end
     self:Print("auto fill trades with mats for team members is %s", tostring(self.db.autoTrade))
     return
   end
@@ -322,6 +322,7 @@ MF:AddCommand("trade", function(self, rest)
       if c[1] == key then
         self.db.tradeCats = self.db.tradeCats or {}
         self.db.tradeCats[key] = self:ParseOnOff(setting, self:TradeCategoryOn(key, c[3]))
+        self:Fire("OPTION_CHANGED", "tradeCats")
         self:Print("trading %s is now %s", c[2], tostring(self.db.tradeCats[key]))
         return
       end

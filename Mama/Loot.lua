@@ -607,8 +607,8 @@ end)
 MF:Listen("LOGIN", function() lastMethod = IsInGroup() and C_PartyInfo.GetLootMethod() or nil end)
 
 MF:AddCommand("loot", function(self, rest)
-  if rest ~= "" then self.db.masterLoot = self:ParseOnOff(rest, self.db.masterLoot) end
-  self:Print("master loot help is %s; loot method %s, master looter %s, threshold %d",
+  if rest ~= "" then self:SetOption("masterLoot", self:ParseOnOff(rest, self.db.masterLoot)) end
+  self:Print("master loot auto distribution is %s; loot method %s, master looter %s, threshold %d",
              self.db.masterLoot and "on" or "off", tostring(C_PartyInfo.GetLootMethod()), masterLooterName(self) or "-",
              GetLootThreshold())
 end, "loot [on|off] - as master looter (picked in the group menu; greys and up then), give items to who uses them" ..

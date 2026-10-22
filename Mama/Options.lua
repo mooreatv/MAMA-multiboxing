@@ -26,7 +26,7 @@ local SECTIONS = {
       }
     }, {
       {
-        "masterLoot", "Master loot to who uses it",
+        "masterLoot", "Master loot auto distribution",
         "When you pick master looter in the group menu: threshold down to greys (once, raise it again if you " ..
           "want), and the master looter gives each item to the team member who uses it (mats to the profession, " ..
           "armor to the class that wears it, quest items to whoever needs them, junk to the most bag space). " ..
@@ -284,6 +284,7 @@ MF.messageHandlers.O = function(self, sender, rest)
 end
 
 MF:Listen("OPTION_CHANGED", function(self, key)
+  Refresh() -- also when changed by a command while the page is open
   if key == "macro" or key == "showStatus" then
     self:RefreshActions()
     self:RefreshStatus()
