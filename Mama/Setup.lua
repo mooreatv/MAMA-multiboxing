@@ -21,6 +21,9 @@ local function showBars(done)
   if count > 0 then done[#done + 1] = ("%d more action bars"):format(count) end
 end
 
+-- For the debug log: an unbound key's action is "", a command without a key has nil.
+local function orNone(s) return (s == nil or s == "") and "(none)" or s end
+
 -- The modern default (A/D strafe, Q/E turn) is swapped; any other binding of these keys is left alone.
 -- Bindings are account wide (and saved by the server), so this is a no-op once done on any character.
 local SWAP = {
@@ -34,7 +37,7 @@ local function swapKeys(done)
   local default = true
   for key, actions in pairs(SWAP) do
     local current = GetBindingAction(key)
-    MF:Debug("setup: key %s is %s", key, tostring(current))
+    MF:Debug("setup: key %s is %s", key, orNone(current))
     if current ~= actions[1] then default = false end
   end
   if not default then return end
@@ -44,25 +47,26 @@ local function swapKeys(done)
 end
 
 -- Bindings.xml defaults are ignored (https://github.com/Stanzilla/WoWUIBugs/issues/12), so they are set here: each
--- only when the key is free and the binding has no key yet.
+-- only when the key is free and the binding has no key yet. Same for "." = interact with target.
 local MAMA_KEYS = {
-  {"ALT-F", "CLICK MamaFollow:LeftButton"}, {"ALT-T", "CLICK MamaTrain:LeftButton"}, {"ALT-L", "MAMA_LEAD"}
+  {"ALT-F", "CLICK MamaFollow:LeftButton", "Alt-F follow"}, {"ALT-T", "CLICK MamaTrain:LeftButton", "Alt-T train"},
+  {"ALT-L", "MAMA_LEAD", "Alt-L lead"}, {".", "INTERACTTARGET", ". interact"}
 }
 
 local function mamaKeys(done)
   local set = {}
   for _, k in ipairs(MAMA_KEYS) do
-    local key, command = k[1], k[2]
+    local key, command, label = k[1], k[2], k[3]
     local current, bound = GetBindingAction(key), GetBindingKey(command)
-    MF:Debug("setup: key %s is %s, %s is on %s", key, tostring(current), command, tostring(bound))
+    MF:Debug("setup: key %s is %s, %s is on %s", key, orNone(current), command, orNone(bound))
     if (current or "") == "" and not bound then
       SetBinding(key, command)
-      set[#set + 1] = (key:gsub("ALT%-", "Alt-"))
+      set[#set + 1] = label
     end
   end
   if #set == 0 then return end
   SaveBindings(GetCurrentBindingSet())
-  done[#done + 1] = table.concat(set, "/") .. " keys"
+  done[#done + 1] = "keys (" .. table.concat(set, ", ") .. ")"
 end
 
 local function autoloot(done)
@@ -171,5 +175,5 @@ MF:AddCommand("setup", function(self, rest)
   if arg == "on" or arg == "off" then self.db.autoSetup = arg == "on" end
   self:Print("new character setup (at a level 1 character's first login) is now %s", tostring(self.db.autoSetup))
 end, "setup [on|off|now] - show or set whether a level 1 character's first login turns on bars 2-5, swaps A/D " ..
-                "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead), autoloot, puts the MAMA macro " ..
+                "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead) and . (interact), autoloot, puts the MAMA macro " ..
                 "on 1 and picks the Classic layout, each only if still at its default; now does it on this character")
