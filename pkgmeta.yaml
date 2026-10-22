@@ -7,7 +7,6 @@ ignore:
     - OldChangeLog.txt
     - luaformat.cfg
     - Probe
-    - STATUS.md
     - README.md
     - ReleaseNotes-v2.0.0.md
     - .github
