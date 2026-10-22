@@ -15,9 +15,9 @@
 -- then gives each item to the team member who uses it: mats and recipes to the best profession holder (trade
 -- categories), armor to the classes that wear that type, weapons to the classes that can use them (taking turns),
 -- greens nobody uses to the enchanter, the rest (greys, sell list...) where the same item stacks (the looter's partial
--- stacks, else who got that item last while they have room), else to the most free bag slots. BoP items wait in a
--- picker, suggestion first: there may be other candidates, or the enchanter should disenchant it. Clicking an item in
--- the loot window shows the picker too (when the client doesn't show its own candidate list).
+-- stacks, else who got that item last while they have room and still hold some), else to the most free bag slots. BoP
+-- items wait in a picker, suggestion first: there may be other candidates, or the enchanter should disenchant it.
+-- Clicking an item in the loot window shows the picker too (when the client doesn't show its own candidate list).
 local _, MF = ...
 
 local MASTER = Enum.LootMethod.Masterlooter
@@ -231,12 +231,60 @@ local function stackHolder(self, it, team)
     if m.name == self.myName then me = m end
     if m.name == keeper then kept = m end
   end
-  if kept and kept ~= me and keptRoom(it, kept) >= it.count then return kept, "stacks with the last ones" end
+  if kept == me then kept = nil end -- our bags are scanned: none left there (traded...) = nothing to stack with
+  if kept and keptRoom(it, kept) >= it.count then return kept, "stacks with the last ones" end
   if me then
     local room, free = ownRoom(it)
     if room > 0 and (room >= it.count or free > 0) then return me, "stacks with ours" end
   end
   if kept and hasRoom(self, it, kept) then return kept, "with the last ones" end
+end
+
+-- Who got the last ones may trade, sell or bank them all: under master loot, each window tells the group the
+-- stackable items no longer in its bags ("K;id,id,..."), and the master looter stops stacking them there.
+local bagCounts -- item ID -> count in our bags, nil until the first scan
+local gone, goneTimer = {}, false
+
+local function bagItems()
+  local counts = {}
+  for bag = 0, NUM_BAG_SLOTS or 4 do
+    for s = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+      local info = C_Container.GetContainerItemInfo(bag, s)
+      if info and info.itemID then counts[info.itemID] = (counts[info.itemID] or 0) + info.stackCount end
+    end
+  end
+  return counts
+end
+
+local function sendGone(self)
+  goneTimer = false
+  local ids = {}
+  for id in pairs(gone) do ids[#ids + 1] = id end
+  wipe(gone)
+  if C_PartyInfo.GetLootMethod() ~= MASTER or self:IsMasterLooter() then return end
+  for i = 1, #ids, 20 do self:SendGroup("K;" .. table.concat(ids, ",", i, math.min(i + 19, #ids))) end
+end
+
+MF:OnTeam("BAG_UPDATE_DELAYED", function(self)
+  local was = bagCounts
+  bagCounts = bagItems()
+  if not was or not IsInGroup() then return end
+  for id in pairs(was) do
+    if not bagCounts[id] and (select(8, C_Item.GetItemInfo(id)) or 2) > 1 then gone[id] = true end
+  end
+  if next(gone) and not goneTimer then
+    goneTimer = true
+    C_Timer.After(2, function() sendGone(self) end) -- selling or trading changes the bags in bursts
+  end
+end)
+
+MF.messageHandlers.K = function(self, sender, rest)
+  local keepers = self.db.lootKeepers or {}
+  for id in rest:gmatch("%d+") do
+    id = tonumber(id)
+    if keepers[id] == sender then keepers[id] = nil end
+    if stacked[id] and stacked[id].name == sender then stacked[id] = nil end
+  end
 end
 
 local function canDisenchant(self, it)
