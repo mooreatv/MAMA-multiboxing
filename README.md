@@ -12,6 +12,7 @@ It lets all your windows of the same team:
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
 - **sell** the same junk at every vendor (a team wide sell list, greys optional),
+- with **master loot**, give each item to the team member who uses it (quest items to whoever still needs them),
 - be managed from a small **team status window** (invite, disband, party/raid, target, ...),
 - mark a member **away** for a while (Alt+Left click its status window row, or `/mama away`): no invites, follow
   alerts or quest/dialog sync, still trades and forwards whispers.
@@ -169,6 +170,21 @@ last) in the trade, for them to sell at the next merchant.
 **Auto repair** (Options, off by default: early on, the money is better spent on training than on repairing gear
 you'll soon replace): after selling, a merchant that can repair fixes all your gear, if you have the money.
 
+### Master loot
+
+Pick master looter in the group menu: the threshold goes down to greys (once: raise it again if you want), and the
+master looter's window gives each item to the team member who uses it:
+
+- quest items to whoever still needs them, the one furthest behind in xp first (until done), the looter on a tie,
+- mats and recipes to the best profession holder (same kinds as trades),
+- armor to the classes that wear that type (leather to the rogue or druid...), weapons to the classes that can use
+  them, taking turns; greens nobody uses to the enchanter,
+- greys, the sell list and everything else to the most free bag slots.
+
+Soulbound items open a picker next to the loot window instead, the suggestion first (another candidate, or the
+enchanter to disenchant it); clicking an item in the loot window opens it too. Hold Shift, Ctrl or Alt while opening
+the loot to give it all by hand. Turn it off with "Master loot auto distribution" (Options) or `/mama loot off`.
+
 ### Alerts to the lead
 
 - **Follow broken**: when a window stops following out of combat (not in a fight, where that's normal) and the lead
@@ -222,9 +238,9 @@ remembered for that character until `/mama enable` turns it back on.
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `loot`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
+mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, master loot auto distribution, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.
 
 ## Not included (compared to the old addons)
