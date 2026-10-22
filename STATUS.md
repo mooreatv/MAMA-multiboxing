@@ -347,7 +347,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   then saved layouts): Modern preset active -> `C_EditMode.SetActiveLayout(Classic preset index)`.
   Done flag only set once the macro exists (`MF:MamaMacroIndex()`), so a missing macro retries at the next login.
 - Bindings.xml `default` keys are still ignored (WoWUIBugs #12), so setup binds ALT-F (follow), ALT-T (train), ALT-L
-  (`MAMA_LEAD`), and `.` (`INTERACTTARGET`, unverified name) with `SetBinding(key, "CLICK MamaTrain:LeftButton")` etc., each only when `GetBindingAction(key)` is
+  (`MAMA_LEAD`), and `.` (`INTERACTTARGET`, verified) with `SetBinding(key, "CLICK MamaTrain:LeftButton")` etc., each only when `GetBindingAction(key)` is
   empty and `GetBindingKey(command)` is nil. A `/mama train` command can't follow: `FollowUnit` is protected and
   `/click` from a macro does nothing, so the train stays a key binding.
 

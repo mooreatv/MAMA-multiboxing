@@ -46,24 +46,24 @@ end
 -- Bindings.xml defaults are ignored (https://github.com/Stanzilla/WoWUIBugs/issues/12), so they are set here: each
 -- only when the key is free and the binding has no key yet. Same for "." = interact with target.
 local MAMA_KEYS = {
-  {"ALT-F", "CLICK MamaFollow:LeftButton"}, {"ALT-T", "CLICK MamaTrain:LeftButton"}, {"ALT-L", "MAMA_LEAD"},
-  {".", "INTERACTTARGET"}
+  {"ALT-F", "CLICK MamaFollow:LeftButton", "Alt-F follow"}, {"ALT-T", "CLICK MamaTrain:LeftButton", "Alt-T train"},
+  {"ALT-L", "MAMA_LEAD", "Alt-L lead"}, {".", "INTERACTTARGET", ". interact"}
 }
 
 local function mamaKeys(done)
   local set = {}
   for _, k in ipairs(MAMA_KEYS) do
-    local key, command = k[1], k[2]
+    local key, command, label = k[1], k[2], k[3]
     local current, bound = GetBindingAction(key), GetBindingKey(command)
     MF:Debug("setup: key %s is %s, %s is on %s", key, tostring(current), command, tostring(bound))
     if (current or "") == "" and not bound then
       SetBinding(key, command)
-      set[#set + 1] = (key:gsub("ALT%-", "Alt-"))
+      set[#set + 1] = label
     end
   end
   if #set == 0 then return end
   SaveBindings(GetCurrentBindingSet())
-  done[#done + 1] = table.concat(set, "/") .. " keys"
+  done[#done + 1] = "keys (" .. table.concat(set, ", ") .. ")"
 end
 
 local function autoloot(done)
