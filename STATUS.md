@@ -333,7 +333,7 @@ ids and secrets). The Forever rewrite replaced the old addon on `master` (PR #21
   When the master (token's master) says our slot is someone else's and our slot came from the login dialog
   (`MF.slotPicked`, this session), we move to the lowest free slot >= 2; otherwise the usual error.
 
-## New character setup (2026-10-22, verified in game; Mama keys unverified)
+## New character setup (2026-10-22, verified in game)
 - `Setup.lua`, option `autoSetup` (default on, `/mama setup [on|off|now]`, no checkbox): 4s after the first login of a
   level 1 character (`chars[me].setup` not set), out of combat, not disabled. Each step only from the default:
   bars 2-5 via `Settings.GetSetting("PROXY_SHOW_ACTIONBAR_N"):SetValue(true)` when off (Blizzard_SettingsDefinitions_Frame
