@@ -21,6 +21,9 @@ local function showBars(done)
   if count > 0 then done[#done + 1] = ("%d more action bars"):format(count) end
 end
 
+-- For the debug log: an unbound key's action is "", a command without a key has nil.
+local function orNone(s) return (s == nil or s == "") and "(none)" or s end
+
 -- The modern default (A/D strafe, Q/E turn) is swapped; any other binding of these keys is left alone.
 -- Bindings are account wide (and saved by the server), so this is a no-op once done on any character.
 local SWAP = {
@@ -34,7 +37,7 @@ local function swapKeys(done)
   local default = true
   for key, actions in pairs(SWAP) do
     local current = GetBindingAction(key)
-    MF:Debug("setup: key %s is %s", key, tostring(current))
+    MF:Debug("setup: key %s is %s", key, orNone(current))
     if current ~= actions[1] then default = false end
   end
   if not default then return end
@@ -55,7 +58,7 @@ local function mamaKeys(done)
   for _, k in ipairs(MAMA_KEYS) do
     local key, command, label = k[1], k[2], k[3]
     local current, bound = GetBindingAction(key), GetBindingKey(command)
-    MF:Debug("setup: key %s is %s, %s is on %s", key, tostring(current), command, tostring(bound))
+    MF:Debug("setup: key %s is %s, %s is on %s", key, orNone(current), command, orNone(bound))
     if (current or "") == "" and not bound then
       SetBinding(key, command)
       set[#set + 1] = label
