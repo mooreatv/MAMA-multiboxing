@@ -160,9 +160,11 @@ local function candidates(self, lootSlot)
   return list
 end
 
+local reserved = {} -- name -> bag slots the gives queued for this loot will take (their stats don't show it yet)
+
 local function freeSlots(self, name)
   local s = self:StatsOf(name)
-  return s and s.free or -1
+  return s and math.max(s.free - (reserved[name] or 0), 0) or -1
 end
 
 local given = {} -- rule key -> name -> items given this session: equal candidates take turns
@@ -203,7 +205,7 @@ local function ownRoom(it)
       if info and info.itemID == it.id then room = room + math.max(maxStack - info.stackCount, 0) end
     end
   end
-  return room, free
+  return room, math.max(free - (reserved[MF.myName] or 0), 0)
 end
 
 -- Room left in the stack m got this session (0: unknown or full).
@@ -523,6 +525,16 @@ function MF:DistributeLoot(tries)
   end
   wipe(queue)
   wipe(picks)
+  wipe(reserved)
+  -- quest items first: they get the last free bag slots, the rest then goes to someone else
+  table.sort(items, function(a, b)
+    if a.quest ~= b.quest then return a.quest end
+    return a.slot < b.slot
+  end)
+  local function enqueue(g, stacks) -- stacks: goes on a stack of the same item, no new bag slot
+    if not stacks then reserved[g.m.name] = (reserved[g.m.name] or 0) + 1 end
+    queue[#queue + 1] = g
+  end
   local questNeeds = {} -- item name -> QuestNeeds, counting what we give now (the next slot may hold the same item)
   for _, it in ipairs(items) do
     local cands = candidates(self, it.slot)
@@ -540,10 +552,11 @@ function MF:DistributeLoot(tries)
         end
         if m then
           local w = needs[m.name]
+          local stacks = (it.maxStack or 1) > 1 and w.have > 0
           w.have = w.have + it.count
           if w.have >= w.need then needs[m.name] = nil end
           local others = perPlayer(it) and othersNeeding(self, m, needs) or nil
-          queue[#queue + 1] = {it = it, m = m, why = why, others = others}
+          enqueue({it = it, m = m, why = why, others = others}, stacks)
         elseif not known then
           picks[#picks + 1] = it -- not one of our quests: who needs it is unknown, ask
         else
@@ -553,7 +566,7 @@ function MF:DistributeLoot(tries)
         picks[#picks + 1] = it
       else
         local m, why, key = self:LootRecipient(it, cands)
-        if m then queue[#queue + 1] = {it = it, m = m, why = why, key = key} end
+        if m then enqueue({it = it, m = m, why = why, key = key}, why:find("stacks") ~= nil) end
       end
     end
   end
@@ -581,6 +594,7 @@ MF:On("LOOT_CLOSED", function(self)
   lootOpen = false
   wipe(queue)
   wipe(picks)
+  wipe(reserved)
   if picker then picker:Hide() end
   -- the corpse is free now: one alert, on the lead's window, listing who must loot their own copy of what
   local parts = {}
@@ -601,6 +615,8 @@ end)
 MF.messageHandlers.R = function(self, _, rest)
   if rest ~= "" and self:GetLead() == self.myName then lootAlert(self, rest) end
 end
+
+MF:Listen("STATS", function(_, name) reserved[name] = nil end) -- their bags as of now, our gives included
 
 MF:On("LOOT_SLOT_CLEARED", function(self, slot)
   if picker and picker:IsShown() and picker.it and picker.it.slot == slot then showPick(self) end
