@@ -44,9 +44,10 @@ local function swapKeys(done)
 end
 
 -- Bindings.xml defaults are ignored (https://github.com/Stanzilla/WoWUIBugs/issues/12), so they are set here: each
--- only when the key is free and the binding has no key yet.
+-- only when the key is free and the binding has no key yet. Same for "." = interact with target.
 local MAMA_KEYS = {
-  {"ALT-F", "CLICK MamaFollow:LeftButton"}, {"ALT-T", "CLICK MamaTrain:LeftButton"}, {"ALT-L", "MAMA_LEAD"}
+  {"ALT-F", "CLICK MamaFollow:LeftButton"}, {"ALT-T", "CLICK MamaTrain:LeftButton"}, {"ALT-L", "MAMA_LEAD"},
+  {".", "INTERACTTARGET"}
 }
 
 local function mamaKeys(done)
@@ -171,5 +172,5 @@ MF:AddCommand("setup", function(self, rest)
   if arg == "on" or arg == "off" then self.db.autoSetup = arg == "on" end
   self:Print("new character setup (at a level 1 character's first login) is now %s", tostring(self.db.autoSetup))
 end, "setup [on|off|now] - show or set whether a level 1 character's first login turns on bars 2-5, swaps A/D " ..
-                "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead), autoloot, puts the MAMA macro " ..
+                "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead) and . (interact), autoloot, puts the MAMA macro " ..
                 "on 1 and picks the Classic layout, each only if still at its default; now does it on this character")

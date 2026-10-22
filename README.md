@@ -110,7 +110,7 @@ Follow and assist are protected actions that must come from a key press or your 
 ### New characters
 
 A level 1 character's first login with Mama sets up, once: action bars 2-5 shown, A/D turn and Q/E strafe,
-Alt-F/Alt-T/Alt-L for the follow, train and make me lead keys, autoloot,
+Alt-F/Alt-T/Alt-L for the follow, train and make me lead keys, `.` for interact with target, autoloot,
 the `MAMA` macro on button 1 (what was there moves to the button above it) and the Classic Edit Mode layout (the rest
 of the Modern choice, like high resolution characters, is kept). Each one only if it is still at the new character
 default: bars you turned off, your own key bindings or a custom layout are left alone. `/mama setup off` turns it off,
