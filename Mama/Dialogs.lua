@@ -498,12 +498,12 @@ MF:Listen("LOGIN", function(self)
 end)
 
 MF:AddCommand("dialog", function(self, rest)
-  self.db.autoDialog = self:ParseOnOff(rest, self.db.autoDialog)
+  self:SetOption("autoDialog", self:ParseOnOff(rest, self.db.autoDialog))
   self:Print("mirroring the lead's dialog choices (gossip, quests, flight paths, popups) is now %s",
              tostring(self.db.autoDialog))
 end, "dialog [on|off] - make the other windows pick the same dialog options/flight path/popup button as the lead")
 
 MF:AddCommand("gossip", function(self, rest)
-  self.db.autoGossip = self:ParseOnOff(rest, self.db.autoGossip)
+  self:SetOption("autoGossip", self:ParseOnOff(rest, self.db.autoGossip))
   self:Print("picking the only option of NPC dialogs (vendors, trainers...) is now %s", tostring(self.db.autoGossip))
 end, "gossip [on|off] - pick the only option of an NPC dialog (straight to the vendor, trainer...)")

@@ -21,6 +21,7 @@ Setup.lua
 Professions.lua
 Trade.lua
 Vendor.lua
+Loot.lua
 Dialogs.lua
 Alerts.lua
 Stats.lua

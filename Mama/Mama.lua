@@ -38,6 +38,7 @@ MF.defaults = {
   autoInvite = true,
   autoRaid = true,
   autoFFA = true,
+  masterLoot = true,
   autoTrade = true,
   autoRepair = false,
   followWarn = true,
@@ -52,8 +53,9 @@ local MAX_LOG = 100
 local log = {}
 MF.log = log
 
+-- Plain text: no colors (item links use "|cnIQ4:" quality colors) and links reduced to their "[Name]".
 local function record(msg)
-  msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+  msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|cn[^:|]*:", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
   log[#log + 1] = date("%H:%M:%S") .. " " .. msg
   if #log > MAX_LOG then table.remove(log, 1) end
 end
@@ -199,6 +201,12 @@ function MF:GroupUnits()
   return others
 end
 
+-- For commands: the options page shows the change (OPTION_CHANGED, like its checkboxes).
+function MF:SetOption(key, value)
+  self.db[key] = value
+  self:Fire("OPTION_CHANGED", key)
+end
+
 function MF:ParseOnOff(arg, current)
   arg = (arg or ""):lower()
   if arg == "on" then return true end
@@ -235,7 +243,7 @@ end
 
 MF:AddCommand("help", function(self) self:Help() end, "help - this list")
 MF:AddCommand("debug", function(self, rest)
-  self.db.debug = self:ParseOnOff(rest, self.db.debug)
+  self:SetOption("debug", self:ParseOnOff(rest, self.db.debug))
   self:Print("debug is now %s", tostring(self.db.debug))
 end, "debug [on|off] - toggle debug output")
 MF:AddCommand("enable", function(self, rest) self:SetDisabled(rest:lower() == "off") end,

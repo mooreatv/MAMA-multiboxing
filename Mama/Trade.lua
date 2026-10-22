@@ -71,6 +71,7 @@ local NO_DISENCHANT = {
   [11289] = true, -- Lesser Mystic Wand
   [11290] = true -- Greater Mystic Wand
 }
+MF.NO_DISENCHANT = NO_DISENCHANT
 
 -- Recipe subclass -> profession.
 local RECIPES = {
@@ -120,11 +121,14 @@ end
 
 -- The team member (us included) who uses these professions best: the first profession anyone on the team has wins,
 -- then the highest rank; ties keep the mats where they are, then go to the lowest slot.
-function MF:BestHolder(profs)
+-- members: name -> slot to choose from (default: the whole team).
+function MF:BestHolder(profs, members)
   local team = self:TeamProfessions()
-  local members = {}
-  for s, name in pairs(self.db.slots) do members[name] = s end
-  members[self.myName] = 0 -- wins ties
+  if not members then
+    members = {}
+    for s, name in pairs(self.db.slots) do members[name] = s end
+    members[self.myName] = 0 -- wins ties
+  end
   for _, prof in ipairs(profs) do
     local best, bestRank, bestSlot
     for name, slot in pairs(members) do
@@ -309,7 +313,7 @@ end)
 MF:AddCommand("trade", function(self, rest)
   local key, setting = rest:lower():match("^(%S*)%s*(%S*)$")
   if key == "" or key == "on" or key == "off" then
-    if key ~= "" then self.db.autoTrade = key == "on" end
+    if key ~= "" then self:SetOption("autoTrade", key == "on") end
     self:Print("auto fill trades with mats for team members is %s", tostring(self.db.autoTrade))
     return
   end
@@ -318,6 +322,7 @@ MF:AddCommand("trade", function(self, rest)
       if c[1] == key then
         self.db.tradeCats = self.db.tradeCats or {}
         self.db.tradeCats[key] = self:ParseOnOff(setting, self:TradeCategoryOn(key, c[3]))
+        self:Fire("OPTION_CHANGED", "tradeCats")
         self:Print("trading %s is now %s", c[2], tostring(self.db.tradeCats[key]))
         return
       end

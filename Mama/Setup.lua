@@ -172,7 +172,7 @@ MF:AddCommand("setup", function(self, rest)
     self:NewCharSetup(true)
     return
   end
-  if arg == "on" or arg == "off" then self.db.autoSetup = arg == "on" end
+  if arg == "on" or arg == "off" then self:SetOption("autoSetup", arg == "on") end
   self:Print("new character setup (at a level 1 character's first login) is now %s", tostring(self.db.autoSetup))
 end, "setup [on|off|now] - show or set whether a level 1 character's first login turns on bars 2-5, swaps A/D " ..
                 "(turn) and Q/E (strafe), binds Alt-F/T/L (follow, train, lead) and . (interact), autoloot, puts the MAMA macro " ..

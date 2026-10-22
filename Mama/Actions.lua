@@ -328,13 +328,13 @@ MF:AddCommand("macro", function(self, rest)
     end
     return
   end
-  if setting == "on" or setting == "off" then self.db.macro = setting == "on" end
+  if setting == "on" or setting == "off" then self:SetOption("macro", setting == "on") end
   self:Print("keeping this character's \"%s\" macro up to date is now %s", MACRO_NAME, tostring(self.db.macro))
   self:RefreshActions()
 end, "macro [on|off|reset] - show or set whether to maintain this character's MAMA macro (drag it to a bar " ..
                 "once, edit it freely: only its /follow and /assist lines are updated); reset puts the class starter back")
 
 MF:AddCommand("quest", function(self, rest)
-  self.db.autoQuest = self:ParseOnOff(rest, self.db.autoQuest)
+  self:SetOption("autoQuest", self:ParseOnOff(rest, self.db.autoQuest))
   self:Print("auto accept quests (while grouped) is now %s", tostring(self.db.autoQuest))
 end, "quest [on|off] - auto accept shared quests/quest dialogs while grouped")
