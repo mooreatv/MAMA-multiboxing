@@ -12,7 +12,8 @@
    ]] --
 -- Alerts sent from the other windows to the lead's:
 -- "F;subzone": we stopped following out of combat and the lead got away (stuck behind something).
--- "F;subzone;1": a /follow (key, MAMA macro) didn't start following out of combat (too far, not visible...).
+-- "F;subzone;1": a /follow (key, MAMA macro) didn't start following out of combat (too far, not visible...); not while
+-- the lead fights, we cast, or for a few seconds after our fight.
 -- Neither is sent when the lead wasn't in sight lately (we're elsewhere), is dead, a ghost or on a taxi, nor by an
 -- away member; the lead drops them while it's dead or flying and for a bit after it's back, landed or teleported.
 -- "W;i/n;flag;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255
@@ -25,6 +26,7 @@ local START = 1 -- seconds for a /follow to start following
 local CHUNK = 120 -- bytes of whisper text per message (fits in 255 with the signature, names and "T;Name;" wrap)
 local NEAR = 120 -- seconds since the lead was last in sight (about 100 yards) for a follow problem to be worth a warning
 local QUIET = 20 -- lead: seconds after coming back to life, releasing, landing or a loading screen without warnings
+local AFTER_COMBAT = 5 -- seconds after a fight during which a /follow that doesn't start isn't worth a warning (looting...)
 
 local function lead(self)
   local l = self:GetLead()
@@ -64,19 +66,28 @@ MF:On("AUTOFOLLOW_BEGIN", function()
   stopWatch()
 end)
 
+local combatEnd = -AFTER_COMBAT
+MF:On("PLAYER_REGEN_ENABLED", function() combatEnd = GetTime() end)
+
+-- We or the lead fight (or just did), or we cast: the MAMA macro's /cast after its /follow stops the follow, and we're
+-- only in combat once the spell lands. A /follow that doesn't start is normal then.
+local function fighting(unit)
+  return busy(unit) or GetTime() - combatEnd < AFTER_COMBAT or UnitCastingInfo("player") or UnitChannelInfo("player")
+end
+
 -- /follow (our keys and macro, or the user's own) calls the global FollowUnit: when it doesn't start following, tell
--- the lead. Not in combat (the MAMA macro is pressed all fight long, out of range is normal there), nor for ourselves
--- (the lead's window follows "player").
+-- the lead. Not around fights (the MAMA macro is pressed all fight long, out of range is normal there), nor for
+-- ourselves (the lead's window follows "player").
 local lastTry = -SPAM
 hooksecurefunc("FollowUnit", function(who)
   local self = MF
   local l = lead(self)
-  if not (self.db.followWarn and l) or self:Disabled() or self:IsAway() or busy() then return end
+  if not (self.db.followWarn and l) or self:Disabled() or self:IsAway() or fighting(self.roster[l]) then return end
   who = who and who ~= "" and who or "target"
   if who == self.myName or UnitIsUnit(who, "player") then return end
   local before = begins
   C_Timer.After(START, function()
-    if begins ~= before or following or busy() or gone("player") then return end
+    if begins ~= before or following or fighting(self.roster[l]) or gone("player") then return end
     local unit = self.roster[l]
     if not nearby(self) or (unit and gone(unit)) then
       self:Debug("/follow %s didn't start following, not telling %s: %s", who, l,
