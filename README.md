@@ -21,9 +21,12 @@ Names in Forever are `First Last` (with a space) and there is no realm part: Mam
 
 ## Install
 
-Copy the `Mama` folder to
-`World of Warcraft\_classic_beta_\Interface\AddOns\` (or run `install.bat` from a clone, adjust the path in it if
-needed), then **restart the game** (a `/reload` isn't enough the first time, key bindings are only read at startup).
+Install it with an addon manager: the [CurseForge](https://www.curseforge.com/wow/addons/mama-multiboxing) app,
+[WowUp](https://wowup.io/) or [Wago](https://addons.wago.io/). Or download the zip from the
+[GitHub releases](https://github.com/mooreatv/MAMA-multiboxing/releases) and extract it in
+`World of Warcraft\_classic_beta_\Interface\AddOns\` (it contains the `Mama` folder).
+
+Then **restart the game** (a `/reload` isn't enough the first time, key bindings are only read at startup).
 
 ## One-time setup
 
@@ -253,6 +256,8 @@ No ISBoxer team discovery (Even if it should still work, but use [WowOpenBox](ht
 
 ## Development
 
+- From a clone, `install.bat` copies the `Mama` folder to the game's AddOns folder (adjust the path in it if needed).
+
 - Releases are built by the GitHub action in `.github/workflows` using
   [BigWigsMods/packager](https://github.com/BigWigsMods/packager) and `pkgmeta.yaml` when a tag is pushed.
 
@@ -267,7 +272,7 @@ Get-ChildItem -Filter *.lua -Recurse | ForEach-Object {  C:\Users\l\AppData\Roam
 
 ## More info
 
-- Get the binary release using curse/twitch/overwolf/wowup/wago... clients https://www.curseforge.com/wow/addons/mama-multiboxing
+- CurseForge page: https://www.curseforge.com/wow/addons/mama-multiboxing
 
 - Source code is https://github.com/mooreatv/MAMA-multiboxing
 
