@@ -106,6 +106,14 @@ Follow and assist are protected actions that must come from a key press or your 
   `/mama macro reset` puts the class starter back, `/mama macro off` stops managing it. The account wide `MAMA` macro
   of older versions is deleted.
 
+### New characters
+
+A level 1 character's first login with Mama sets up, once: action bars 2-5 shown, A/D turn and Q/E strafe, autoloot,
+the `MAMA` macro on button 1 (what was there moves to the button above it) and the Classic Edit Mode layout (the rest
+of the Modern choice, like high resolution characters, is kept). Each one only if it is still at the new character
+default: bars you turned off, your own key bindings or a custom layout are left alone. `/mama setup off` turns it off,
+`/mama setup now` does it on the current character.
+
 ### Quests
 
 - Quests you accept are shared with the group, and shared quests are accepted automatically on the other windows.
@@ -211,7 +219,7 @@ remembered for that character until `/mama enable` turns it back on.
 ## Commands and options
 
 `/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
+`macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
 (`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
 mirror the lead's dialog choices, skip single option dialogs, free-for-all loot, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
 forwarding, status window, slot display at login, debug.

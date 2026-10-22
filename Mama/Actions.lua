@@ -79,6 +79,8 @@ local function charMacroIndex()
   return findMacro(base + 1, base + count)
 end
 
+function MF:MamaMacroIndex() return charMacroIndex() end
+
 local function accountMacroIndex() return findMacro(1, (GetNumMacros())) end
 
 -- The only part of the macro Mama manages: every /follow and /assist line gets the target, the rest is the user's.

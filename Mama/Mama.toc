@@ -17,6 +17,7 @@ Hash.lua
 Team.lua
 Comm.lua
 Actions.lua
+Setup.lua
 Professions.lua
 Trade.lua
 Vendor.lua
