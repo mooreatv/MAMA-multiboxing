@@ -355,11 +355,10 @@ local picks = {} -- items waiting for a click in the picker
 local picker -- the picker window, built on first use
 
 -- Quest items that don't stack (heads...) drop once per player on the quest: we only see our own copy, the others
--- have to loot theirs by hand. A guess (nothing in the API tells), good for the usual unique quest drops.
+-- have to loot theirs by hand. A guess (nothing in the API tells), good for the usual unique quest drops. Our copy
+-- can't be given away: GiveMasterLoot to someone else puts it in our bags anyway.
 local function perPlayer(it) return it.quest and it.maxStack == 1 end
 local reminders = {} -- item name -> names: per player quest items of this loot, who else must loot theirs
-local gotCopy = {} -- item name -> {name = true}: who got a per player quest item from this loot
-local toldNobody = {} -- loot slots of quest items nobody needs, already said (distribution runs again on changes)
 
 -- Who else still needs a per player quest item once m got this copy (needs: QuestNeeds), away members left out.
 local function othersNeeding(self, m, needs)
@@ -374,11 +373,7 @@ local function give(self, it, m, why, key, others)
   self:Print("loot: %s%s to %s%s", it.link, it.count > 1 and ("x" .. it.count) or "", m.name,
              why and (" (" .. why .. ")") or "")
   GiveMasterLoot(it.slot, m.index)
-  if perPlayer(it) then
-    gotCopy[it.name] = gotCopy[it.name] or {}
-    gotCopy[it.name][m.name] = true
-  end
-  if others then reminders[it.name] = #others > 0 and others or nil end
+  if others and #others > 0 then reminders[it.name] = others end
   if key then
     given[key] = given[key] or {}
     given[key][m.name] = (given[key][m.name] or 0) + 1
@@ -425,20 +420,9 @@ function MF:DistributeLoot(tries)
         local list = {}
         for n, w in pairs(needs) do list[#list + 1] = ("%s %d/%d"):format(n, w.have, w.need) end
         self:Debug("quest item %s: in our quests %s, needed by %s", it.name, tostring(known), table.concat(list, ", "))
-        if perPlayer(it) then
-          -- skip whoever already got a copy from this loot (the quest progress may not show it yet)
-          for n in pairs(gotCopy[it.name] or {}) do needs[n] = nil end
-        end
         local m, why = self:QuestItemRecipient(cands, needs)
-        if perPlayer(it) and m and m.name == self.myName then
-          -- test: give our copy to someone else, in case we then get our own (2 given instead of 1)
-          local mine = needs[self.myName]
-          needs[self.myName] = nil
-          m, why = self:QuestItemRecipient(cands, needs)
-          needs[self.myName] = mine
-          if not m then
-            for _, c in ipairs(cands) do if c.name == self.myName then m, why = c, "quest, our own copy" end end
-          end
+        if perPlayer(it) and needs[self.myName] then -- our own copy: the others loot theirs
+          for _, c in ipairs(cands) do if c.name == self.myName then m, why = c, "quest, our own copy" end end
         end
         if m then
           local w = needs[m.name]
@@ -448,8 +432,7 @@ function MF:DistributeLoot(tries)
           queue[#queue + 1] = {it = it, m = m, why = why, others = others}
         elseif not known then
           picks[#picks + 1] = it -- not one of our quests: who needs it is unknown, ask
-        elseif not toldNobody[it.slot] then
-          toldNobody[it.slot] = true
+        else
           self:Print("loot: nobody needs %s for a quest, left in the loot", it.link)
         end
       elseif not it.bindType or it.bindType == BOP then
@@ -489,8 +472,6 @@ MF:On("LOOT_CLOSED", function(self)
   local parts = {}
   for item, names in pairs(reminders) do parts[#parts + 1] = ("%s: %s"):format(item, table.concat(names, ", ")) end
   wipe(reminders)
-  wipe(gotCopy)
-  wipe(toldNobody)
   if #parts == 0 then return end
   table.sort(parts)
   local msg = "Loot your copy from the corpse, " .. table.concat(parts, "; ")
@@ -508,25 +489,7 @@ MF.messageHandlers.R = function(self, _, rest)
 end
 
 MF:On("LOOT_SLOT_CLEARED", function(self, slot)
-  self:Debug("loot slot %d cleared", slot)
   if picker and picker:IsShown() and picker.it and picker.it.slot == slot then showPick(self) end
-end)
-
--- A slot changing while the loot is open (e.g. our own copy of a per player quest item showing up after we gave the
--- first one away): distribute again.
-local rescanPending
-MF:On("LOOT_SLOT_CHANGED", function(self, slot)
-  self:Debug("loot slot %d changed: %s", slot, tostring(GetLootSlotLink(slot)))
-  if rescanPending or not lootOpen or not self.db.masterLoot or self:Disabled() or not self:IsMasterLooter() then
-    return
-  end
-  rescanPending = true
-  local function rescan()
-    if #queue > 0 then return C_Timer.After(0.3, rescan) end -- gives still going
-    rescanPending = false
-    self:DistributeLoot()
-  end
-  C_Timer.After(0.3, rescan)
 end)
 
 -- An item clicked in the loot window: the picker, unless the client shows its own candidate list.
