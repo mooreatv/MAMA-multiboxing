@@ -802,7 +802,23 @@ MF:On("PARTY_LOOT_METHOD_CHANGED", function(self)
   end)
 end)
 
-MF:Listen("LOGIN", function() lastMethod = IsInGroup() and C_PartyInfo.GetLootMethod() or nil end)
+-- New group leader that is the lead (/mama lead, Alt-L): under master loot, it becomes the master looter too (the
+-- point of changing lead is to play and loot from that window). Not on login/reload, only an actual change.
+local wasLeader
+MF:On("PARTY_LEADER_CHANGED", function(self)
+  local leader = UnitIsGroupLeader("player")
+  local became = wasLeader == false and leader
+  wasLeader = leader
+  if not became or not self.db.masterLoot or not self.db.autoFFA or self:Disabled() then return end
+  if self:GetLead() ~= self.myName or C_PartyInfo.GetLootMethod() ~= MASTER or self:IsMasterLooter() then return end
+  self:Print("we're the lead now, taking master loot")
+  C_PartyInfo.SetLootMethod(MASTER, self.myName)
+end)
+
+MF:Listen("LOGIN", function()
+  lastMethod = IsInGroup() and C_PartyInfo.GetLootMethod() or nil
+  wasLeader = UnitIsGroupLeader("player")
+end)
 
 MF:AddCommand("loot", function(self, rest)
   if rest ~= "" then self:SetOption("masterLoot", self:ParseOnOff(rest, self.db.masterLoot)) end
