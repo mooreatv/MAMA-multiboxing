@@ -29,12 +29,17 @@ function MF:RefreshRoster()
   self:Fire("TEAM_CHANGED")
 end
 
--- Explicit lead if set, otherwise whoever else leads the group. nil when we lead or are alone.
+-- Explicit lead if set, otherwise whoever else leads the group (the master when not grouped). nil when we lead or are
+-- alone.
 function MF:GetLead()
-  -- An explicit lead only counts while it is us or in our current group (it may be left over from a previous team).
+  -- An explicit lead only counts while it is us, in our current group or in our team (it may be left over from a
+  -- previous team); the team case lets the macro follow the lead while not grouped (yet).
   local lead = self.db.lead
-  if lead and (lead == self.myName or self.roster[lead]) then return lead end
+  if lead and (lead == self.myName or self.roster[lead] or self:SlotOf(lead)) then return lead end
   for _, u in ipairs(self:GroupUnits()) do if UnitIsGroupLeader(u) then return self:FullName(u) end end
+  -- Not grouped: the master (slot 1) leads until someone says otherwise.
+  local master = not IsInGroup() and self.db.slots[1]
+  if master and master ~= self.myName then return master end
   return nil
 end
 

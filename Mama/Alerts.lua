@@ -29,7 +29,7 @@ local QUIET = 20 -- lead: seconds after coming back to life, releasing, landing 
 local AFTER_COMBAT = 5 -- seconds after a fight during which a /follow that doesn't start isn't worth a warning (looting...)
 
 local function lead(self)
-  local l = self:GetLead()
+  local l = IsInGroup() and self:GetLead() -- not grouped: the lead is only for the macro and the status window
   if l and l ~= self.myName then return l end
 end
 
