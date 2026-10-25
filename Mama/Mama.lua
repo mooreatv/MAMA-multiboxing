@@ -182,7 +182,16 @@ function MF:RememberTeam()
 end
 
 -- Names in Forever are "First Last" with a space and no realm part: always treat them as opaque whole strings.
-function MF:FullName(unit) return GetUnitName(unit, true) end
+-- On retail (WOW_PROJECT_ID 1) characters can be on other realms: names are always "Name-Realm" there, like the senders of
+-- addon messages and whispers, so whispers reach the right character whatever its realm.
+local retail = WOW_PROJECT_ID == 1
+function MF:FullName(unit)
+  if not retail then return GetUnitName(unit, true) end
+  local name, realm = UnitFullName(unit)
+  if not name then return nil end
+  if not realm or realm == "" then realm = GetNormalizedRealmName() end
+  return realm and realm ~= "" and (name .. "-" .. realm) or name
+end
 
 -- Unit tokens of the other group members (not including the player).
 function MF:GroupUnits()
