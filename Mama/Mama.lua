@@ -193,6 +193,14 @@ function MF:FullName(unit)
   return realm and realm ~= "" and (name .. "-" .. realm) or name
 end
 
+-- What /follow and /assist take: on retail the realm is left out for characters on our own realm (the full name makes
+-- the command fail), kept for the other realms.
+function MF:CommandName(name)
+  if not (retail and name) then return name end
+  local short, realm = name:match("^(.-)%-([^%-]+)$")
+  return short and realm == GetNormalizedRealmName() and short or name
+end
+
 -- Unit tokens of the other group members (not including the player).
 function MF:GroupUnits()
   local others = {}

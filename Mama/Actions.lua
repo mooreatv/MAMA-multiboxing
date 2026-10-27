@@ -92,7 +92,7 @@ local function retarget(body, target)
 end
 
 -- Lead window (or no lead): follow self (harmless, no chat output) so the macro only does the rest for the lead.
-local function macroTarget(self, lead) return lead and lead ~= self.myName and lead or "player" end
+local function macroTarget(self, lead) return lead and lead ~= self.myName and self:CommandName(lead) or "player" end
 
 local function makeButton(name)
   local b = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
@@ -183,7 +183,7 @@ function MF:RefreshActions()
   end
   self.pendingRefresh = nil
   local lead = self:GetLead()
-  local target = lead and lead ~= self.myName and (self.roster[lead] or lead) or nil
+  local target = lead and lead ~= self.myName and (self.roster[lead] or self:CommandName(lead)) or nil
   local follow, assist = "", ""
   if target then
     assist = "/assist " .. target
@@ -196,7 +196,7 @@ function MF:RefreshActions()
     if count > 0 then
       local previousSlot = ((self.db.slot + count - 2) % count) + 1
       local previous = self.db.slots[previousSlot]
-      train = assist .. "\n/follow " .. (previous or "player")
+      train = assist .. "\n/follow " .. (self:CommandName(previous) or "player")
     end
   end
   local changed = setText(self.buttons.MamaFollow, follow)
