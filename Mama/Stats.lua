@@ -14,6 +14,8 @@
 -- for quest loot and only as of the last money/bag change, e.g. a quest turn-in), whispered once to each team
 -- member we first hear from directly and sent again (debounced) when they change. Remembered per faction across
 -- sessions, so characters not logged in (alts) still count, with their last known values.
+-- The hello whisper also carries the account's other characters' gold (";accountId;alliance,horde" copper, fixed for
+-- the session): the faction and grand totals then add each account once, the same in every window that heard them all.
 local _, MF = ...
 
 local DELAY = 5 -- seconds to wait after a change before telling the team (looting changes them in bursts)
@@ -45,12 +47,41 @@ end
 
 local function payload(s) return ("G;%d;%d;%d;%d"):format(s.money, s.free, s.slots, s.xp) end
 
+-- Copper of this account's other characters (those that logged in since stats exist) per faction. Fixed while we're
+-- logged in (one character per account at a time), so computed once at login.
+local others = {Alliance = 0, Horde = 0}
+
+local function cacheOthers(self)
+  others = {Alliance = 0, Horde = 0}
+  for faction, stats in pairs(self.db.stats or {}) do
+    for name, s in pairs(stats) do
+      if name ~= self.myName and self.db.chars[name] and others[faction] then
+        others[faction] = others[faction] + s.money
+      end
+    end
+  end
+end
+
+-- Random ID for this account's saved variables (to count each account once in the totals).
+local ALNUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+local function accountId(self)
+  if not self.db.accountId then
+    local t = {}
+    for i = 1, 6 do
+      local k = math.random(#ALNUM)
+      t[i] = ALNUM:sub(k, k)
+    end
+    self.db.accountId = table.concat(t)
+  end
+  return self.db.accountId
+end
+
 local lastSent
 
 function MF:SendStats(to, why)
   local p = payload(refreshOwn(self))
   if to then
-    self:SendWhisper(to, p, why)
+    self:SendWhisper(to, ("%s;%s;%d,%d"):format(p, accountId(self), others.Alliance, others.Horde), why)
   else
     lastSent = p
     self:SendTeam(p, true)
@@ -58,7 +89,7 @@ function MF:SendStats(to, why)
 end
 
 MF.messageHandlers.G = function(self, sender, rest)
-  local money, free, slots, xp = rest:match("^(%d+);(%d+);(%d+);?(%d*)$")
+  local money, free, slots, xp, tail = rest:match("^(%d+);(%d+);(%d+);(%d+)(.*)$")
   if not money then return end
   self:TeamStats()[sender] = {
     money = tonumber(money),
@@ -67,7 +98,31 @@ MF.messageHandlers.G = function(self, sender, rest)
     xp = tonumber(xp),
     t = time()
   }
+  -- Hello: the latest character of that account and its account's others (its own gold stays live in its stats).
+  local id, a, h = tail:match("^;(%w+);(%d+),(%d+)$")
+  if id then
+    self.db.accounts = self.db.accounts or {}
+    self.db.accounts[id] = {name = sender, faction = self.faction, Alliance = tonumber(a), Horde = tonumber(h)}
+  end
   self:Fire("STATS", sender)
+end
+
+-- faction -> copper of every account we know (ours live, the others' alts as of their last hello plus the sender's
+-- last stats), and the grand total.
+function MF:AllMoney()
+  local sums = {Alliance = others.Alliance, Horde = others.Horde}
+  sums[self.faction] = (sums[self.faction] or 0) + GetMoney()
+  for id, a in pairs(self.db.accounts or {}) do
+    if id ~= accountId(self) then
+      local s = self.db.stats[a.faction] and self.db.stats[a.faction][a.name]
+      sums.Alliance = sums.Alliance + a.Alliance
+      sums.Horde = sums.Horde + a.Horde
+      if s then sums[a.faction] = (sums[a.faction] or 0) + s.money end
+    end
+  end
+  local grand = 0
+  for _, sum in pairs(sums) do grand = grand + sum end
+  return sums, grand
 end
 
 local pending
@@ -86,7 +141,10 @@ end
 
 MF:On("PLAYER_MONEY", changed)
 MF:On("BAG_UPDATE_DELAYED", changed)
-MF:Listen("LOGIN", function(self) lastSent = payload(refreshOwn(self)) end)
+MF:Listen("LOGIN", function(self)
+  cacheOthers(self)
+  lastSent = payload(refreshOwn(self))
+end)
 MF:Listen("MEMBER_SEEN", function(self, name) self:SendStats(name, "hello") end)
 
 -- "12g 34s 56c" with coin colors; copper and silver are left out of large amounts.

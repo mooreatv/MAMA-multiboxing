@@ -222,6 +222,16 @@ function MF:StatsTooltip()
                               self:MoneyText(s.money), 1, 1, 1, 1, 1, 1)
   end
   GameTooltip:AddDoubleLine("All characters", self:MoneyText(total), 1, 0.82, 0, 1, 1, 1)
+  -- Every known account's characters (alts included) per faction, then the grand total.
+  local sums, grand = self:AllMoney()
+  local factions = {}
+  for faction, sum in pairs(sums) do if sum > 0 then factions[#factions + 1] = faction end end
+  table.sort(factions)
+  GameTooltip:AddLine(" ")
+  for _, faction in ipairs(factions) do
+    GameTooltip:AddDoubleLine(faction .. " accounts", self:MoneyText(sums[faction]), 1, 0.82, 0, 1, 1, 1)
+  end
+  GameTooltip:AddDoubleLine("All factions", self:MoneyText(grand), 1, 0.82, 0, 1, 1, 1)
 end
 
 local function bagsText(s)
