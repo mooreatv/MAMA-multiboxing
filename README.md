@@ -209,7 +209,7 @@ Both are on by default (Options > Alerts to the lead).
 One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
 blue grey is away (left out of the title count), `*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
 line is the team's gold; hover it for the gold and bag slots of every character of this faction you've played with
-Mama, alts included (last known values). Hover the title for all the shortcuts:
+Mama, alts included (last known values), then the gold of all the team's accounts per faction and in total. Hover the title for all the shortcuts:
 
 | Click | Action |
 |---|---|
