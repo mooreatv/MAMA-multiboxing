@@ -144,6 +144,13 @@ MF:On("ADDON_LOADED", function(self, name)
   self:LoadLog()
 end)
 
+-- Which protected function the game blamed us for (its popup doesn't say, and its text isn't in our log).
+local function blocked(self, event, addon, func)
+  if addon == addonName then self:Debug("%s: %s", event:lower(), tostring(func)) end
+end
+MF:On("ADDON_ACTION_FORBIDDEN", function(self, ...) blocked(self, "ADDON_ACTION_FORBIDDEN", ...) end)
+MF:On("ADDON_ACTION_BLOCKED", function(self, ...) blocked(self, "ADDON_ACTION_BLOCKED", ...) end)
+
 MF:On("PLAYER_LOGIN", function(self)
   self.myName = self:FullName("player")
   -- each login or /reload starts with a marker, so it's easy to see where to start copying in /mama bug

@@ -156,6 +156,41 @@ function MamaForever:ShowSlotDialog()
   e:SetFocus()
 end
 
+-- After new character setup switched the Edit Mode layout: the game menu's Logout/Exit are blocked until a reload
+-- (see Setup.lua's classicLayout). Its own frame: the slot dialog can be open at the same time.
+local reloadDialog
+function MamaForever:ShowReloadDialog()
+  local f = reloadDialog
+  if not f then
+    f = CreateFrame("Frame", "MamaForeverReloadDialog", UIParent, "BasicFrameTemplateWithInset")
+    f:SetSize(360, 110)
+    f:SetPoint("CENTER", 0, -40) -- under the slot dialog
+    f:SetFrameStrata("DIALOG")
+    f:EnableMouse(true)
+    f:SetMovable(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    tinsert(UISpecialFrames, f:GetName()) -- Escape closes it
+    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOP", 0, -5)
+    title:SetText("Mama-forever: reload needed")
+    local text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    text:SetPoint("TOPLEFT", 15, -35)
+    text:SetPoint("TOPRIGHT", -15, -35)
+    text:SetJustifyH("LEFT")
+    text:SetText(
+      "The layout changed: reload the UI, or the game menu can't log out or exit (|cFF99E5FF/reload|r later).")
+    local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    b:SetSize(100, 22)
+    b:SetPoint("BOTTOM", 0, 15)
+    b:SetText("Reload")
+    b:SetScript("OnClick", ReloadUI)
+    reloadDialog = f
+  end
+  f:Show()
+end
+
 BINDING_NAME_MAMA_INVITE = "Invite team |cFF99E5FF(/mama invite)|r"
 BINDING_NAME_MAMA_DISBAND = "Disband team |cFF99E5FF(/mama disband)|r"
 BINDING_NAME_MAMA_IDENTIFY = "Identify slot |cFF99E5FF(/mama identify)|r"

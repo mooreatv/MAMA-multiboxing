@@ -14,7 +14,7 @@ local DYNAMIC_ICON = 134400 -- question mark: the client shows the #showtooltip 
 local STARTERS = {
   DRUID = {{"Wrath"}},
   HUNTER = {pet = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = {1978}}},
-  MAGE = {{"Fireball"}},
+  MAGE = {{WOW_PROJECT_ID == 1 and "Frostbolt" or "Fireball"}}, -- retail mages start with Frostbolt
   PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = {20271}}},
   PRIEST = {{"Smite"}},
   ROGUE = {{"Sinister Strike"}},

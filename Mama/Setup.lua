@@ -120,7 +120,9 @@ local function placeMacro(done)
 end
 
 -- Only from the Modern preset: a custom layout (or Classic already) is left alone. activeLayout indexes the preset
--- layouts first, then the saved ones (see Blizzard_EditMode's UpdateLayoutInfo).
+-- layouts first, then the saved ones (see Blizzard_EditMode's UpdateLayoutInfo). Returns true when it switched:
+-- SetActiveLayout fires EDIT_MODE_LAYOUTS_UPDATED within our call, so EditModeManagerFrame's account settings get
+-- written tainted, and the game menu (CanEnterEditMode) then blocks Logout/Exit until a /reload (taint log).
 local function classicLayout(done)
   local presets = EditModePresetLayoutManager and EditModePresetLayoutManager.presetLayoutInfo
   if not presets then return end
@@ -137,6 +139,7 @@ local function classicLayout(done)
   if not (modern and classic and active == modern) then return end
   C_EditMode.SetActiveLayout(classic)
   done[#done + 1] = "Classic layout"
+  return true
 end
 
 -- force: run (again) whatever the level and whether it was already done; prints even when nothing changed.
@@ -151,13 +154,14 @@ function MF:NewCharSetup(force)
   mamaKeys(done)
   autoloot(done)
   local placed = placeMacro(done)
-  classicLayout(done)
+  local switched = classicLayout(done)
   if placed then self.db.chars[self.myName].setup = true end
   if #done > 0 then
     self:Print("new character setup: %s (/mama setup off: not for the next ones)", table.concat(done, ", "))
   elseif force then
     self:Print("new character setup: nothing to change")
   end
+  if switched then self:ShowReloadDialog() end
 end
 
 MF:Listen("LOGIN", function(self)
