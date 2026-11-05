@@ -161,13 +161,23 @@ function MF:VerifyMessage(msg, tok, channel)
   return true, payload, delta
 end
 
--- Addon messages are throttled: space our sends out a bit.
+-- Trial accounts' addon messages never reach anyone (Forever 2026-11-04: they get ours, nobody gets theirs), but
+-- they can talk in party chat: their group messages go there instead, marked, and every Mama window hides them.
+-- db.partyChat: true/false forces it on/off, nil = only on trial accounts.
+local CHAT_MARK = "MAMA~"
+function MF:PartyChat()
+  local forced = self.db and self.db.partyChat
+  if forced ~= nil then return forced end
+  return GameLimitedMode_IsActive ~= nil and GameLimitedMode_IsActive() or false
+end
+
+-- Addon messages are throttled, chat more so: space our sends out a bit.
 local nextSend = 0
 local function schedule(fn)
   if MF:Disabled() then return end
   local t = GetTime()
   local at = math.max(t, nextSend)
-  nextSend = at + 0.25
+  nextSend = at + (MF:PartyChat() and 0.5 or 0.25)
   if at <= t then
     fn()
   else
@@ -177,8 +187,20 @@ end
 
 local function groupChannel() return IsInRaid() and "RAID" or "PARTY" end
 
+-- Chat can't carry "|" as is (escape sequences): "~" -> "~t", "|" -> "~p".
+local function sendChat(msg, channel)
+  local text = CHAT_MARK .. msg:gsub("~", "~t"):gsub("|", "~p")
+  if #text > 255 then
+    MF:Debug("%s chat message not sent: too long (%d)", channel, #text)
+    return
+  end
+  local ok, err = pcall(C_ChatInfo.SendChatMessage or SendChatMessage, text, channel)
+  if not ok then MF:Debug("%s chat message not sent: %s", channel, tostring(err)) end
+end
+
 -- Sends and logs when the client didn't (throttled...): to tell our own traffic apart from server lag.
 local function send(msg, channel, to)
+  if channel ~= "WHISPER" and channel ~= "GUILD" and MF:PartyChat() then return sendChat(msg, channel) end
   local ok, r = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, to)
   if ok and (r == nil or r == true or r == 0) then return end
   local why = r -- error message, or result code
@@ -446,9 +468,8 @@ function MF:HandleInfo(sender, slot, name, flag)
   end
 end
 
-MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
-  if prefix ~= PREFIX then return end
-  self:Debug("received addon msg on %s from %s", tostring(channel), tostring(sender))
+local function receive(self, text, channel, sender, via)
+  self:Debug("received %s on %s from %s", via, tostring(channel), tostring(sender))
   if sender == self.myName then return end
   local tok = self:Token()
   if not tok then
@@ -469,7 +490,45 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end
+end
+
+MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
+  if prefix == PREFIX then receive(self, text, channel, sender, "addon msg") end
 end)
+
+local function isOurs(text)
+  return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:sub(1, #CHAT_MARK) == CHAT_MARK
+end
+
+local CHAT_EVENTS = {
+  CHAT_MSG_PARTY = "PARTY",
+  CHAT_MSG_PARTY_LEADER = "PARTY",
+  CHAT_MSG_RAID = "RAID",
+  CHAT_MSG_RAID_LEADER = "RAID"
+}
+local addFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
+for event, channel in pairs(CHAT_EVENTS) do
+  MF:OnTeam(event, function(self, text, sender)
+    if not isOurs(text) then return end
+    local msg = text:sub(#CHAT_MARK + 1):gsub("~(.)", {t = "~", p = "|"})
+    receive(self, msg, channel, sender, "chat msg")
+  end)
+  if addFilter then addFilter(event, function(_, _, text) return isOurs(text) end) end
+end
+
+MF:AddCommand("partychat", function(self, rest)
+  local arg = rest:lower()
+  if arg == "on" then
+    self.db.partyChat = true
+  elseif arg == "off" then
+    self.db.partyChat = false
+  elseif arg == "auto" then
+    self.db.partyChat = nil
+  end
+  self:Print("group messages go through %s (%s)", self:PartyChat() and "party chat" or "addon messages",
+             self.db.partyChat == nil and "auto: party chat on trial accounts" or "forced")
+end, "partychat [on|off|auto] - send group messages as hidden party chat (auto: on trial accounts, " ..
+                "whose addon messages don't arrive)")
 
 -- kind letter -> function(MF, sender, rest of payload) lives in MF.messageHandlers (defined in Mama.lua).
 MF.messageHandlers.I = function(self, sender, rest)
