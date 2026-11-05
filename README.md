@@ -24,7 +24,7 @@ Names in Forever are `First Last` (with a space) and there is no realm part: Mam
 Install it with an addon manager: the [CurseForge](https://www.curseforge.com/wow/addons/mama-multiboxing) app,
 [WowUp](https://wowup.io/) or [Wago](https://addons.wago.io/). Or download the zip from the
 [GitHub releases](https://github.com/mooreatv/MAMA-multiboxing/releases) and extract it in
-`World of Warcraft\_forever_\Interface\AddOns\` (`_classic_beta_` for the beta; it contains the `Mama` folder).
+`World of Warcraft\_forever_\Interface\AddOns\` (it contains the `Mama` folder).
 
 ## One-time setup
 
