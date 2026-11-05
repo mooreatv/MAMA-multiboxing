@@ -23,7 +23,7 @@ local taxiNames = {} -- node index -> name, cached when the map opens
 local hooked = {} -- reward buttons whose clicks we already track
 local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the quest complete dialog we have open
 -- Popups never mirrored: about the lead's own items or session, or answered elsewhere (team invites, Team.lua).
-local noPopup = {CAMP = true, QUIT = true, PARTY_INVITE = true}
+local noPopup = {CAMP = true, QUIT = true, PARTY_INVITE = true, DANGEROUS_SCRIPTS_WARNING = true}
 local function mirroredPopup(which) return which ~= "" and not noPopup[which] and not which:find("^DELETE") end
 
 local function setPicked(index, source)
