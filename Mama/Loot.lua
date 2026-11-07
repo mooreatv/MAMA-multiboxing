@@ -354,21 +354,28 @@ end
 
 local LINE = Enum.TooltipDataLineType or {}
 
+-- Unit GUIDs and tooltip lines can be secret values (in dungeons): they can't be compared nor used as strings.
+local function secret(v) return issecretvalue and issecretvalue(v) end
+
 -- Reads quest progress tooltip lines into needs (full name -> {have, need}, for those not done with item yet): a quest
 -- title (our own objectives follow), a first name (that party member's objectives follow), objectives
 -- ("2/8 Tough Wolf Meat"). Returns whether any objective was for item.
 local function readProgress(self, lines, item, needs, byName)
   local who, known = nil, false
   for _, line in ipairs(lines or {}) do
-    local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-    local have, need = text:match("(%d+)%s*/%s*(%d+)")
-    if line.type ~= nil and line.type == LINE.QuestTitle then
-      who = self.myName
-    elseif not have and byName[text] then
-      who = self:FullName(byName[text])
-    elseif have and objectiveItem(text) == item then
-      known = true
-      if who and tonumber(have) < tonumber(need) then needs[who] = {have = tonumber(have), need = tonumber(need)} end
+    if not secret(line.leftText) and not secret(line.type) then
+      local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+      local have, need = text:match("(%d+)%s*/%s*(%d+)")
+      if line.type ~= nil and line.type == LINE.QuestTitle then
+        who = self.myName
+      elseif not have and byName[text] then
+        who = self:FullName(byName[text])
+      elseif have and objectiveItem(text) == item then
+        known = true
+        if who and tonumber(have) < tonumber(need) then
+          needs[who] = {have = tonumber(have), need = tonumber(need)}
+        end
+      end
     end
   end
   return known
@@ -377,24 +384,39 @@ end
 -- The unit being looted, for its tooltip (it lists the party's progress on its quests, even ours we don't have).
 local function lootUnit(slot)
   local guid = GetLootSourceInfo and GetLootSourceInfo(slot)
+  if secret(guid) then guid = nil end
   for _, u in ipairs({"softinteract", "mouseover", "target"}) do
-    if UnitExists(u) and UnitIsDead(u) and (not guid or UnitGUID(u) == guid) then return u end
+    if UnitExists(u) and UnitIsDead(u) then
+      local g = UnitGUID(u)
+      if not secret(g) and (not guid or g == guid) then return u end
+    end
   end
 end
 
 -- Full name -> {have, need} for the group members (us included) on a quest needing this item, not done with it yet:
 -- from the looted unit's tooltip, and the party progress of the quests in our log. Also returns whether any of those
 -- has the item at all (if not, we can't know who needs it).
+-- Each source on its own: one that fails (logged) doesn't stop the others.
 function MF:QuestNeeds(item, slot)
   local byName, needs, known = unitsByName(self), {}, false
-  local u = lootUnit(slot)
-  local data = u and C_TooltipInfo.GetUnit(u)
-  if data and readProgress(self, data.lines, item, needs, byName) then known = true end
-  self:Debug("quest item %s: looted unit %s, on its tooltip %s", item, tostring(u), tostring(known))
+  local ok, err = pcall(function()
+    local u = lootUnit(slot)
+    local data = u and C_TooltipInfo.GetUnit(u)
+    if data and readProgress(self, data.lines, item, needs, byName) then known = true end
+    self:Debug("quest item %s: looted unit %s, on its tooltip %s", item, tostring(u), tostring(known))
+  end)
+  if not ok then self:Debug("quest item %s: looted unit's tooltip failed: %s", item, tostring(err)) end
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
     local info = C_QuestLog.GetInfo(i)
-    data = info and not info.isHeader and C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
-    if data and readProgress(self, data.lines, item, needs, byName) then known = true end
+    if info and not info.isHeader then
+      ok, err = pcall(function()
+        local data = C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
+        if data and readProgress(self, data.lines, item, needs, byName) then known = true end
+      end)
+      if not ok then
+        self:Debug("quest item %s: quest %s progress failed: %s", item, tostring(info.questID), tostring(err))
+      end
+    end
   end
   return needs, known
 end
@@ -474,11 +496,35 @@ local function othersNeeding(self, m, needs)
   return names
 end
 
+local showPick
+local GIVE_CHECK, GIVE_TRIES = 1.5, 2
+
+-- Whether the item left the loot window; if not, gives it again (candidates looked up again), then the picker.
+local function checkGiven(self, it, m, tries)
+  if not lootOpen or GetLootSlotLink(it.slot) ~= it.link then return end
+  local c
+  for _, x in ipairs(candidates(self, it.slot)) do if x.name == m.name then c = x end end
+  if c and tries < GIVE_TRIES then
+    self:Debug("loot: %s still in slot %d, giving it to %s again", it.link, it.slot, m.name)
+    GiveMasterLoot(it.slot, c.index)
+    C_Timer.After(GIVE_CHECK, function() self:Call(checkGiven, self, it, c, tries + 1) end)
+    return
+  end
+  self:Print("loot: couldn't give %s to %s, pick who gets it", it.link, m.name)
+  picks[#picks + 1] = it
+  if picker and picker:IsShown() and picker.it then
+    picker.left:SetText(#picks .. " more after this one")
+  else
+    showPick(self)
+  end
+end
+
 local function give(self, it, m, why, key, others)
   if GetLootSlotLink(it.slot) ~= it.link then return false end -- already looted
   self:Print("loot: %s%s to %s%s", it.link, it.count > 1 and ("x" .. it.count) or "", m.name,
              why and (" (" .. why .. ")") or "")
   GiveMasterLoot(it.slot, m.index)
+  C_Timer.After(GIVE_CHECK, function() self:Call(checkGiven, self, it, m, 1) end)
   if others and #others > 0 then reminders[it.name] = others end
   if (it.maxStack or 1) > 1 and not it.quest then -- the next ones of this item go to the same stack
     self.db.lootKeepers = self.db.lootKeepers or {}
@@ -500,11 +546,9 @@ end
 local function giveNext(self)
   local g = table.remove(queue, 1)
   if not g or not lootOpen then return end
-  give(self, g.it, g.m, g.why, g.key, g.others)
-  C_Timer.After(GIVE_DELAY, function() giveNext(self) end)
+  self:Call(give, self, g.it, g.m, g.why, g.key, g.others)
+  C_Timer.After(GIVE_DELAY, function() self:Call(giveNext, self) end)
 end
-
-local showPick
 
 -- Gives the automatic items, queues the BoP ones (and the ones not cached after a few tries) for the picker.
 function MF:DistributeLoot(tries)
@@ -520,7 +564,7 @@ function MF:DistributeLoot(tries)
     end
   end
   if uncached and tries < 3 then
-    C_Timer.After(0.3, function() self:DistributeLoot(tries + 1) end)
+    C_Timer.After(0.3, function() self:Call(self.DistributeLoot, self, tries + 1) end)
     return
   end
   wipe(queue)
@@ -536,7 +580,7 @@ function MF:DistributeLoot(tries)
     queue[#queue + 1] = g
   end
   local questNeeds = {} -- item name -> QuestNeeds, counting what we give now (the next slot may hold the same item)
-  for _, it in ipairs(items) do
+  local function decide(it)
     local cands = candidates(self, it.slot)
     self:Debug("loot slot %d %s bind %s, %d candidates", it.slot, it.link, tostring(it.bindType), #cands)
     if #cands > 0 then
@@ -570,18 +614,57 @@ function MF:DistributeLoot(tries)
       end
     end
   end
+  for _, it in ipairs(items) do
+    local ok, err = pcall(decide, it)
+    if not ok then -- one item failing doesn't stop the others: that one waits in the picker
+      self:Debug("loot slot %d %s failed: %s", it.slot, it.link, tostring(err))
+      picks[#picks + 1] = it
+    end
+  end
   giveNext(self)
   if #picks > 0 then showPick(self) end
 end
 
-MF:On("LOOT_OPENED", function(self)
+-- Autoloot leftovers: when several windows loot the same corpse (per player quest drops under master loot), the
+-- game's autoloot sometimes leaves an item there. On the other windows (not the master looter's), once the client or
+-- an autoloot addon had its go: loot what is still there and not locked (the master looter's items are), a few tries.
+local LEFTOVER_DELAY, LEFTOVER_TRIES = 0.5, 5
+local lootSerial = 0 -- per loot window: a closed one's tries stop
+
+local function lootLeftovers(self, serial, tries)
+  if not lootOpen or serial ~= lootSerial then return end
+  local left = false
+  for slot = 1, GetNumLootItems() do
+    if LootSlotHasItem(slot) and not select(6, GetLootSlotInfo(slot)) then
+      self:Debug("loot: autoloot left %s in slot %d, looting it (try %d)", GetLootSlotLink(slot) or "money", slot, tries)
+      LootSlot(slot)
+      left = true
+    end
+  end
+  if left and tries < LEFTOVER_TRIES then
+    C_Timer.After(LEFTOVER_DELAY, function() self:Call(lootLeftovers, self, serial, tries + 1) end)
+  end
+end
+
+MF:On("LOOT_OPENED", function(self, autoLoot)
   lootOpen = true
-  if not self.db.masterLoot or self:Disabled() or not self:IsMasterLooter() then return end
+  lootSerial = lootSerial + 1
+  if not self.db.masterLoot or self:Disabled() or C_PartyInfo.GetLootMethod() ~= MASTER then return end
+  if not self:IsMasterLooter() then
+    local serial = lootSerial
+    if autoLoot then C_Timer.After(LEFTOVER_DELAY, function() self:Call(lootLeftovers, self, serial, 1) end) end
+    return
+  end
   if IsModifierKeyDown() then -- this loot by hand (clicking an item still shows the picker)
     self:Debug("modifier held: no automatic loot distribution")
     return
   end
-  C_Timer.After(0.1, function() self:DistributeLoot() end)
+  C_Timer.After(0.1, function() self:Call(self.DistributeLoot, self) end)
+end)
+
+-- Why a give didn't happen (bags full, too far...), for /mama bug.
+MF:On("UI_ERROR_MESSAGE", function(self, _, msg)
+  if lootOpen and not secret(msg) then self:Debug("loot: game error %s", tostring(msg)) end
 end)
 
 local function lootAlert(self, msg)
