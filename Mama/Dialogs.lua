@@ -26,11 +26,16 @@ local reward = {questID = 0, items = {}, picked = 0} -- reward choices of the qu
 local noPopup = {CAMP = true, QUIT = true, PARTY_INVITE = true, DANGEROUS_SCRIPTS_WARNING = true}
 local function mirroredPopup(which) return which ~= "" and not noPopup[which] and not which:find("^DELETE") end
 
+local function rewardLink(index) return GetQuestItemLink("choice", index) or ("item " .. tostring(reward.items[index])) end
+
 local function setPicked(index, source)
   if not index or index < 1 or index > #reward.items or reward.picked == index then return end
   reward.picked = index
-  MF:Debug("dialog: reward %d selected here (item %s, via %s): it will be kept, not the lead's", index,
-           tostring(reward.items[index]), source)
+  MF:Debug("dialog: reward %d selected here (item %s, via %s)", index, tostring(reward.items[index]), source)
+  -- in chat: a pick this doesn't show up for (quest UI replacement addon...) isn't seen and the lead's would be used
+  if MF.db.autoDialog and IsInGroup() and MF:GetLead() ~= MF.myName then
+    MF:Print("reward %s selected here: kept when the lead turns in", rewardLink(index))
+  end
 end
 
 -- Every clickable reward choice under the quest frame, whatever it is named in this client.
@@ -206,6 +211,10 @@ local function questReward(self, id, text, p)
   end
   self:Debug("dialog: turning in quest %d with reward %d: %s (hand-picked %d, lead's item %d)", id, choice,
              picked > 0 and choice == picked and "YOUR selection" or "following the lead", picked, want)
+  if #reward.items > 1 then
+    self:Print("turning in quest %d with %s (%s)", id, rewardLink(choice),
+               picked > 0 and choice == picked and "selected here" or "the lead's pick: none selected here")
+  end
   GetQuestReward(choice)
   return true
 end
