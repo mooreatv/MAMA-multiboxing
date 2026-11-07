@@ -110,7 +110,24 @@ function MF:On(event, fn, first)
   table.insert(handlers[event], first and 1 or #handlers[event] + 1, fn)
 end
 
-frame:SetScript("OnEvent", function(_, event, ...) for _, fn in ipairs(handlers[event]) do fn(MF, ...) end end)
+-- An error in our code goes in the log (once per message, with where, for /mama bug: most players have script errors
+-- off), then to the game's error handler as usual. The event's other handlers still run.
+local errorsSeen = {}
+local function onError(err)
+  local msg = tostring(err)
+  if not errorsSeen[msg] then
+    errorsSeen[msg] = true
+    MF:Debug("error: %s; %s", msg, (debugstack(2, 4, 0) or ""):gsub("\n", " | "))
+  end
+  geterrorhandler()(err)
+  return err
+end
+
+-- Calls fn(...), errors logged (see onError): for timers. Returns whether it worked.
+function MF:Call(fn, ...) return (xpcall(fn, onError, ...)) end
+
+frame:SetScript("OnEvent",
+                function(_, event, ...) for _, fn in ipairs(handlers[event]) do xpcall(fn, onError, MF, ...) end end)
 
 -- Same as On, for team automation that must not happen while this character has Mama turned off.
 function MF:OnTeam(event, fn) self:On(event, function(mf, ...) if not mf:Disabled() then fn(mf, ...) end end) end
