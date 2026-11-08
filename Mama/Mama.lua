@@ -268,7 +268,8 @@ end
 
 function MF:Help()
   self:Print("commands (|cFF99E5FF/mama <command>|r):")
-  for _, name in ipairs(self.commandOrder) do print("  |cFF99E5FF/mama|r " .. self.commands[name].help) end
+  -- "|" doubled: chat reads "|r", "|n"... as escape sequences ("off|reset" showed as "offeset")
+  for _, name in ipairs(self.commandOrder) do print("  |cFF99E5FF/mama|r " .. self.commands[name].help:gsub("|", "||")) end
 end
 
 SLASH_MAMA1 = "/mama"
