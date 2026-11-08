@@ -288,7 +288,7 @@ MF:AddCommand("back", function(self, rest)
   elseif rest ~= "" then
     names = awayTargets(self, rest)
   else
-    self:Print("usage: /mama back N ...|Full Name|all")
+    self:Print("usage: /mama back N ...||Full Name||all") -- "||": "|a" is an escape
     return
   end
   changeAway(self, names, false)

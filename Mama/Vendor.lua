@@ -494,7 +494,7 @@ MF:AddCommand("vendor", function(self, rest)
   elseif cmd == "sell" then
     self:SellItems(true)
   else
-    self:Print("usage: /mama vendor [add|remove <item>|greys [on|off]|list|sync|sell]")
+    self:Print("usage: /mama vendor [add||remove <item>||greys [on||off]||list||sync||sell]") -- "||": "|r" is an escape
   end
 end, "vendor [add|remove <item>|greys [on|off]|list|sync|sell] - items sold when opening a merchant, synced " ..
                 "with the team (no argument: the window)")
