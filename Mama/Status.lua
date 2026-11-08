@@ -215,6 +215,28 @@ local function ApplyScale(scale)
   frame:SetScale(scale)
 end
 
+-- Status window position and scale for the settings sync: "point,relativePoint,x,y,scale".
+function MF:StatusLayout()
+  if not frame then return "" end
+  local p, _, rp, x, y = frame:GetPoint()
+  return ("%s,%s,%.1f,%.1f,%.3f"):format(p, rp, x, y, self.db.statusScale or 1)
+end
+
+-- Applies a StatusLayout() string: true if the window moved or was rescaled, false if not, nil + reason.
+function MF:SetStatusLayout(text)
+  local p, rp, x, y, scale = text:match("^(%u+),(%u+),(%-?[%d.]+),(%-?[%d.]+),([%d.]+)$")
+  if not p then return nil, "bad window layout" end
+  if not frame then return nil, "no status window yet" end
+  if InCombatLockdown() then return nil, "in combat" end
+  x, y, scale = tonumber(x), tonumber(y), tonumber(scale)
+  if text == self:StatusLayout() then return false end
+  ApplyScale(scale)
+  frame:ClearAllPoints()
+  frame:SetPoint(p, UIParent, rp, x, y)
+  self.db.statusPos = {p, rp, x, y}
+  return true
+end
+
 local function MakeFrame()
   local f = CreateFrame("Frame", "MamaForeverStatus", UIParent, "BackdropTemplate")
   f:SetSize(WIDTH, 40)

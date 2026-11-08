@@ -193,8 +193,8 @@ local function sendButton(panel, anchor)
   b:SetScript("OnEnter", function(btn)
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:SetText("Send settings to team")
-    GameTooltip:AddLine("Copy this window's options and trade categories to the other windows of the " .. "group.", 1,
-                        1, 1, true)
+    GameTooltip:AddLine("Copy this window's options, trade categories and status window position and size to the " ..
+                          "other windows of the group.", 1, 1, 1, true)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
@@ -265,8 +265,9 @@ MF:Listen("LOGIN", function(self)
 end)
 
 -- Settings sync, to the group only (whispering offline slots would only produce "no player named" errors):
--- "O;<options>;<trade categories>", one 0/1 character per setting in SYNCED / MF.tradeCategories order. All windows
--- run the same addon version; a length mismatch (different versions) is reported and ignored.
+-- "O;<options>;<trade categories>;<status window layout>", one 0/1 character per setting in SYNCED /
+-- MF.tradeCategories order, then MF:StatusLayout(). All windows run the same addon version; a length mismatch
+-- (different versions) is reported and ignored.
 function MF:SendSettings()
   if not IsInGroup() then
     self:Error("settings are sent to the group: invite the team first")
@@ -275,12 +276,12 @@ function MF:SendSettings()
   local o, c = {}, {}
   for i, key in ipairs(SYNCED) do o[i] = self.db[key] and "1" or "0" end
   for i, cat in ipairs(self.tradeCategories) do c[i] = self:TradeCategoryOn(cat[1], cat[3]) and "1" or "0" end
-  self:SendGroup("O;" .. table.concat(o) .. ";" .. table.concat(c))
+  self:SendGroup("O;" .. table.concat(o) .. ";" .. table.concat(c) .. ";" .. self:StatusLayout())
   self:Print("sent this window's settings to the group")
 end
 
 MF.messageHandlers.O = function(self, sender, rest)
-  local o, c = rest:match("^([01]*);([01]*)$")
+  local o, c, window = rest:match("^([01]*);([01]*);?(.*)$")
   if not o or #o ~= #SYNCED or #c ~= #self.tradeCategories then
     self:Error("ignoring settings from %s: not the same Mama version as this window", sender)
     return
@@ -300,6 +301,14 @@ MF.messageHandlers.O = function(self, sender, rest)
       self.db.tradeCats = self.db.tradeCats or {}
       self.db.tradeCats[cat[1]] = value
       changed[#changed + 1] = "trade " .. cat[1] .. (value and " on" or " off")
+    end
+  end
+  if window ~= "" then
+    local moved, err = self:SetStatusLayout(window)
+    if moved then
+      changed[#changed + 1] = "status window position"
+    elseif err then
+      changed[#changed + 1] = "status window position not applied (" .. err .. ")"
     end
   end
   self:Print("%s sent their settings: %s", sender, #changed > 0 and table.concat(changed, ", ") or "nothing changed")
