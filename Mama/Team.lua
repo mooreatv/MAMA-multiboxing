@@ -372,7 +372,9 @@ local function processInvites(tries)
         return
       end
       MF:Print("inviting %s", name)
-      invitedAt[name] = GetTime()
+      -- not the login's blind invites to members not heard from (likely not logged in yet: they get invited when
+      -- they announce themselves)
+      if MF.online[name] then invitedAt[name] = GetTime() end
       C_PartyInfo.InviteUnit(name)
       inviteCount = inviteCount + 1
       tries = 0
