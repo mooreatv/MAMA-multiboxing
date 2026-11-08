@@ -161,45 +161,119 @@ function MF:VerifyMessage(msg, tok, channel)
   return true, payload, delta
 end
 
--- Addon messages are throttled: space our sends out a bit.
-local nextSend = 0
-local function schedule(fn)
-  if MF:Disabled() then return end
-  local t = GetTime()
-  local at = math.max(t, nextSend)
-  nextSend = at + 0.25
-  if at <= t then
-    fn()
+-- Addon messages are throttled per prefix (a burst of about 10, then about 1 per second; the client drops the rest,
+-- e.g. a reload's hellos and relays): one queue, sends 0.25s apart, and a throttled message is tried again every 1s
+-- (re-signed) before the rest of the queue goes. fn(tries, job) sends one message (tries = earlier throttled attempts).
+local SPACING, RETRY_WAIT, MAX_TRIES = 0.25, 1, 30
+local queue, nextSend, pumping = {}, 0, false
+local throttled -- set by send() for the job being run
+
+local function pump()
+  local job = queue[1]
+  if not job or MF:Disabled() then
+    wipe(queue)
+    pumping = false
+    return
+  end
+  throttled = false
+  MF:Call(job.fn, job.tries, job)
+  nextSend = GetTime() + SPACING
+  if throttled and job.tries < MAX_TRIES then
+    if job.tries == 0 then MF:Debug("throttled: retrying every %ds", RETRY_WAIT) end
+    job.tries = job.tries + 1
+    C_Timer.After(RETRY_WAIT, pump)
+    return
+  end
+  if throttled then
+    MF:Debug("throttled message dropped after %d tries", job.tries + 1)
+  elseif job.tries > 0 then
+    MF:Debug("throttled message sent after %d retries", job.tries)
+  end
+  table.remove(queue, 1)
+  if queue[1] then
+    C_Timer.After(SPACING, pump)
   else
-    C_Timer.After(at - t, function() if not MF:Disabled() then fn() end end)
+    pumping = false
+  end
+end
+
+local function schedule(fn, job)
+  if MF:Disabled() then return end
+  job = job or {}
+  job.fn, job.tries = fn, 0
+  queue[#queue + 1] = job
+  if pumping then return end
+  pumping = true
+  local wait = nextSend - GetTime()
+  if wait > 0 then
+    C_Timer.After(wait, pump)
+  else
+    pump()
   end
 end
 
 local function groupChannel() return IsInRaid() and "RAID" or "PARTY" end
 
--- Sends and logs when the client didn't (throttled...): to tell our own traffic apart from server lag.
+-- Sends and logs when the client didn't: to tell our own traffic apart from server lag. Throttled = retried by pump().
 local function send(msg, channel, to)
   local ok, r = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, to)
   if ok and (r == nil or r == true or r == 0) then return end
   local why = r -- error message, or result code
   if ok then for k, v in pairs(Enum.SendAddonMessageResult or {}) do if v == r then why = k end end end
-  MF:Debug("%s message not sent: %s", channel, tostring(why))
+  if why == "AddonMessageThrottle" or why == "ChannelThrottle" then
+    throttled = true
+  else
+    MF:Debug("%s message not sent: %s", channel, tostring(why))
+  end
 end
 
--- why: optional reason, shown in the debug log
-function MF:SendWhisper(to, payload, why)
+-- Payload fine for the whole group to see (team info: slots, away list, professions, stats) for a grouped member:
+-- merged with the same queued payload for other grouped members into one plain group message (all the answers to a
+-- reload's announces, or several reloads at once, go out once). Held GATHER seconds first, for the other askers.
+local GATHER = 0.5
+local gathering = {} -- payload -> job not queued yet
+local function sendShared(self, tok, to, payload, why)
+  local pending = gathering[payload]
+  if not pending then for _, job in ipairs(queue) do if job.shared == payload then pending = job end end end
+  if pending then
+    for _, n in ipairs(pending.names) do if n == to then return end end
+    pending.names[#pending.names + 1] = to
+    return
+  end
+  local job = {shared = payload, names = {to}}
+  gathering[payload] = job
+  C_Timer.After(GATHER, function()
+    gathering[payload] = nil
+    schedule(job.send, job)
+  end)
+  job.send = function(tries)
+    if IsInGroup() then
+      if tries == 0 then self:Debug("group msg for %s: %s%s", table.concat(job.names, ", "), payload, why) end
+      send(self:SecureMessage(payload, tok), groupChannel())
+      return
+    end
+    for _, name in ipairs(job.names) do -- left the group while queued
+      if tries == 0 then self:Debug("whisper to %s: %s%s", name, payload, why) end
+      send(self:SecureMessage(payload, tok), "WHISPER", name)
+    end
+  end
+end
+
+-- why: optional reason, shown in the debug log; groupOK: see sendShared.
+function MF:SendWhisper(to, payload, why, groupOK)
   local tok = self:Token()
   if not tok or to == self.myName then return end
   why = why and (" (" .. why .. ")") or ""
-  schedule(function()
+  if groupOK and self.roster[to] and IsInGroup() then return sendShared(self, tok, to, payload, why) end
+  schedule(function(tries)
     if self.roster[to] and IsInGroup() then
       local msg = self:SecureMessage("T;" .. to .. ";" .. payload, tok)
-      self:Debug("group msg to %s: %s%s", to, payload, why)
+      if tries == 0 then self:Debug("group msg to %s: %s%s", to, payload, why) end
       send(msg, groupChannel())
       return
     end
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("whisper to %s: %s%s", to, payload, why)
+    if tries == 0 then self:Debug("whisper to %s: %s%s", to, payload, why) end
     send(msg, "WHISPER", to)
   end)
 end
@@ -207,9 +281,9 @@ end
 function MF:SendGroup(payload)
   local tok = self:Token()
   if not tok or not IsInGroup() then return end
-  schedule(function()
+  schedule(function(tries)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("group msg: %s", payload)
+    if tries == 0 then self:Debug("group msg: %s", payload) end
     send(msg, groupChannel())
   end)
 end
@@ -217,7 +291,9 @@ end
 local function infoPayload(slot, name, flag) return ("I;%d;%s;%d"):format(slot, name, flag) end
 
 -- flag 1 means "please tell me about yourself too", flag 0 is a plain information message.
-function MF:SendInfo(to, flag, why) self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag), why) end
+function MF:SendInfo(to, flag, why, groupOK)
+  self:SendWhisper(to, infoPayload(self.db.slot, self.myName, flag), why, groupOK)
+end
 
 local MAX_PER_SLOT = 3 -- most recent characters of this faction to try per slot
 local HISTORY_DELAY = 3 -- seconds the current slot owners get to answer before we try older characters
@@ -267,9 +343,9 @@ end
 function MF:Broadcast(payload)
   local tok = self:Token()
   if not tok or not IsInGuild() then return end
-  schedule(function()
+  schedule(function(tries)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("broadcast on GUILD: %s", payload)
+    if tries == 0 then self:Debug("broadcast on GUILD: %s", payload) end
     send(msg, "GUILD")
   end)
 end
@@ -410,6 +486,21 @@ end
 local ANSWER_EVERY = 60
 local answered = {} -- name -> {at = GetTime(), slot = slot} of our last answer to their announce
 
+local RELAY_DELAY = 2
+local function relay(self, name, slot, recorded)
+  if not self:IsMaster() or self:Disabled() then return end
+  for s, n in pairs(self.db.slots) do
+    if n ~= name and n ~= self.myName and not (self.roster[name] and self.roster[n] and self.online[n]) then
+      if recorded and self.online[n] then
+        self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name, true)
+      end
+      self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them", true)
+    end
+  end
+  -- the away members too, they may have changed while it was offline (empty list: nobody is away)
+  self:SendWhisper(name, "X;" .. table.concat(self:AwayNames(), ","), "relaying away members", true)
+end
+
 function MF:HandleInfo(sender, slot, name, flag)
   local direct = sender == name -- otherwise it's relayed by the master
   local recorded = self:RecordMember(slot, name, sender)
@@ -428,44 +519,42 @@ function MF:HandleInfo(sender, slot, name, flag)
   end
   if asking then answered[name] = {at = GetTime(), slot = slot} end
   if asking then self:Fire("MEMBER_SEEN", name) end
-  if asking and flag == 1 then self:SendInfo(name, 0, "answering their announce") end
+  if asking and flag == 1 then self:SendInfo(name, 0, "answering their announce", true) end
   if self.db.autoInvite and self:IsMaster() and not self.roster[name] then
     self:Debug("%s isn't grouped with us: scheduling invites", name)
     self:ScheduleInvites()
   end
-  -- the master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply
+  -- The master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply: who holds
+  -- each slot (only the slot map: relayed info marks nobody online), and the newcomer to the members it may not reach.
+  -- Not between two members grouped with us that we heard from: they get each other's info directly on the group.
+  -- RELAY_DELAY later, so the others of a whole team reload are heard from first.
   if self:IsMaster() and asking then
-    for s, n in pairs(self.db.slots) do
-      if n ~= name and n ~= self.myName then
-        if recorded and self.online[n] then self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name) end
-        self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them")
-      end
-    end
-    -- the away members too, they may have changed while it was offline (empty list: nobody is away)
-    self:SendWhisper(name, "X;" .. table.concat(self:AwayNames(), ","), "relaying away members")
+    C_Timer.After(RELAY_DELAY, function() self:Call(relay, self, name, slot, recorded) end)
   end
 end
 
 MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
-  if prefix ~= PREFIX then return end
-  self:Debug("received addon msg on %s from %s", tostring(channel), tostring(sender))
-  if sender == self.myName then return end
+  if prefix ~= PREFIX or sender == self.myName then return end
   local tok = self:Token()
   if not tok then
-    self:Debug("ignoring message from %s: we have no token", tostring(sender))
+    self:Debug("ignoring %s message from %s: we have no token", tostring(channel), tostring(sender))
     return
   end
   local ok, payload, delay = self:VerifyMessage(text, tok, channel)
   if not ok then
-    self:Debug("ignoring message from %s: %s", tostring(sender), payload)
+    self:Debug("ignoring %s message from %s: %s", tostring(channel), tostring(sender), payload)
     return
   end
   local to, inner = payload:match("^T;([^;]+);(.*)$")
   if to then
-    if to ~= self.myName then return end -- addressed to another member of the group
+    if to ~= self.myName then -- addressed to another member of the group
+      self:Debug("group msg from %s for %s: %s", tostring(sender), to, inner:match("^(%a)") or "?")
+      return
+    end
     payload = inner
   end
-  self:Debug("valid message from %s%s: %s", tostring(sender), delay > 1 and (" (%ds late)"):format(delay) or "", payload)
+  self:Debug("%s msg from %s%s: %s", to and "group" or tostring(channel), tostring(sender),
+             delay > 1 and (" (%ds late)"):format(delay) or "", payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end

@@ -81,7 +81,7 @@ local lastSent
 function MF:SendStats(to, why)
   local p = payload(refreshOwn(self))
   if to then
-    self:SendWhisper(to, ("%s;%s;%d,%d"):format(p, accountId(self), others.Alliance, others.Horde), why)
+    self:SendWhisper(to, ("%s;%s;%d,%d"):format(p, accountId(self), others.Alliance, others.Horde), why, true)
   else
     lastSent = p
     self:SendTeam(p, true)

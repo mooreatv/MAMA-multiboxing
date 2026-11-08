@@ -116,7 +116,7 @@ function MF:SendProfessions(to, why)
   lastSignature = signature(profs)
   local payload = "P;" .. encode(profs)
   if to then
-    self:SendWhisper(to, payload, why)
+    self:SendWhisper(to, payload, why, true)
   else
     self:SendTeam(payload)
   end
