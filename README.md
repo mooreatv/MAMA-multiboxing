@@ -217,7 +217,7 @@ view, hover the title for it). Click the `?` on the title (or Alt+Middle, or `/m
 | Left | invite the team |
 | Middle | disband (leader uninvites the team, others leave) |
 | Right | options |
-| Shift+Left / Shift+Right | toggle party/raid / toggle compact view |
+| Shift+Left / Shift+Right | toggle party/raid / toggle compact view (also in the options, sent with the settings) |
 | Shift+Middle | show the big slot number, class and name |
 | Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
 | Alt+Left | resend our info to the team |

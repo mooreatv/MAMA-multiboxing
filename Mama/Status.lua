@@ -190,8 +190,7 @@ local function WindowClick(button)
     if ctrl then
       MF:ShowTokenDialog(MF.db.slot == 1 and "copy" or "paste")
     elseif shift then
-      MF.db.compact = not MF.db.compact
-      MF:RefreshStatus()
+      MF:SetOption("compact", not MF.db.compact) -- refreshes the window (Options.lua)
     elseif alt then
       MF:TeamComplete()
     else
