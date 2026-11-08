@@ -236,6 +236,7 @@ local function sendShared(self, tok, to, payload, why)
   local pending = gathering[payload]
   if not pending then for _, job in ipairs(queue) do if job.shared == payload then pending = job end end end
   if pending then
+    for _, n in ipairs(pending.names) do if n == to then return end end
     pending.names[#pending.names + 1] = to
     return
   end
