@@ -229,15 +229,23 @@ end
 
 -- Payload fine for the whole group to see (team info: slots, away list, professions, stats) for a grouped member:
 -- merged with the same queued payload for other grouped members into one plain group message (all the answers to a
--- reload's announces, or several reloads at once, go out once).
+-- reload's announces, or several reloads at once, go out once). Held GATHER seconds first, for the other askers.
+local GATHER = 0.5
+local gathering = {} -- payload -> job not queued yet
 local function sendShared(self, tok, to, payload, why)
-  for _, job in ipairs(queue) do
-    if job.shared == payload then
-      job.names[#job.names + 1] = to
-      return
-    end
+  local pending = gathering[payload]
+  if not pending then for _, job in ipairs(queue) do if job.shared == payload then pending = job end end end
+  if pending then
+    pending.names[#pending.names + 1] = to
+    return
   end
-  schedule(function(tries, job)
+  local job = {shared = payload, names = {to}}
+  gathering[payload] = job
+  C_Timer.After(GATHER, function()
+    gathering[payload] = nil
+    schedule(job.send, job)
+  end)
+  job.send = function(tries)
     if IsInGroup() then
       if tries == 0 then self:Debug("group msg for %s: %s%s", table.concat(job.names, ", "), payload, why) end
       send(self:SecureMessage(payload, tok), groupChannel())
@@ -247,7 +255,7 @@ local function sendShared(self, tok, to, payload, why)
       if tries == 0 then self:Debug("whisper to %s: %s%s", name, payload, why) end
       send(self:SecureMessage(payload, tok), "WHISPER", name)
     end
-  end, {shared = payload, names = {to}})
+  end
 end
 
 -- why: optional reason, shown in the debug log; groupOK: see sendShared.
@@ -477,6 +485,21 @@ end
 local ANSWER_EVERY = 60
 local answered = {} -- name -> {at = GetTime(), slot = slot} of our last answer to their announce
 
+local RELAY_DELAY = 2
+local function relay(self, name, slot, recorded)
+  if not self:IsMaster() or self:Disabled() then return end
+  for s, n in pairs(self.db.slots) do
+    if n ~= name and n ~= self.myName and not (self.roster[name] and self.roster[n] and self.online[n]) then
+      if recorded and self.online[n] then
+        self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name, true)
+      end
+      self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them", true)
+    end
+  end
+  -- the away members too, they may have changed while it was offline (empty list: nobody is away)
+  self:SendWhisper(name, "X;" .. table.concat(self:AwayNames(), ","), "relaying away members", true)
+end
+
 function MF:HandleInfo(sender, slot, name, flag)
   local direct = sender == name -- otherwise it's relayed by the master
   local recorded = self:RecordMember(slot, name, sender)
@@ -503,17 +526,9 @@ function MF:HandleInfo(sender, slot, name, flag)
   -- The master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply: who holds
   -- each slot (only the slot map: relayed info marks nobody online), and the newcomer to the members it may not reach.
   -- Not between two members grouped with us that we heard from: they get each other's info directly on the group.
+  -- RELAY_DELAY later, so the others of a whole team reload are heard from first.
   if self:IsMaster() and asking then
-    for s, n in pairs(self.db.slots) do
-      if n ~= name and n ~= self.myName and not (self.roster[name] and self.roster[n] and self.online[n]) then
-        if recorded and self.online[n] then
-          self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name, true)
-        end
-        self:SendWhisper(name, infoPayload(s, n, 0), "relaying slot " .. s .. " to them", true)
-      end
-    end
-    -- the away members too, they may have changed while it was offline (empty list: nobody is away)
-    self:SendWhisper(name, "X;" .. table.concat(self:AwayNames(), ","), "relaying away members", true)
+    C_Timer.After(RELAY_DELAY, function() self:Call(relay, self, name, slot, recorded) end)
   end
 end
 
