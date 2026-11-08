@@ -28,7 +28,13 @@ local SECTIONS = {
     "Group", {
       {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
       {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."}
-    }, {{"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}}, {
+    }, {
+      {"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}, {
+        "compact", "Compact status window",
+        "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
+          "Also Shift+Right click on the window."
+      }
+    }, {
       {
         "autoFFA", teamLootLabel,
         "When you lead a full team group, set loot to free for all, or to master loot by the lead when master loot " ..
@@ -304,6 +310,8 @@ MF:Listen("OPTION_CHANGED", function(self, key)
   Refresh() -- also when changed by a command while the page is open
   if key == "macro" or key == "showStatus" then
     self:RefreshActions()
+    self:RefreshStatus()
+  elseif key == "compact" then
     self:RefreshStatus()
   end
 end)

@@ -13,29 +13,100 @@
 -- Team status window: one row per slot with name and link state, plus mouse shortcuts for team management.
 -- Colors: white = this window, green = in our group, yellow = linked but not grouped, grey = not seen yet,
 -- blue grey = away (Alt+left click on its row toggles it), left out of the header count.
--- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's).
--- Window clicks (header or any row, see the tooltip): invite, disband, party/raid, auto invite, resync,
--- token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the title).
--- Plain click on a row targets it (or invites it if not grouped).
+-- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's;
+-- in compact view the title tooltip has it).
+-- Window clicks (header or any row, listed in the help window: "?" on the header, Alt+Middle or /mama clicks):
+-- invite, disband, party/raid, auto invite, resync, token dialog, options, compact view, identify, turn Mama off/on
+-- for this character ("disabled" in the title). Plain click on a row targets it (or invites it if not grouped).
 local _, MF = ...
 
-local ROW_H, WIDTH = 18, 210
+local ROW_H, WIDTH, HELP_W = 18, 210, 14
 local rows = {}
 local frame
 local pendingRefresh
 
-local TIP = table.concat({
-  "|cFF99E5FFLeft click|r invite the team",
-  "|cFF99E5FFMiddle click|r disband (leader uninvites the team, others leave)", "|cFF99E5FFRight click|r options",
-  "|cFF99E5FFShift left|r toggle party/raid", "|cFF99E5FFShift right|r toggle compact view",
-  "|cFF99E5FFShift middle|r identify this window (big slot number)",
-  "|cFF99E5FFCtrl middle|r turn Mama off/on for this character", "|cFF99E5FFCtrl left|r toggle auto invite",
-  "|cFF99E5FFCtrl right|r show/paste the team token", "|cFF99E5FFAlt left|r resend our info to the team",
-  "|cFF99E5FFAlt left|r on a row: that member is away/back (no invites, follow alerts, quest or dialog sync)",
-  "|cFF99E5FFAlt right|r team is complete (forget slots that aren't here)",
-  "|cFF99E5FFMousewheel|r resize, |cFF99E5FFdrag|r the header to move",
-  "On a row: left click targets (or invites if not in group), right click unit menu."
-}, "\n")
+local KEY = "|cFF99E5FF%s|r"
+
+-- Help window grid: one line per mouse button, one column per modifier.
+local CLICK_COLUMNS = {"", "Plain", "Shift", "Ctrl", "Alt"}
+local CLICK_ROWS = {
+  {"Left", "Invite the team", "Party / raid", "Auto invite on/off", "Resend our info to the team"},
+  {"Right", "Options", "Compact view", "Show / paste the team token", "Team complete (forget slots that aren't here)"},
+  {
+    "Middle", "Disband (leader uninvites the team, others leave)", "Big slot number", "Mama off/on for this character",
+    "This help"
+  }
+}
+local HELP_NOTES = {
+  {
+    "On a member row", ("%s target it (invite it when not grouped), %s its unit menu, %s away/back (no invites, " ..
+      "follow alerts, quest or dialog sync). Other clicks: same as the title."):format(KEY:format("Left"),
+                                                                                       KEY:format("Right"),
+                                                                                       KEY:format("Alt+Left"))
+  }, {
+    "Window", ("%s the title to move, %s to resize. Hover the bottom line (the title in compact view) for every " ..
+      "character's gold and free bag slots."):format(KEY:format("Drag"), KEY:format("Mouse wheel"))
+  }
+}
+
+local helpFrame
+local function BuildHelp()
+  local f = CreateFrame("Frame", "MamaForeverClickHelp", UIParent, "BasicFrameTemplateWithInset")
+  f:SetFrameStrata("DIALOG")
+  f:SetPoint("CENTER", 0, 100)
+  f:EnableMouse(true)
+  f:SetMovable(true)
+  f:SetClampedToScreen(true)
+  f:RegisterForDrag("LeftButton")
+  f:SetScript("OnDragStart", f.StartMoving)
+  f:SetScript("OnDragStop", f.StopMovingOrSizing)
+  tinsert(UISpecialFrames, f:GetName()) -- Escape closes it
+  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  title:SetPoint("TOP", 0, -5)
+  title:SetText("Mama status window: mouse shortcuts")
+  local PAD, FIRST, COL, GAP = 16, 60, 120, 8
+  local width = PAD * 2 + FIRST + COL * (#CLICK_COLUMNS - 1)
+  local y = -36
+  local function line(cells, header)
+    local h = 0
+    local x = PAD
+    for i, text in ipairs(cells) do
+      local w = i == 1 and FIRST or COL
+      local fs = f:CreateFontString(nil, "OVERLAY",
+                                    (header or i == 1) and "GameFontNormalSmall" or "GameFontHighlightSmall")
+      fs:SetPoint("TOPLEFT", x, y)
+      fs:SetWidth(w - GAP)
+      fs:SetJustifyH("LEFT")
+      fs:SetText(text)
+      h = math.max(h, fs:GetStringHeight())
+      x = x + w
+    end
+    y = y - h - GAP
+  end
+  line(CLICK_COLUMNS, true)
+  for _, cells in ipairs(CLICK_ROWS) do line(cells) end
+  for _, note in ipairs(HELP_NOTES) do
+    y = y - 4
+    local head = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    head:SetPoint("TOPLEFT", PAD, y)
+    head:SetText(note[1])
+    y = y - head:GetStringHeight() - 4
+    local body = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    body:SetPoint("TOPLEFT", PAD, y)
+    body:SetWidth(width - PAD * 2)
+    body:SetJustifyH("LEFT")
+    body:SetText(note[2])
+    y = y - body:GetStringHeight() - GAP
+  end
+  f:SetSize(width, 12 - y)
+  return f
+end
+
+-- Toggles the mouse shortcuts window.
+function MF:ShowClickHelp()
+  helpFrame = helpFrame or BuildHelp()
+  helpFrame:SetShown(not helpFrame:IsShown())
+end
 
 local function expectedCount()
   local n = 0
@@ -119,8 +190,7 @@ local function WindowClick(button)
     if ctrl then
       MF:ShowTokenDialog(MF.db.slot == 1 and "copy" or "paste")
     elseif shift then
-      MF.db.compact = not MF.db.compact
-      MF:RefreshStatus()
+      MF:SetOption("compact", not MF.db.compact) -- refreshes the window (Options.lua)
     elseif alt then
       MF:TeamComplete()
     else
@@ -131,6 +201,8 @@ local function WindowClick(button)
       MF:ToggleDisabled()
     elseif shift then
       MF:Identify()
+    elseif alt then
+      MF:ShowClickHelp()
     else
       MF:Disband()
     end
@@ -182,12 +254,35 @@ local function MakeFrame()
   end)
   header:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Mama-forever team")
-    GameTooltip:AddLine(TIP, 1, 1, 1, true)
+    GameTooltip:AddLine(("Mama team: %d of %d grouped"):format(f.grouped or 0, f.counted or 0))
+    GameTooltip:AddLine(("%s invite, %s options, %s or %s all the shortcuts"):format(KEY:format("Left"),
+                                                                                     KEY:format("Right"),
+                                                                                     KEY:format("?"),
+                                                                                     KEY:format("Alt+Middle")), 1, 1, 1,
+                        true)
+    if MF.db.compact then -- the gold footer is hidden
+      GameTooltip:AddLine(" ")
+      MF:StatsTooltip()
+    end
     GameTooltip:Show()
   end)
   header:SetScript("OnLeave", GameTooltip_Hide)
   f.header = header
+
+  local help = CreateFrame("Button", nil, header)
+  help:SetSize(HELP_W, ROW_H)
+  help:SetPoint("RIGHT", -2, 0)
+  help:SetNormalFontObject("GameFontNormalSmall")
+  help:SetHighlightFontObject("GameFontHighlightSmall")
+  help:SetText("?")
+  help:RegisterForClicks("AnyUp")
+  help:SetScript("OnClick", function() MF:ShowClickHelp() end)
+  help:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Mouse shortcuts")
+    GameTooltip:Show()
+  end)
+  help:SetScript("OnLeave", GameTooltip_Hide)
 
   local footer = CreateFrame("Frame", nil, f)
   footer:SetHeight(ROW_H)
@@ -294,15 +389,11 @@ local function GetRow(i)
     if s then
       GameTooltip:AddLine(("%s, %d/%d bag slots free"):format(MF:MoneyText(s.money), s.free, s.slots), 0.8, 0.8, 0.8)
     end
-    if self.unit then
-      GameTooltip:AddLine("|cFF99E5FFLeft click|r target, |cFF99E5FFright click|r unit menu", 1, 1, 1)
-    elseif self.fullName then
-      GameTooltip:AddLine("|cFF99E5FFLeft click|r to invite", 1, 1, 1)
+    if self.fullName then
+      GameTooltip:AddLine(KEY:format("Alt+Left") .. " away/back", 1, 1, 1)
     else
-      GameTooltip:AddLine("Run |cFF99E5FF/mama s " .. self.slot .. "|r in that window", 1, 1, 1)
+      GameTooltip:AddLine("Run " .. KEY:format("/mama s " .. self.slot) .. " in that window", 1, 1, 1)
     end
-    if self.fullName then GameTooltip:AddLine("|cFF99E5FFAlt left click|r away/back", 1, 1, 1) end
-    GameTooltip:AddLine("Other clicks: see the header tooltip", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
@@ -341,11 +432,12 @@ function MF:RefreshStatus()
     row:SetShown(not self.db.compact)
   end
   for i = n + 1, #rows do rows[i]:Hide() end
+  frame.grouped, frame.counted = grouped, counted
   local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, counted)
   if self:Disabled() then count = count .. " |cFFFF3333disabled|r" end
   if self.db.compact then
     frame.header.text:SetText(table.concat(compact, " ") .. " " .. count)
-    frame:SetSize(math.max(60, frame.header.text:GetStringWidth() + 14), ROW_H + 2)
+    frame:SetSize(math.max(60, frame.header.text:GetStringWidth() + 14 + HELP_W), ROW_H + 2)
   else
     frame.header.text:SetText("Mama team  " .. count)
     frame:SetSize(WIDTH, ROW_H * (n + 2) + 2)
@@ -378,4 +470,6 @@ MF:AddCommand("ui", function(self, rest)
   self:SetOption("showStatus", self:ParseOnOff(rest, self.db.showStatus))
   self:Print("status window is now %s", self.db.showStatus and "shown" or "hidden")
   self:RefreshStatus()
-end, "ui [on|off] - show or hide the team status window (hover it for all the mouse shortcuts)")
+end, "ui [on|off] - show or hide the team status window (\"?\" on its title for the mouse shortcuts)")
+MF:AddCommand("clicks", function(self) self:ShowClickHelp() end,
+              "clicks - show or hide the status window's mouse shortcuts")

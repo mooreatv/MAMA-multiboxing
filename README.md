@@ -209,19 +209,21 @@ Both are on by default (Options > Alerts to the lead).
 One row per slot. White is this window, green is in the group, yellow is online but not grouped, grey is not seen yet,
 blue grey is away (left out of the title count), `*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
 line is the team's gold; hover it for the gold and bag slots of every character of this faction you've played with
-Mama, alts included (last known values), then the gold of all the team's accounts per faction and in total. Hover the title for all the shortcuts:
+Mama, alts included (last known values), then the gold of all the team's accounts per faction and in total (in compact
+view, hover the title for it). Click the `?` on the title (or Alt+Middle, or `/mama clicks`) for all the shortcuts:
 
 | Click | Action |
 |---|---|
 | Left | invite the team |
 | Middle | disband (leader uninvites the team, others leave) |
 | Right | options |
-| Shift+Left / Shift+Right | toggle party/raid / toggle compact view |
+| Shift+Left / Shift+Right | toggle party/raid / toggle compact view (also in the options, sent with the settings) |
 | Shift+Middle | show the big slot number, class and name |
 | Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
 | Alt+Left | resend our info to the team |
 | Ctrl+Middle | turn Mama off/on for this character (see below) |
 | Alt+Right | mark the team complete (forget slots that aren't here) |
+| Alt+Middle | show the mouse shortcuts |
 | Mouse wheel / drag title | resize / move |
 
 On a row: left click targets the character (or invites it when not grouped), right click opens its unit menu,
