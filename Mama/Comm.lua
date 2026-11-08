@@ -161,29 +161,68 @@ function MF:VerifyMessage(msg, tok, channel)
   return true, payload, delta
 end
 
--- Addon messages are throttled: space our sends out a bit.
-local nextSend = 0
+-- Addon messages are throttled per prefix (a burst of about 10, then about 1 per second; the client drops the rest,
+-- e.g. a reload's hellos and relays): one queue, sends 0.25s apart, and a throttled message is tried again every 1s
+-- (re-signed) before the rest of the queue goes. fn(tries) sends one message (tries = earlier throttled attempts).
+local SPACING, RETRY_WAIT, MAX_TRIES = 0.25, 1, 30
+local queue, nextSend, pumping = {}, 0, false
+local throttled -- set by send() for the job being run
+
+local function pump()
+  local job = queue[1]
+  if not job or MF:Disabled() then
+    wipe(queue)
+    pumping = false
+    return
+  end
+  throttled = false
+  MF:Call(job.fn, job.tries)
+  nextSend = GetTime() + SPACING
+  if throttled and job.tries < MAX_TRIES then
+    if job.tries == 0 then MF:Debug("throttled: retrying every %ds", RETRY_WAIT) end
+    job.tries = job.tries + 1
+    C_Timer.After(RETRY_WAIT, pump)
+    return
+  end
+  if throttled then
+    MF:Debug("throttled message dropped after %d tries", job.tries + 1)
+  elseif job.tries > 0 then
+    MF:Debug("throttled message sent after %d retries", job.tries)
+  end
+  table.remove(queue, 1)
+  if queue[1] then
+    C_Timer.After(SPACING, pump)
+  else
+    pumping = false
+  end
+end
+
 local function schedule(fn)
   if MF:Disabled() then return end
-  local t = GetTime()
-  local at = math.max(t, nextSend)
-  nextSend = at + 0.25
-  if at <= t then
-    fn()
+  queue[#queue + 1] = {fn = fn, tries = 0}
+  if pumping then return end
+  pumping = true
+  local wait = nextSend - GetTime()
+  if wait > 0 then
+    C_Timer.After(wait, pump)
   else
-    C_Timer.After(at - t, function() if not MF:Disabled() then fn() end end)
+    pump()
   end
 end
 
 local function groupChannel() return IsInRaid() and "RAID" or "PARTY" end
 
--- Sends and logs when the client didn't (throttled...): to tell our own traffic apart from server lag.
+-- Sends and logs when the client didn't: to tell our own traffic apart from server lag. Throttled = retried by pump().
 local function send(msg, channel, to)
   local ok, r = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, to)
   if ok and (r == nil or r == true or r == 0) then return end
   local why = r -- error message, or result code
   if ok then for k, v in pairs(Enum.SendAddonMessageResult or {}) do if v == r then why = k end end end
-  MF:Debug("%s message not sent: %s", channel, tostring(why))
+  if why == "AddonMessageThrottle" or why == "ChannelThrottle" then
+    throttled = true
+  else
+    MF:Debug("%s message not sent: %s", channel, tostring(why))
+  end
 end
 
 -- why: optional reason, shown in the debug log
@@ -191,15 +230,15 @@ function MF:SendWhisper(to, payload, why)
   local tok = self:Token()
   if not tok or to == self.myName then return end
   why = why and (" (" .. why .. ")") or ""
-  schedule(function()
+  schedule(function(tries)
     if self.roster[to] and IsInGroup() then
       local msg = self:SecureMessage("T;" .. to .. ";" .. payload, tok)
-      self:Debug("group msg to %s: %s%s", to, payload, why)
+      if tries == 0 then self:Debug("group msg to %s: %s%s", to, payload, why) end
       send(msg, groupChannel())
       return
     end
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("whisper to %s: %s%s", to, payload, why)
+    if tries == 0 then self:Debug("whisper to %s: %s%s", to, payload, why) end
     send(msg, "WHISPER", to)
   end)
 end
@@ -207,9 +246,9 @@ end
 function MF:SendGroup(payload)
   local tok = self:Token()
   if not tok or not IsInGroup() then return end
-  schedule(function()
+  schedule(function(tries)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("group msg: %s", payload)
+    if tries == 0 then self:Debug("group msg: %s", payload) end
     send(msg, groupChannel())
   end)
 end
@@ -267,9 +306,9 @@ end
 function MF:Broadcast(payload)
   local tok = self:Token()
   if not tok or not IsInGuild() then return end
-  schedule(function()
+  schedule(function(tries)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    self:Debug("broadcast on GUILD: %s", payload)
+    if tries == 0 then self:Debug("broadcast on GUILD: %s", payload) end
     send(msg, "GUILD")
   end)
 end
@@ -447,25 +486,24 @@ function MF:HandleInfo(sender, slot, name, flag)
 end
 
 MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
-  if prefix ~= PREFIX then return end
-  self:Debug("received addon msg on %s from %s", tostring(channel), tostring(sender))
-  if sender == self.myName then return end
+  if prefix ~= PREFIX or sender == self.myName then return end
   local tok = self:Token()
   if not tok then
-    self:Debug("ignoring message from %s: we have no token", tostring(sender))
+    self:Debug("ignoring %s message from %s: we have no token", tostring(channel), tostring(sender))
     return
   end
   local ok, payload, delay = self:VerifyMessage(text, tok, channel)
   if not ok then
-    self:Debug("ignoring message from %s: %s", tostring(sender), payload)
+    self:Debug("ignoring %s message from %s: %s", tostring(channel), tostring(sender), payload)
     return
   end
   local to, inner = payload:match("^T;([^;]+);(.*)$")
   if to then
-    if to ~= self.myName then return end -- addressed to another member of the group
+    if to ~= self.myName then return end -- addressed to another member of the group, not logged
     payload = inner
   end
-  self:Debug("valid message from %s%s: %s", tostring(sender), delay > 1 and (" (%ds late)"):format(delay) or "", payload)
+  self:Debug("%s msg from %s%s: %s", to and "group" or tostring(channel), tostring(sender),
+             delay > 1 and (" (%ds late)"):format(delay) or "", payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
   if handler then handler(self, sender, rest) end
