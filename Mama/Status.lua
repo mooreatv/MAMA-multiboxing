@@ -321,7 +321,7 @@ local function MakeFrame()
   return f
 end
 
--- Every character of this faction we know the gold of (alts included), richest first.
+-- Every character of this faction we know the gold of: the team by slot, then the others (alts) richest first.
 function MF:StatsTooltip()
   GameTooltip:AddLine("Gold and free bag slots")
   local names, total = {}, 0
@@ -329,7 +329,13 @@ function MF:StatsTooltip()
     names[#names + 1] = name
     total = total + s.money
   end
-  table.sort(names, function(a, b) return self:StatsOf(a).money > self:StatsOf(b).money end)
+  table.sort(names, function(a, b)
+    local sa, sb = self:SlotOf(a), self:SlotOf(b)
+    if sa or sb then return sb == nil or (sa ~= nil and sa < sb) end
+    local ma, mb = self:StatsOf(a).money, self:StatsOf(b).money
+    if ma ~= mb then return ma > mb end
+    return a < b
+  end)
   for _, name in ipairs(names) do
     local s = self:StatsOf(name)
     local live = name == self.myName or self.online[name] or self.roster[name]
