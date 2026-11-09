@@ -357,28 +357,32 @@ local LINE = Enum.TooltipDataLineType or {}
 -- Unit GUIDs and tooltip lines can be secret values (in dungeons): they can't be compared nor used as strings.
 local function secret(v) return issecretvalue and issecretvalue(v) end
 
--- Reads quest progress tooltip lines into needs (full name -> {have, need}, for those not done with item yet): a quest
--- title (our own objectives follow), a first name (that party member's objectives follow), objectives
--- ("2/8 Tough Wolf Meat"). Returns whether any objective was for item.
-local function readProgress(self, lines, item, needs, byName)
-  local who, known = nil, false
+-- Reads quest progress tooltip lines into p (see QuestProgress): a quest title (our own objectives follow), a first
+-- name (that party member's objectives follow), objectives ("2/8 Tough Wolf Meat"). quest: the title until a title
+-- line. Objectives already in p are kept (they count what this loot gives).
+local function readProgress(self, lines, p, quest)
+  local who
   for _, line in ipairs(lines or {}) do
     if not secret(line.leftText) and not secret(line.type) then
       local text = (line.leftText or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
       local have, need = text:match("(%d+)%s*/%s*(%d+)")
+      local obj = have and objectiveItem(text)
       if line.type ~= nil and line.type == LINE.QuestTitle then
-        who = self.myName
-      elseif not have and byName[text] then
-        who = self:FullName(byName[text])
-      elseif have and objectiveItem(text) == item then
-        known = true
-        if who and tonumber(have) < tonumber(need) then
-          needs[who] = {have = tonumber(have), need = tonumber(need)}
+        quest, who = text, self.myName
+      elseif not have and p.byName[text] then
+        who = self:FullName(p.byName[text])
+      elseif obj then
+        p.items[obj] = true
+        if who then
+          quest = quest or "?" -- a member's objectives without a title line
+          p.quests[quest] = p.quests[quest] or {}
+          local q = p.quests[quest][who] or {}
+          p.quests[quest][who] = q
+          q[obj] = q[obj] or {have = tonumber(have), need = tonumber(need), quest = q}
         end
       end
     end
   end
-  return known
 end
 
 -- The unit being looted, for its tooltip (it lists the party's progress on its quests, even ours we don't have).
@@ -393,32 +397,71 @@ local function lootUnit(slot)
   end
 end
 
--- Full name -> {have, need} for the group members (us included) on a quest needing this item, not done with it yet:
--- from the looted unit's tooltip, and the party progress of the quests in our log. Also returns whether any of those
--- has the item at all (if not, we can't know who needs it).
+-- The group's quest progress (us included), from the party progress of the quests in our log: quests = quest title ->
+-- full name -> objective -> {have, need, quest = that name's objectives}; items = objectives seen at all. Kept for a
+-- whole loot window, counting what it gives (the next slots may hold the same item, or the quest's other one).
 -- Each source on its own: one that fails (logged) doesn't stop the others.
-function MF:QuestNeeds(item, slot)
-  local byName, needs, known = unitsByName(self), {}, false
-  local ok, err = pcall(function()
-    local u = lootUnit(slot)
-    local data = u and C_TooltipInfo.GetUnit(u)
-    if data and readProgress(self, data.lines, item, needs, byName) then known = true end
-    self:Debug("quest item %s: looted unit %s, on its tooltip %s", item, tostring(u), tostring(known))
-  end)
-  if not ok then self:Debug("quest item %s: looted unit's tooltip failed: %s", item, tostring(err)) end
+function MF:QuestProgress()
+  local p = {quests = {}, items = {}, byName = unitsByName(self)}
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
     local info = C_QuestLog.GetInfo(i)
     if info and not info.isHeader then
-      ok, err = pcall(function()
+      local ok, err = pcall(function()
         local data = C_TooltipInfo.GetQuestPartyProgress(info.questID, true)
-        if data and readProgress(self, data.lines, item, needs, byName) then known = true end
+        if data then readProgress(self, data.lines, p, info.title) end
       end)
-      if not ok then
-        self:Debug("quest item %s: quest %s progress failed: %s", item, tostring(info.questID), tostring(err))
-      end
+      if not ok then self:Debug("quest %s progress failed: %s", tostring(info.questID), tostring(err)) end
     end
   end
-  return needs, known
+  return p
+end
+
+-- Full name -> {have, need, quest} for the group members on a quest needing this item, not done with it yet: from p
+-- (QuestProgress, a new one if nil) and the looted unit's tooltip (it lists the party's progress on its quests, even
+-- ours we don't have). Also returns whether any of those has the item at all (if not, we can't know who needs it).
+function MF:QuestNeeds(item, slot, p)
+  p = p or self:QuestProgress()
+  local ok, err = pcall(function()
+    local u = lootUnit(slot)
+    local data = u and C_TooltipInfo.GetUnit(u)
+    self:Debug("quest item %s: looted unit %s", item, tostring(u))
+    if not data then return end
+    local t = {quests = {}, items = p.items, byName = p.byName}
+    readProgress(self, data.lines, t)
+    -- only the objectives p doesn't have yet for that member (titles may not match our log's)
+    local function has(who, obj) for _, q in pairs(p.quests) do if q[who] and q[who][obj] then return true end end end
+    for title, q in pairs(t.quests) do
+      for who, objs in pairs(q) do
+        for obj, o in pairs(objs) do
+          if not has(who, obj) then
+            p.quests[title] = p.quests[title] or {}
+            local mine = p.quests[title][who] or {}
+            p.quests[title][who] = mine
+            mine[obj] = {have = o.have, need = o.need, quest = mine}
+          end
+        end
+      end
+    end
+  end)
+  if not ok then self:Debug("quest item %s: looted unit's tooltip failed: %s", item, tostring(err)) end
+  local needs = {}
+  for _, q in pairs(p.quests) do
+    for who, objs in pairs(q) do
+      local w = objs[item]
+      if w and w.have < w.need and not needs[who] then needs[who] = w end
+    end
+  end
+  return needs, p.items[item] or false
+end
+
+-- How much of the quest this objective is part of is done (all its objectives, for that member), 0 to 1.
+local function questDone(w)
+  local have, need = 0, 0
+  for _, o in pairs(w.quest) do
+    have = have + math.min(o.have, o.need)
+    need = need + o.need
+  end
+  return need > 0 and have / need or 0
 end
 
 -- xp in the current level: ours, the others' from their stats (sent after money/bag changes, turn-ins included).
@@ -437,14 +480,28 @@ local function behind(self, a, b)
   return bySlot(a, b)
 end
 
+local CLOSE = 0.05 -- of a level's xp: candidates this close to the furthest behind count as level with them
+
 -- The candidate who still needs this quest item and is furthest behind (so they finish the quest first), and the
--- reason. nil: nobody needs it. needs: from QuestNeeds.
+-- reason; among those about level with them, the one furthest along the quest (all its objectives: one member gets
+-- both items of a two item quest, it gets done instead of half done on two). nil: nobody needs it. needs: QuestNeeds.
 function MF:QuestItemRecipient(cands, needs)
-  local best
-  for _, c in ipairs(cands) do if needs[c.name] and (not best or behind(self, c, best)) then best = c end end
-  if not best then return end
+  local last
+  for _, c in ipairs(cands) do if needs[c.name] and (not last or behind(self, c, last)) then last = c end end
+  if not last then return end
+  local scale = UnitXPMax("player") -- the others' xp to level isn't known: ours as the scale
+  local best, bestDone, close = nil, 0, 0
+  for _, c in ipairs(cands) do
+    local w = needs[c.name]
+    if w and (c.level - last.level) * scale + xpOf(self, c.name) - xpOf(self, last.name) <= CLOSE * scale then
+      close = close + 1
+      local done = questDone(w)
+      if not best or done > bestDone or (done == bestDone and behind(self, c, best)) then best, bestDone = c, done end
+    end
+  end
   local w = needs[best.name]
-  return best, ("quest %d/%d, furthest behind"):format(w.have, w.need)
+  if close == 1 then return best, ("quest %d/%d, furthest behind"):format(w.have, w.need) end
+  return best, ("quest %d/%d, %d%% done, furthest along"):format(w.have, w.need, math.floor(bestDone * 100))
 end
 
 -- What the picker shows next to each candidate (needs, known: QuestNeeds for a quest item).
@@ -455,8 +512,8 @@ local function noteFor(self, it, m, needs, known)
   end
   if needs then
     local w = needs[m.name]
-    parts[#parts + 1] = w and ("quest %d/%d"):format(w.have, w.need) or (known and "doesn't need it") or
-                          "quest progress unknown"
+    parts[#parts + 1] = w and ("quest %d/%d, %d%% done"):format(w.have, w.need, math.floor(questDone(w) * 100)) or
+                          (known and "doesn't need it") or "quest progress unknown"
   end
   local f = fit(it, m.class or "", m.level)
   if f then parts[#parts + 1] = fitText(it, f) end
@@ -579,16 +636,18 @@ function MF:DistributeLoot(tries)
     if not stacks then reserved[g.m.name] = (reserved[g.m.name] or 0) + 1 end
     queue[#queue + 1] = g
   end
-  local questNeeds = {} -- item name -> QuestNeeds, counting what we give now (the next slot may hold the same item)
+  local progress -- QuestProgress, counting what we give now
   local function decide(it)
     local cands = candidates(self, it.slot)
     self:Debug("loot slot %d %s bind %s, %d candidates", it.slot, it.link, tostring(it.bindType), #cands)
     if #cands > 0 then
       if it.quest then
-        if not questNeeds[it.name] then questNeeds[it.name] = {self:QuestNeeds(it.name, it.slot)} end
-        local needs, known = questNeeds[it.name][1], questNeeds[it.name][2]
+        progress = progress or self:QuestProgress()
+        local needs, known = self:QuestNeeds(it.name, it.slot, progress)
         local list = {}
-        for n, w in pairs(needs) do list[#list + 1] = ("%s %d/%d"):format(n, w.have, w.need) end
+        for n, w in pairs(needs) do
+          list[#list + 1] = ("%s %d/%d (%d%%)"):format(n, w.have, w.need, math.floor(questDone(w) * 100))
+        end
         self:Debug("quest item %s: in our quests %s, needed by %s", it.name, tostring(known), table.concat(list, ", "))
         local m, why = self:QuestItemRecipient(cands, needs)
         if perPlayer(it) and needs[self.myName] then -- our own copy: the others loot theirs
@@ -598,7 +657,6 @@ function MF:DistributeLoot(tries)
           local w = needs[m.name]
           local stacks = (it.maxStack or 1) > 1 and w.have > 0
           w.have = w.have + it.count
-          if w.have >= w.need then needs[m.name] = nil end
           local others = perPlayer(it) and othersNeeding(self, m, needs) or nil
           enqueue({it = it, m = m, why = why, others = others}, stacks)
         elseif not known then

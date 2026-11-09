@@ -164,6 +164,7 @@ read_globals = {
   "SetLootThreshold",
   "UnitName",
   "UnitXP",
+  "UnitXPMax",
   "C_TooltipInfo",
   "GetLootSourceInfo",
   "UnitIsDead",
