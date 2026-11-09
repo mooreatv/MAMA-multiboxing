@@ -495,8 +495,8 @@ function MF:PartyToggle()
 end
 
 -- Merge and split: every window acts on its own part, so the key binding pressed on all windows at once is quick.
--- Done on slot 1 only (status window click), slot 1 whispers the other groups' first slots ("M;r" / "M;s"), which can
--- take a minute or two to arrive; a group's first slot whispers "M;d" back once its group is disbanded for the merge.
+-- Done on slot 1 only (status window click): a merge whispers the other groups' first slots ("M;r"), which can take a
+-- minute or two to arrive, and they whisper "M;d" back once their group is disbanded; a split goes to the team ("M;s").
 
 -- The first slot of every group but ours (split by db.groupSize, whatever our mode).
 local function otherLeads(self)
@@ -505,10 +505,6 @@ local function otherLeads(self)
     if s > 1 and (s - 1) % n == 0 and name ~= self.myName then list[#list + 1] = name end
   end
   return list
-end
-
-local function tellLeads(self, what, why)
-  for _, name in ipairs(otherLeads(self)) do self:SendWhisper(name, "M;" .. what, why) end
 end
 
 local function groupedWithOutsiders(self)
@@ -521,7 +517,7 @@ function MF:MergeGroups(fromSlot1)
   setGroupMode(self, "raid")
   if self.db.slot == 1 then
     self:Print("merging the groups into one raid")
-    tellLeads(self, "r", "merging the groups")
+    for _, name in ipairs(otherLeads(self)) do self:SendWhisper(name, "M;r", "merging the groups") end
     -- invites the others once they left their group (quick with the key binding on all windows; else on their "M;d")
     C_Timer.After(2, function() if self:GroupMode() == "raid" then self:InviteMissing(false, true) end end)
     return
@@ -554,19 +550,23 @@ local function settleSplit(self, tries)
   end
 end
 
--- Groups of db.groupSize: the group leader uninvites the other groups' members, they leave a group led by another
--- group's member; each group's first slot then invites its group.
+-- Groups of db.groupSize: members leave a group led by another group's member, the group leader then uninvites the
+-- other groups' members still there (windows with Mama off); each group's first slot then invites its group. Slot 1
+-- tells the team on the raid ("M;s", no whisper lag), before any uninvite could keep it from reaching them.
 function MF:SplitGroups()
   setGroupMode(self, "split")
   self:Print("splitting the team in groups of %d", self.db.groupSize)
-  if self.db.slot == 1 then tellLeads(self, "s", "splitting the team") end
+  if self.db.slot == 1 then self:SendTeam("M;s", true) end
   if IsInGroup() then
     local leader
     for name, u in pairs(self.roster) do if UnitIsGroupLeader(u) then leader = name end end
     if UnitIsGroupLeader("player") then
-      for name in pairs(self.roster) do
-        if self:SlotOf(name) and not self:InMyGroup(name) then C_PartyInfo.UninviteUnit(name) end
-      end
+      C_Timer.After(2, function()
+        if not (self:SplitMode() and UnitIsGroupLeader("player")) then return end
+        for name in pairs(self.roster) do
+          if self:SlotOf(name) and not self:InMyGroup(name) then C_PartyInfo.UninviteUnit(name) end
+        end
+      end)
     elseif groupedWithOutsiders(self) and not (leader and self:InMyGroup(leader)) then
       C_PartyInfo.LeaveParty()
     end
