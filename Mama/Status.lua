@@ -314,8 +314,8 @@ local function MakeFrame()
   groups:SetScript("OnClick", function() MF:ToggleGroups() end)
   groups:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine(MF:SplitMode() and "Merge the groups into one raid" or
-                          ("Split the team in groups of %d"):format(MF.db.groupSize))
+    GameTooltip:AddLine(MF:Merged() and ("Split the team in groups of %d"):format(MF.db.groupSize) or
+                          "Merge the groups into one raid")
     GameTooltip:AddLine("For this session. Also " .. KEY:format("Shift+Left") .. " and a key binding: pressed on " ..
                           "all windows at once it's instant; on slot 1 only, the other groups' first slots get it " ..
                           "by whisper, which can take a minute or two.", 1, 1, 1, true)
@@ -482,7 +482,7 @@ function MF:RefreshStatus()
   local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, counted)
   if self:Disabled() then count = count .. " |cFFFF3333disabled|r" end
   local split = n > self.db.groupSize
-  frame.groups:SetText(self:SplitMode() and "raid" or "split")
+  frame.groups:SetText(self:Merged() and "split" or "raid")
   frame.groups:SetShown(split)
   if self.db.compact then
     frame.header.text:SetText(table.concat(compact, " ") .. " " .. count)

@@ -512,14 +512,38 @@ local function groupedWithOutsiders(self)
   return false
 end
 
+-- Grouped with a team member of another group (split by db.groupSize, whatever our mode): the groups are merged.
+function MF:Merged()
+  local n = self.db.groupSize
+  local mine = math.floor((self.db.slot - 1) / n)
+  for name in pairs(self.roster) do
+    local s = self:SlotOf(name)
+    if s and math.floor((s - 1) / n) ~= mine then return true end
+  end
+  return false
+end
+
+-- A group's first slot, once out of its group: tells slot 1 to invite us (and the rest of our former group).
+local function readyToJoin(self, master, tries)
+  if self:GroupMode() ~= "raid" or self.roster[master] then return end
+  if IsInGroup() then
+    if tries < 30 then C_Timer.After(0.5, function() self:Call(readyToJoin, self, master, tries + 1) end) end
+    return
+  end
+  self:SendWhisper(master, "M;d", "ready to join the raid")
+end
+
 -- Slot 1: the whole team in one raid. Others: out of any group without slot 1 (a group's leader uninvites its group).
 function MF:MergeGroups(fromSlot1)
   setGroupMode(self, "raid")
   if self.db.slot == 1 then
     self:Print("merging the groups into one raid")
-    for _, name in ipairs(otherLeads(self)) do self:SendWhisper(name, "M;r", "merging the groups") end
-    -- invites the others once they left their group (quick with the key binding on all windows; else on their "M;d")
-    C_Timer.After(2, function() if self:GroupMode() == "raid" then self:InviteMissing(false, true) end end)
+    local leads = otherLeads(self)
+    for _, name in ipairs(leads) do self:SendWhisper(name, "M;r", "merging the groups") end
+    -- the others' groups first have to be gone: invites on each lead's "M;d" (quick with the key binding on all
+    -- windows); a late pass for groups whose lead doesn't answer (Mama off), else right away
+    C_Timer.After(#leads > 0 and 15 or 1,
+                  function() if self:GroupMode() == "raid" then self:InviteMissing(false, true) end end)
     return
   end
   local master = self.db.slots[1]
@@ -530,9 +554,9 @@ function MF:MergeGroups(fromSlot1)
       C_PartyInfo.LeaveParty()
     end
   end
-  -- a group's first slot tells slot 1 when its group is gone (also when the key binding already did it: harmless)
+  -- a group's first slot tells slot 1 once its group is gone (also when the key binding already did it: harmless)
   if master and (fromSlot1 or (self.db.slot - 1) % self.db.groupSize == 0) and not self.roster[master] then
-    C_Timer.After(1, function() self:SendWhisper(master, "M;d", "ready to join the raid") end)
+    C_Timer.After(0.5, function() self:Call(readyToJoin, self, master, 0) end)
   end
 end
 
@@ -574,13 +598,13 @@ function MF:SplitGroups()
   C_Timer.After(1, function() self:Call(settleSplit, self, 0) end)
 end
 
--- Merged <-> split when the team is bigger than a group, else party <-> raid.
+-- Merged <-> split (from the group we're in) when the team is bigger than a group, else party <-> raid.
 function MF:ToggleGroups()
   if self:TeamSize() <= self.db.groupSize then return self:PartyToggle() end
-  if self:SplitMode() then
-    self:MergeGroups()
-  else
+  if self:Merged() then
     self:SplitGroups()
+  else
+    self:MergeGroups()
   end
 end
 
