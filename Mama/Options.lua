@@ -26,9 +26,20 @@ end
 local SECTIONS = {
   {
     "Group", {
-      {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
-      {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."}
-    }, {{"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}}, {
+      {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."}, {
+        "autoInvite", "Auto invite team",
+        "Slot 1 (when split in groups: each group's first slot) automatically invites team members as they come " ..
+          "online."
+      }
+    }, {
+      {
+        "autoRaid", "Auto convert to raid",
+        "Slot 1 invites the whole team, converting to a raid above 5. Off: the team is split in groups of the size " ..
+          "on the right by slot (with 3: 1-3, 4-6...), each invited by its first slot. Either way, merge the groups " ..
+          "into a raid or split them again for the session: Shift+Left click on the status window (or its " ..
+          "raid/split button), or the key binding pressed on all windows (quicker)."
+      }
+    }, {
       {
         "autoFFA", teamLootLabel,
         "When you lead a full team group, set loot to free for all, or to master loot by the lead when master loot " ..
@@ -124,11 +135,39 @@ local checkboxes = {} -- {cb, get} for every checkbox of every panel
 
 local function textOf(label) return type(label) == "function" and label() or label end
 
+local groupSlider
+
 local function Refresh()
   for _, c in ipairs(checkboxes) do
     c.cb:SetChecked(c.get())
     c.cb.Text:SetText(textOf(c.label))
   end
+  if groupSlider then groupSlider:SetValue(MF.db.groupSize) end
+end
+
+-- "Group size" slider (2-5), right of `anchor` (the auto raid checkbox).
+local function groupSizeSlider(panel, anchor)
+  local label = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  label:SetPoint("LEFT", anchor, "LEFT", COLUMN + 6, 0)
+  label:SetText("Group size")
+  local s = CreateFrame("Frame", nil, panel, "MinimalSliderWithSteppersTemplate")
+  s:SetSize(150, 20)
+  s:SetPoint("LEFT", label, "RIGHT", 4, 0)
+  local function round(v) return math.floor(v + 0.5) end
+  s:Init(MF.db.groupSize, 2, 5, 3,
+         {[MinimalSliderWithSteppersMixin.Label.Right] = function(v) return tostring(round(v)) end})
+  s:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged,
+                     function(_, v) if round(v) ~= MF.db.groupSize then MF:SetOption("groupSize", round(v)) end end, s)
+  s.Slider:HookScript("OnEnter", function(b)
+    GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Group size")
+    GameTooltip:AddLine("Size of the groups the team splits in, by slot (with 3: 1-3, 4-6...): auto raid off, or " ..
+                          "split for the session (Shift+Left click on the status window). Also " ..
+                          "|cFF99E5FF/mama groups N|r.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  s.Slider:HookScript("OnLeave", GameTooltip_Hide)
+  groupSlider = s
 end
 
 -- o: {label (text or function, for one that depends on other options), tooltip, get(), set(value)}; ...: SetPoint
@@ -147,6 +186,7 @@ local function checkbox(panel, o, ...)
   end)
   cb:SetScript("OnLeave", GameTooltip_Hide)
   checkboxes[#checkboxes + 1] = {cb = cb, get = get, label = label}
+  if o.key then checkboxes[o.key] = cb end
   return cb
 end
 
@@ -194,7 +234,7 @@ local function sendButton(panel, anchor)
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:SetText("Send settings to team")
     GameTooltip:AddLine("Copy this window's options, trade categories and status window position and size to the " ..
-                          "other windows of the group.", 1, 1, 1, true)
+                          "other windows of the team (grouped or heard from).", 1, 1, 1, true)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
@@ -210,10 +250,14 @@ local function optionSections()
       for j, o in ipairs(section[i]) do
         local key = o[1]
         row[j] = {
-          o[2], o[3], function() return MF.db[key] end, function(v)
+          o[2],
+          o[3],
+          function() return MF.db[key] end,
+          function(v)
             MF.db[key] = v
             MF:Fire("OPTION_CHANGED", key)
-          end
+          end,
+          key = key
         }
       end
       s[i] = row
@@ -251,6 +295,7 @@ MF:Listen("LOGIN", function(self)
   local panel, sub = newPanel("Mama-forever", "Mama-forever (" .. self.version .. ")",
                               "Team setup: |cFF99E5FF/mama s N|r in each window. All commands: |cFF99E5FF/mama help|r")
   sendButton(panel, layout(panel, sub, optionSections()))
+  groupSizeSlider(panel, checkboxes.autoRaid)
   self.category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
   Settings.RegisterAddOnCategory(self.category)
 
@@ -264,24 +309,26 @@ MF:Listen("LOGIN", function(self)
   end
 end)
 
--- Settings sync, to the group only (whispering offline slots would only produce "no player named" errors):
--- "O;<options>;<trade categories>;<status window layout>", one 0/1 character per setting in SYNCED /
--- MF.tradeCategories order, then MF:StatusLayout(). All windows run the same addon version; a length mismatch
--- (different versions) is reported and ignored.
+-- Settings sync, to the group and the team members we heard from (whispering offline slots would only produce "no
+-- player named" errors; split in groups, the others aren't in ours): "O;<options><group size>;<trade
+-- categories>;<status window layout>", one 0/1 character per setting in SYNCED / MF.tradeCategories order, the group
+-- size digit, then MF:StatusLayout(). All windows run the same addon version; a length mismatch (different versions)
+-- is reported and ignored.
 function MF:SendSettings()
-  if not IsInGroup() then
-    self:Error("settings are sent to the group: invite the team first")
+  if not IsInGroup() and not next(self.online) then
+    self:Error("settings are sent to the group and the team members heard from: none yet")
     return
   end
   local o, c = {}, {}
   for i, key in ipairs(SYNCED) do o[i] = self.db[key] and "1" or "0" end
   for i, cat in ipairs(self.tradeCategories) do c[i] = self:TradeCategoryOn(cat[1], cat[3]) and "1" or "0" end
-  self:SendGroup("O;" .. table.concat(o) .. ";" .. table.concat(c) .. ";" .. self:StatusLayout())
-  self:Print("sent this window's settings to the group")
+  self:SendTeam("O;" .. table.concat(o) .. self.db.groupSize .. ";" .. table.concat(c) .. ";" .. self:StatusLayout(),
+                true)
+  self:Print("sent this window's settings to the team")
 end
 
 MF.messageHandlers.O = function(self, sender, rest)
-  local o, c, window = rest:match("^([01]*);([01]*);?(.*)$")
+  local o, size, c, window = rest:match("^([01]*)([2-5]?);([01]*);?(.*)$")
   if not o or #o ~= #SYNCED or #c ~= #self.tradeCategories then
     self:Error("ignoring settings from %s: not the same Mama version as this window", sender)
     return
@@ -294,6 +341,11 @@ MF.messageHandlers.O = function(self, sender, rest)
       self:Fire("OPTION_CHANGED", key)
       changed[#changed + 1] = key .. (value and " on" or " off")
     end
+  end
+  size = tonumber(size)
+  if size and size ~= self.db.groupSize then
+    self:SetOption("groupSize", size)
+    changed[#changed + 1] = "group size " .. size
   end
   for i, cat in ipairs(self.tradeCategories) do
     local value = c:sub(i, i) == "1"
@@ -320,7 +372,7 @@ MF:Listen("OPTION_CHANGED", function(self, key)
   if key == "macro" or key == "showStatus" then
     self:RefreshActions()
     self:RefreshStatus()
-  elseif key == "compact" then
+  elseif key == "compact" or key == "groupSize" or key == "autoRaid" then
     self:RefreshStatus()
   end
 end)

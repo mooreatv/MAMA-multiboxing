@@ -16,11 +16,12 @@
 -- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's;
 -- in compact view the title tooltip has it).
 -- Window clicks (header or any row, listed in the help window: "?" on the header, Alt+Middle or /mama clicks):
--- invite, disband, party/raid, auto invite, resync, token dialog, options, compact view, identify, turn Mama off/on
--- for this character ("disabled" in the title). Plain click on a row targets it (or invites it if not grouped).
+-- invite, disband, merge/split groups (also a header button when the team is bigger than a group), auto invite,
+-- resync, token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the
+-- title). Plain click on a row targets it (or invites it if not grouped).
 local _, MF = ...
 
-local ROW_H, WIDTH, HELP_W = 18, 210, 14
+local ROW_H, WIDTH, HELP_W, GROUPS_W = 18, 210, 14, 30
 local rows = {}
 local frame
 local pendingRefresh
@@ -30,7 +31,10 @@ local KEY = "|cFF99E5FF%s|r"
 -- Help window grid: one line per mouse button, one column per modifier.
 local CLICK_COLUMNS = {"", "Plain", "Shift", "Ctrl", "Alt"}
 local CLICK_ROWS = {
-  {"Left", "Invite the team", "Party / raid", "Auto invite on/off", "Resend our info to the team"},
+  {
+    "Left", "Invite the team (our group when split)", "Merge groups into a raid / split again (or party / raid)",
+    "Auto invite on/off", "Resend our info to the team"
+  },
   {"Right", "Options", "Compact view", "Show / paste the team token", "Team complete (forget slots that aren't here)"},
   {
     "Middle", "Disband (leader uninvites the team, others leave)", "Big slot number", "Mama off/on for this character",
@@ -108,12 +112,6 @@ function MF:ShowClickHelp()
   helpFrame:SetShown(not helpFrame:IsShown())
 end
 
-local function expectedCount()
-  local n = 0
-  for s in pairs(MF.db.slots) do if s > n then n = s end end
-  return n
-end
-
 local function stateOf(name)
   if name == MF.myName then return "me", 1, 1, 1, "ffffff" end
   if name and MF:IsAway(name) then return "away", 0.5, 0.6, 0.75, "8099bf" end
@@ -177,9 +175,9 @@ local function WindowClick(button)
   if button == "LeftButton" then
     if ctrl then
       MF.db.autoInvite = not MF.db.autoInvite
-      MF:Print("slot 1 auto invite is now %s", tostring(MF.db.autoInvite))
+      MF:Print("auto invite is now %s", tostring(MF.db.autoInvite))
     elseif shift then
-      MF:PartyToggle()
+      MF:ToggleGroups()
     elseif alt then
       MF:Announce(true)
       MF:Print("resent our info to the team")
@@ -305,6 +303,26 @@ local function MakeFrame()
     GameTooltip:Show()
   end)
   help:SetScript("OnLeave", GameTooltip_Hide)
+
+  -- Merge / split, only shown when the team is bigger than a group (label: what a click does)
+  local groups = CreateFrame("Button", nil, header)
+  groups:SetSize(GROUPS_W, ROW_H)
+  groups:SetPoint("RIGHT", help, "LEFT", -2, 0)
+  groups:SetNormalFontObject("GameFontNormalSmall")
+  groups:SetHighlightFontObject("GameFontHighlightSmall")
+  groups:RegisterForClicks("AnyUp")
+  groups:SetScript("OnClick", function() MF:ToggleGroups() end)
+  groups:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine(MF:SplitMode() and "Merge the groups into one raid" or
+                          ("Split the team in groups of %d"):format(MF.db.groupSize))
+    GameTooltip:AddLine("For this session. Also " .. KEY:format("Shift+Left") .. " and a key binding: pressed on " ..
+                          "all windows at once it's instant; on slot 1 only, the other groups' first slots get it " ..
+                          "by whisper, which can take a minute or two.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  groups:SetScript("OnLeave", GameTooltip_Hide)
+  f.groups = groups
 
   local footer = CreateFrame("Frame", nil, f)
   footer:SetHeight(ROW_H)
@@ -435,7 +453,7 @@ function MF:RefreshStatus()
     pendingRefresh = true
     return
   end
-  local n = expectedCount()
+  local n = self:TeamSize()
   local lead = self:GetLead()
   local grouped, counted = 0, 0
   local compact = {}
@@ -463,9 +481,13 @@ function MF:RefreshStatus()
   frame.grouped, frame.counted = grouped, counted
   local count = ("|cFFFFD100(%d/%d)|r"):format(grouped, counted)
   if self:Disabled() then count = count .. " |cFFFF3333disabled|r" end
+  local split = n > self.db.groupSize
+  frame.groups:SetText(self:SplitMode() and "raid" or "split")
+  frame.groups:SetShown(split)
   if self.db.compact then
     frame.header.text:SetText(table.concat(compact, " ") .. " " .. count)
-    frame:SetSize(math.max(60, frame.header.text:GetStringWidth() + 14 + HELP_W), ROW_H + 2)
+    frame:SetSize(math.max(60, frame.header.text:GetStringWidth() + 14 + HELP_W + (split and GROUPS_W + 2 or 0)),
+                  ROW_H + 2)
   else
     frame.header.text:SetText("Mama team  " .. count)
     frame:SetSize(WIDTH, ROW_H * (n + 2) + 2)
