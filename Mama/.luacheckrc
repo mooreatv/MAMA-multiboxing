@@ -61,6 +61,7 @@ read_globals = {
   "GameTooltip",
   "GameTooltip_Hide",
   "GetAddOnMetadata",
+  "GetBuildInfo",
   "GetMacroInfo",
   "GetNumMacros",
   "GetActiveQuestID",

@@ -107,6 +107,7 @@ MF:Listen("LOGIN", function(self) self:RefreshRoster() end)
 -- new leader doesn't count as a change).
 local FFA = Enum.LootMethod.Freeforall -- what C_PartyInfo.GetLootMethod() returns for free for all
 local MASTER = Enum.LootMethod.Masterlooter
+local GROUP = Enum.LootMethod.Group
 local UNCOMMON = 2
 local lootState -- nil (unknown yet), "solo", "partial" (team members only, not all here), "team" or "strangers"
 local formed, hadStrangers -- the whole team was grouped / strangers were in the group, since we joined it
@@ -150,7 +151,7 @@ function MF:UpdateLoot()
     hadStrangers = true
     if act and (cur == FFA or cur == MASTER) then
       self:Print("strangers in the group, switching to group loot")
-      C_PartyInfo.SetLootMethod("group")
+      C_PartyInfo.SetLootMethod(GROUP)
       -- no rolls on greys (master loot lowered the threshold); after the method change applies
       C_Timer.After(1, function()
         if UnitIsGroupLeader("player") and GetLootThreshold() < UNCOMMON then SetLootThreshold(UNCOMMON) end
@@ -166,7 +167,7 @@ function MF:UpdateLoot()
         C_PartyInfo.SetLootMethod(MASTER, lead)
       else
         self:Print("setting loot to free for all (%s)", why)
-        C_PartyInfo.SetLootMethod("freeforall")
+        C_PartyInfo.SetLootMethod(FFA)
       end
     end
     formed, hadStrangers = true, false
@@ -178,7 +179,7 @@ local lootPending
 MF:Listen("TEAM_CHANGED", function(self)
   if lootPending then return end
   lootPending = true
-  C_Timer.After(1, function()
+  self:After(1, function()
     lootPending = false
     self:UpdateLoot()
   end)
@@ -459,7 +460,7 @@ end
 -- The master invites its team as soon as it logs in, without waiting to hear from them (they auto-accept): with
 -- lagging whispers that saves a whole round trip. Members not logged in yet only give a "not found" error.
 MF:Listen("LOGIN", function(self)
-  C_Timer.After(5, function()
+  self:After(5, function()
     if not (self.db.autoInvite and self:IsGroupInviter()) or self:Disabled() then return end
     if IsInGroup() and not UnitIsGroupLeader("player") then return end
     self:Debug("inviting the team at login")
@@ -665,7 +666,48 @@ MF:AddCommand("autoinvite", function(self, rest)
   self:Print("auto invite is now %s", tostring(self.db.autoInvite))
 end, "autoinvite [on|off] - slot 1 (when split: each group's first slot) invites team members as they come online")
 
-MF:AddCommand("status", function(self)
-  local lead = self:GetLead()
-  self:Print("me: %s, lead: %s, grouped: %s", self.myName or "?", lead or "(none)", tostring(IsInGroup()))
-end, "status - show current character, lead and group state")
+-- What a bug report needs to be read, in one line (the token's master, never its secret): /mama status, and the last
+-- line of /mama bug.
+function MF:StateText()
+  local tok = self:Token()
+  local grouped, heard = 0, 0
+  for _, name in pairs(self.db.slots) do
+    if self.roster[name] then
+      grouped = grouped + 1
+    elseif self.online[name] then
+      heard = heard + 1
+    end
+  end
+  local group = "not grouped"
+  if IsInGroup() then
+    group = ("%s of %d%s"):format(IsInRaid() and "raid" or "party", GetNumGroupMembers(),
+                                  UnitIsGroupLeader("player") and " (leader)" or "")
+  end
+  local method = C_PartyInfo.GetLootMethod()
+  for name, value in pairs(Enum.LootMethod) do if value == method then method = name end end
+  local options = {}
+  for key, default in pairs(self.defaults) do
+    local value = self.db[key]
+    if key ~= "slot" and key ~= "token" and key ~= "lead" and value ~= default then
+      options[#options + 1] = key .. "=" .. tostring(value)
+    end
+  end
+  table.sort(options)
+  local _, _, _, client = GetBuildInfo()
+  local parts = {
+    "Mama " .. self.version, "client " .. tostring(client),
+    ("%s (%s %s)"):format(tostring(self.myName), tostring(self.ruleset), tostring(self.faction)),
+    "slot " .. self.db.slot,
+    ("team of %d (%d grouped with us, %d more heard from)"):format(self:TeamSize(), grouped, heard),
+    "master " .. (tok and tok.master or "(no token)"), "lead " .. (self:GetLead() or "(none)"), group,
+    ("groups: %s of %d"):format(self:GroupMode(), self.db.groupSize),
+    ("loot: %s threshold %s"):format(tostring(method), tostring(GetLootThreshold())),
+    "options changed: " .. (#options > 0 and table.concat(options, " ") or "none")
+  }
+  if self:Disabled() then table.insert(parts, 4, "DISABLED") end
+  if self:IsAway() then table.insert(parts, 4, "away") end
+  return table.concat(parts, ", ")
+end
+
+MF:AddCommand("status", function(self) self:Print("%s", self:StateText()) end,
+              "status - show this window's state (version, slot, team, lead, group, loot, changed options)")

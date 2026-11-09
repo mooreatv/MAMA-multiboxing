@@ -165,18 +165,18 @@ local function split(text, size)
 end
 
 -- Chat text and sender can be secret values (chat messaging lockdown): unreadable, even as table keys.
-local function secret(v) return issecretvalue and issecretvalue(v) end
+local secret = MF.IsSecret
 
 -- flag (specialFlags) is never secret, "GM" for a game master.
 MF:On("CHAT_MSG_WHISPER", function(self, text, sender, _, _, _, flag)
   local l = lead(self)
-  if not (self.db.forwardWhispers and l and sender) then return end
+  if not (self.db.forwardWhispers and l) then return end
   flag = flag == "GM" and "GM" or ""
   if secret(text) or secret(sender) then
     self:SendWhisper(l, "W;0/0;" .. flag .. ";;", "forwarding a hidden whisper")
     return
   end
-  if self:SlotOf(sender) or self.db.team[sender] then return end
+  if not sender or self:SlotOf(sender) or self.db.team[sender] then return end
   local parts = split(text, CHUNK)
   for i, part in ipairs(parts) do
     self:SendWhisper(l, ("W;%d/%d;%s;%s;%s"):format(i, #parts, flag, sender, part), "forwarding a whisper")

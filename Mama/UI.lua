@@ -16,6 +16,19 @@ BINDING_NAME_MAMA_LEAD = "Make me lead |cFF99E5FF(/mama lead)|r"
 _G["BINDING_NAME_CLICK MamaFollow:LeftButton"] = "Follow + assist lead"
 _G["BINDING_NAME_CLICK MamaAssist:LeftButton"] = "Assist lead (no follow)"
 _G["BINDING_NAME_CLICK MamaTrain:LeftButton"] = "Follow train + assist lead"
+BINDING_NAME_MAMA_INVITE = "Invite team |cFF99E5FF(/mama invite)|r"
+BINDING_NAME_MAMA_GROUPS = "Merge groups into a raid / split again |cFF99E5FF(/mama raid)|r"
+BINDING_NAME_MAMA_DISBAND = "Disband team |cFF99E5FF(/mama disband)|r"
+BINDING_NAME_MAMA_IDENTIFY = "Identify slot |cFF99E5FF(/mama identify)|r"
+BINDING_NAME_MAMA_COMPLETE = "Team is complete |cFF99E5FF(/mama complete)|r"
+BINDING_NAME_MAMA_TOGGLE = "Turn Mama off/on for this character |cFF99E5FF(/mama disable, /mama enable)|r"
+
+-- /mama bug (Bug.lua) ends with this window's state: reports are the end of the log.
+local showBug = MamaForever.ShowBug
+function MamaForever:ShowBug()
+  self:Call(function() self:Debug("state: %s", self:StateText()) end)
+  showBug(self)
+end
 
 -- One small dialog used both to copy the token (slot 1) and to paste it (other slots).
 local dialog
@@ -190,10 +203,3 @@ function MamaForever:ShowReloadDialog()
   end
   f:Show()
 end
-
-BINDING_NAME_MAMA_INVITE = "Invite team |cFF99E5FF(/mama invite)|r"
-BINDING_NAME_MAMA_GROUPS = "Merge groups into a raid / split again |cFF99E5FF(/mama raid)|r"
-BINDING_NAME_MAMA_DISBAND = "Disband team |cFF99E5FF(/mama disband)|r"
-BINDING_NAME_MAMA_IDENTIFY = "Identify slot |cFF99E5FF(/mama identify)|r"
-BINDING_NAME_MAMA_COMPLETE = "Team is complete |cFF99E5FF(/mama complete)|r"
-BINDING_NAME_MAMA_TOGGLE = "Turn Mama off/on for this character |cFF99E5FF(/mama disable, /mama enable)|r"

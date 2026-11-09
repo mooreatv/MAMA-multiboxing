@@ -75,9 +75,14 @@ local function clean(s)
   return s:sub(1, MAX_TEXT)
 end
 
--- Creature id from the GUID of the NPC we're talking to ("Creature-0-server-instance-zone-ID-spawn"); nil: no dialog.
+-- Creature id from the GUID of the NPC we're talking to ("Creature-0-server-instance-zone-ID-spawn"); nil: no dialog;
+-- 0: unknown (a secret GUID, in dungeons), which matches any NPC.
 local function currentNpc()
   local guid = UnitGUID("npc")
+  if MF.IsSecret(guid) then
+    lastNpc = 0
+    return 0
+  end
   if not guid then return nil end
   lastNpc = tonumber((select(6, strsplit("-", guid)))) or 0
   return lastNpc

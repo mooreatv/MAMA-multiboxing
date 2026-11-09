@@ -10,10 +10,12 @@
 
    Releases detail/changes are on https://github.com/mooreatv/MAMA-multiboxing/releases
    ]] --
--- Loot: help for master loot (masterLoot option; free for all stays the automatic team loot, see UpdateLoot). When
--- master loot is picked in the group menu, the leader lowers the threshold to greys once. The master looter's window
--- then gives each item to the team member who uses it: mats and recipes to the best profession holder (trade
--- categories), armor to the classes that wear that type, weapons to the classes that can use them (taking turns),
+-- Loot: master loot auto distribution (masterLoot option; with it the full team's automatic loot method is master
+-- loot by the lead instead of free for all, see UpdateLoot in Team.lua). When the method becomes master loot (set by
+-- us or picked in the group menu), the leader lowers the threshold to greys once. The master looter's window then
+-- gives each item to the team member who uses it: quest items to who still needs them (QuestItemRecipient), mats and
+-- recipes to the best profession holder (trade categories), armor to the classes that wear that type, weapons to
+-- the classes that can use them (taking turns),
 -- greens nobody uses to the enchanter, the rest (greys, sell list...) where the same item stacks (the looter's partial
 -- stacks, else who got that item last while they have room and still hold some), else to the most free bag slots. BoP
 -- items wait in a picker, suggestion first: there may be other candidates, or the enchanter should disenchant it.
@@ -355,7 +357,7 @@ end
 local LINE = Enum.TooltipDataLineType or {}
 
 -- Unit GUIDs and tooltip lines can be secret values (in dungeons): they can't be compared nor used as strings.
-local function secret(v) return issecretvalue and issecretvalue(v) end
+local secret = MF.IsSecret
 
 -- Reads quest progress tooltip lines into p (see QuestProgress): a quest title (our own objectives follow), a first
 -- name (that party member's objectives follow), objectives ("2/8 Tough Wolf Meat"). quest: the title until a title
@@ -879,7 +881,7 @@ showPick = function(self)
     suggested, why = self:LootRecipient(it, cands)
   end
   table.sort(cands, function(a, b)
-    if a == suggested or b == suggested then return a == suggested end
+    if (a == suggested) ~= (b == suggested) then return a == suggested end
     if (a.slot ~= nil) ~= (b.slot ~= nil) then return a.slot ~= nil end
     return bySlot(a, b)
   end)
@@ -947,8 +949,12 @@ MF:Listen("LOGIN", function() lastMethod = IsInGroup() and C_PartyInfo.GetLootMe
 
 MF:AddCommand("loot", function(self, rest)
   if rest ~= "" then self:SetOption("masterLoot", self:ParseOnOff(rest, self.db.masterLoot)) end
-  self:Print("master loot auto distribution is %s; loot method %s, master looter %s, threshold %d",
-             self.db.masterLoot and "on" or "off", tostring(C_PartyInfo.GetLootMethod()), masterLooterName(self) or "-",
-             GetLootThreshold())
-end, "loot [on|off] - as master looter (picked in the group menu; greys and up then), give items to who uses them" ..
-                " (BoP after a click)")
+  local method = C_PartyInfo.GetLootMethod()
+  for name, value in pairs(Enum.LootMethod) do if value == method then method = name end end
+  local quality = _G["ITEM_QUALITY" .. GetLootThreshold() .. "_DESC"] or GetLootThreshold()
+  self:Print(
+    "master loot auto distribution is %s (used the next time the full team gets grouped); loot method now: " ..
+      "%s, master looter %s, threshold %s", self.db.masterLoot and "on" or "off", tostring(method),
+    masterLooterName(self) or "-", tostring(quality))
+end, "loot [on|off] - master loot for the full team (off: free for all), the master looter's window gives each " ..
+                "item to who uses it (soulbound ones after a click)")

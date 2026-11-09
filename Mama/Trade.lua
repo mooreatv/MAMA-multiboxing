@@ -190,6 +190,7 @@ end
 
 local partner -- full name of the current trade partner, nil when no trade is open
 local waitingFor -- partner whose professions we asked for, to fill once they answer
+local waitingManual -- whether that fill was asked with the button (gives the mats we could use too)
 
 -- Puts bag stacks ({bag, slot}) in the free trade slots, in order. Returns the ones put.
 local function putInTrade(self, stacks)
@@ -218,7 +219,7 @@ function MF:FillTrade(manual)
   end
   if not self:ProfessionsOf(partner) then
     self:Print("asking %s for their professions", partner)
-    waitingFor = partner
+    waitingFor, waitingManual = partner, manual
     self:AskProfessions(partner)
     return
   end
@@ -275,7 +276,7 @@ end)
 MF:Listen("PROFESSIONS", function(self, name)
   if waitingFor and name == waitingFor and partner == name then
     waitingFor = nil
-    self:FillTrade(true)
+    self:FillTrade(waitingManual)
   end
 end)
 
