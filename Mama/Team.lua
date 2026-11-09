@@ -163,7 +163,8 @@ function MF:UpdateLoot()
       if self.db.masterLoot then
         local lead = self:GetLead() or self.myName
         -- Loot.lua lowers the threshold to greys
-        self:Print("setting master loot to %s (%s); free for all instead: /mama loot off (or /mama options)", lead, why)
+        self:Print("setting master loot to %s (%s); /mama loot off (or /mama options): free for all from the next " ..
+                     "time the team gets grouped", lead, why)
         C_PartyInfo.SetLootMethod(MASTER, lead)
       else
         self:Print("setting loot to free for all (%s)", why)

@@ -100,8 +100,8 @@ local function makeButton(name)
   b:SetAttribute("useOnKeyDown", false)
   b:RegisterForClicks("AnyUp", "AnyDown")
   b:HookScript("PreClick", function(btn, button, down)
-    MF:Debug("%s pressed (%s, down=%s): %s", name, tostring(button), tostring(down),
-             tostring(btn:GetAttribute("macrotext")):gsub("\n", " | "))
+    if down then return end -- the action runs on key up: one log line per press (repeats collapse in the log)
+    MF:Debug("%s pressed (%s): %s", name, tostring(button), tostring(btn:GetAttribute("macrotext")):gsub("\n", " | "))
   end)
   return b
 end
