@@ -181,7 +181,7 @@ function MF:Ruleset()
 end
 
 -- Saved variables from before rulesets (up to v2.14.2): each character keeps its own team (tagged with its ruleset at
--- its next login, see PLAYER_LOGIN), the slot history goes to the first ruleset loaded since; the account's last team
+-- its next login, see PLAYER_LOGIN), the slot history goes to the first ruleset loaded since, the account's last team
 -- comes back as characters log in, the rest (gold, bags, professions of the other characters) as they send it.
 local function migrate(s, ruleset)
   if s.rulesets then return end
@@ -190,10 +190,22 @@ local function migrate(s, ruleset)
   MF:Debug("pre-ruleset slot history -> %s", ruleset)
 end
 
--- Ruleset of this account's characters holding token (nil when none of them is tagged yet).
+-- Ruleset of token's team: its master's when that's one of this account's characters (a name belongs to one ruleset),
+-- else that of this account's characters holding it; nil when unknown, or held in several rulesets (copies made before
+-- rulesets, see PLAYER_LOGIN).
 function MF:TokenRuleset(token)
-  if not token then return nil end
-  for _, c in pairs(self.db.chars) do if c.token == token and c.ruleset then return c.ruleset end end
+  local tok = self:ParseToken(token)
+  if not tok then return nil end
+  local master = self.db.chars[tok.master]
+  if master and master.ruleset then return master.ruleset end
+  local found
+  for _, c in pairs(self.db.chars) do
+    if c.token == token and c.ruleset then
+      if found and found ~= c.ruleset then return nil end
+      found = c.ruleset
+    end
+  end
+  return found
 end
 
 MF:On("PLAYER_LOGIN", function(self)
@@ -219,10 +231,13 @@ MF:On("PLAYER_LOGIN", function(self)
   s.chars = s.chars or {}
   local last = rs.slotsBy[self.faction] or {}
   local c = s.chars[self.myName]
-  -- Created before rulesets with a team of another ruleset (a new character copied the account's last team): drop it.
-  local other = c and not c.ruleset and self:TokenRuleset(c.token)
-  if other and other ~= self.ruleset then
-    self:Debug("%s: pre-ruleset team dropped (token of %s)", self.myName, other)
+  -- Created before rulesets with a copy of another ruleset's team (a new character copied the account's last team):
+  -- dropped only when sure, i.e. its master is one of this account's characters, of another ruleset. Otherwise kept: a
+  -- wrong copy only whispers a master that isn't there until /mama s 1 on this ruleset's master (same team and secret).
+  local tok = c and not c.ruleset and self:ParseToken(c.token)
+  local master = tok and s.chars[tok.master]
+  if master and master.ruleset and master.ruleset ~= self.ruleset then
+    self:Debug("%s: pre-ruleset team dropped (master %s is %s)", self.myName, tok.master, master.ruleset)
     c = nil
   end
   if c then
