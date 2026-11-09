@@ -28,13 +28,7 @@ local SECTIONS = {
     "Group", {
       {"autoAccept", "Auto accept team invites", "Accept group invites from characters of your own team."},
       {"autoInvite", "Auto invite team (slot 1)", "Slot 1 automatically invites team members as they come online."}
-    }, {
-      {"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}, {
-        "compact", "Compact status window",
-        "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
-          "Also Shift+Right click on the window."
-      }
-    }, {
+    }, {{"autoRaid", "Auto convert to raid", "Convert the group to a raid when inviting more than 5 characters."}}, {
       {
         "autoFFA", teamLootLabel,
         "When you lead a full team group, set loot to free for all, or to master loot by the lead when master loot " ..
@@ -109,7 +103,13 @@ local SECTIONS = {
     "Display", {
       {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."},
       {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."}
-    }, {{"debug", "Debug output", "Print detailed messages to the chat window."}}
+    }, {
+      {
+        "compact", "Compact status window",
+        "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
+          "Also Shift+Right click on the window."
+      }
+    }
   }
 }
 local COLUMN = 300 -- x offset of the second checkbox of a row
