@@ -2,12 +2,14 @@
 
 ## About M.A.M.A. Multiboxing
 
-MAMA is now Mama-forever: Multiboxing helper for **WoW Forever** (the new beta client, interface 16xxx). One standalone addon, no libraries and
-no other addon needed. It is the successor of MAMA + DynamicBoxer + MoLib, rewritten for Forever only.
+MAMA is now Mama-forever: Multiboxing helper for **WoW Forever** (interface 16xxx), also supported on **retail**. One
+standalone addon, no libraries and no other addon needed. It is the successor of MAMA + DynamicBoxer + MoLib,
+rewritten for Forever.
 
 It lets all your windows of the same team:
 
 - find each other and form a group automatically (one-time setup: on one PC, just type a slot number per window),
+- play as **one raid or several groups** (teams of more than 5: merge and split with one click or key),
 - **follow and assist** whoever is the lead, with one key or one macro,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
@@ -18,13 +20,15 @@ It lets all your windows of the same team:
   alerts or quest/dialog sync, still trades and forwards whispers.
 
 Names in Forever are `First Last` (with a space) and there is no realm part: Mama-forever treats them as opaque names.
+On retail, names are `Name-Realm`. What depends on the game edition (master loot, new character setup) is described
+for Forever.
 
 ## Install
 
 Install it with an addon manager: the [CurseForge](https://www.curseforge.com/wow/addons/mama-multiboxing) app,
 [WowUp](https://wowup.io/) or [Wago](https://addons.wago.io/). Or download the zip from the
 [GitHub releases](https://github.com/mooreatv/MAMA-multiboxing/releases) and extract it in
-`World of Warcraft\_forever_\Interface\AddOns\` (it contains the `Mama` folder).
+`World of Warcraft\_forever_\Interface\AddOns\` (`_retail_` for retail; it contains the `Mama` folder).
 
 ## One-time setup
 
@@ -56,7 +60,7 @@ Escape in that slot dialog skips it until the next `/reload` or login; `/mama s 
 3. Same for the third window with `/mama s 3`, and so on (up to 40).
 
 Either way the windows then find each other, the status window appears, and slot 1 invites everybody (switching to
-a raid above 5 characters). New characters later: on a PC with a saved token, just log them in and answer the slot
+a raid above 5 characters, or in several groups: see Raid or groups below). New characters later: on a PC with a saved token, just log them in and answer the slot
 dialog; otherwise `/mama s N` and paste the token (`/mama token` on slot 1 shows it again).
 
 The token is saved, so you don't redo this at the next login. Team messages are signed with the token's secret, so
@@ -68,7 +72,8 @@ that character's group invites; it does not pair that character, assign it a slo
 exchange team messages. Each participating window still needs its own `/mama s N` setup and the shared token.
 
 Each character remembers its own team (slot, token, teammates): switching between teams played on the same
-accounts picks up the right one at login.
+accounts picks up the right one at login. Forever's rulesets (Normal, PvP, RP, RP-PvP, Hardcore) are separate worlds:
+each has its own team, token saved on the PC, gold and professions.
 
 **Log in slot 1 last** (when you can't log in all windows at once). Slot 1 invites its team as soon as it logs in, and
 the others accept automatically. If slot 1 logs in first, those invites find nobody, and the group only forms once the
@@ -98,7 +103,8 @@ Follow and assist are protected actions that must come from a key press or your 
 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
   *Follow train + assist lead* (each slot follows the previous slot; the lead stops following),
-  *Make me lead*, *Invite team*, *Disband team*, *Identify slot*. New characters get Alt-F (follow + assist),
+  *Make me lead*, *Invite team*, *Team is complete*, *Merge groups into a raid / split again*, *Disband team*,
+  *Identify slot*, *Turn Mama off/on for this character*. New characters get Alt-F (follow + assist),
   Alt-T (train) and Alt-L (make me lead) when these keys are free (see New characters below).
 - **The MAMA macro**: Mama-forever creates a per character macro called `MAMA` with a starter for your class
   (follow and assist the lead, attack, send the pet, cast a basic spell) and keeps its `/follow` and `/assist` lines
@@ -108,6 +114,17 @@ Follow and assist are protected actions that must come from a key press or your 
   for hunters, Charge out of combat and Rend for warriors).
   `/mama macro reset` puts the class starter back, `/mama macro off` stops managing it. The account wide `MAMA` macro
   of older versions is deleted.
+
+### Raid or groups
+
+A team of more than 5 is one raid by default ("Auto convert to raid" in the options). With that option off, the team
+is split in groups by slot, of the "Group size" next to it (2 to 5, `/mama groups N`; with 3: slots 1-3, 4-6...), each
+invited by its first slot, which also leads it until you pick another lead.
+
+Either way you can merge the groups into one raid and split them again for the session: Shift+Left click on the
+status window, its raid/split button, `/mama merge` and `/mama split` (`/mama raid` toggles), or the *Merge groups
+into a raid / split again* key binding. Each window leaves and joins by itself, so the key binding pressed on all
+windows at once is instant; done on slot 1 only, the other groups are told by whisper, which can take a minute or two.
 
 ### New characters
 
@@ -153,7 +170,8 @@ anyway (e.g. a blacksmith's spare bars to an engineer):
 
 Pick the kinds in Options > AddOns > Mama-forever > Trade (or `/mama trade list`, `/mama trade greens off`);
 `/mama trade off` turns the auto fill off (the button still works). "Send settings to team" (on both options pages)
-copies this window's options and trade kinds to the rest of the group.
+copies this window's options, trade kinds and status window position and size to the other windows (those in the
+group or heard from).
 
 ### Selling at vendors
 
@@ -178,8 +196,9 @@ by the lead (or pick master looter in the group menu yourself); `/mama loot off`
 down to greys (once: raise it again if you want), and the master looter's window gives each item to the team member
 who uses it:
 
-- quest items to whoever still needs them, the one furthest behind in xp first (until done), the looter on a tie;
-  quest items that drop once per player (heads...): the looter keeps its copy and the lead's window gets one raid
+- quest items to whoever still needs them: the one furthest behind in level and xp, or among those about level
+  with it the one closest to finishing the quest (so a quest gets done instead of half done on two characters), the
+  looter on a tie; quest items that drop once per player (heads...): the looter keeps its copy and the lead's window gets one raid
   warning listing who must loot theirs,
 - mats and recipes to the best profession holder (same kinds as trades),
 - armor to the classes that wear that type (leather to the rogue or druid...), weapons to the classes that can use
@@ -217,7 +236,7 @@ view, hover the title for it). Click the `?` on the title (or Alt+Middle, or `/m
 | Left | invite the team |
 | Middle | disband (leader uninvites the team, others leave) |
 | Right | options |
-| Shift+Left / Shift+Right | toggle party/raid / toggle compact view (also in the options, sent with the settings) |
+| Shift+Left / Shift+Right | merge the groups into a raid or split again (party/raid for a team of one group) / toggle compact view (also in the options, sent with the settings) |
 | Shift+Middle | show the big slot number, class and name |
 | Ctrl+Left / Ctrl+Right | toggle auto invite / show or paste the token |
 | Alt+Left | resend our info to the team |
@@ -244,15 +263,26 @@ remembered for that character until `/mama enable` turns it back on.
 
 ## Commands and options
 
-`/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `invite`, `disband`, `raid`, `autoinvite`, `status`,
-`macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`, `vendor`, `loot`, `ui`, `enable`, `disable`, `identify`, `options`, `complete`, `debug`, `bug` (copyable log), `clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever
-(`/mama options`): auto accept/share quests, abandon everywhere, auto accept team invites, auto invite, auto raid,
-mirror the lead's dialog choices, skip single option dialogs, team loot (free for all or master), master loot auto distribution, auto fill trades, auto repair, MAMA macro, follow broken warning, whisper
-forwarding, status window, slot display at login, debug.
+`/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `complete`, `invite`, `disband`, `raid`,
+`merge`, `split`, `groups`, `autoinvite`, `status`, `macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`,
+`vendor`, `loot`, `identify`, `ui`, `clicks`, `options`, `enable`, `disable`, `debug`, `bug` (copyable log),
+`clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
+for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
+master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
+choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
+forwarding, status window, slot display at login, compact status window.
+
+## Reporting a problem
+
+`/mama bug` shows Mama's recent messages, debug details included, in a window: select the end of it (click where to
+start, Shift-click at the end; or Ctrl+A for all), Ctrl+C, and paste it in a
+[GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected. The log only keeps the
+last 100 lines: copy it right after the problem (ideally from the window it happened on and from slot 1), or
+`/mama clearlog` and reproduce it first.
 
 ## Not included (compared to the old addons)
 
-No ISBoxer team discovery (Even if it should still work, but use [WowOpenBox](https://github.com/WowOpenBox/WoWOpenBox#wowopenbox) instead - open source and designed to be safe and compliant), no EMA integration, no support for other WoW versions (yet).
+No ISBoxer team discovery (Even if it should still work, but use [WowOpenBox](https://github.com/WowOpenBox/WoWOpenBox#wowopenbox) instead - open source and designed to be safe and compliant), no EMA integration, no support for the WoW versions other than Forever and retail (yet).
 
 ## Development
 
@@ -264,10 +294,11 @@ No ISBoxer team discovery (Even if it should still work, but use [WowOpenBox](ht
 
 - Opensource license (so if the current author gets hit by a bus, anyone else can pick it up and/or make improvements)
 
-- Formatting (for ref on my pc; lua-format.exe needs the msys64 ucrt64 DLLs on PATH)
-```powershell
-$env:PATH = "C:\msys64\ucrt64\bin;" + $env:PATH
-Get-ChildItem -Filter *.lua -Recurse | ForEach-Object {  C:\Users\l\AppData\Roaming\luarocks\bin\lua-format.exe -c  .\luaformat.cfg -i $_.FullName }
+- Formatting and lint: [lua-format](https://github.com/Koihik/LuaFormatter) with `luaformat.cfg` and
+  [luacheck](https://github.com/lunarmodules/luacheck) with `Mama/.luacheckrc`, from the repository root:
+```sh
+lua-format -c luaformat.cfg -i Mama/*.lua
+luacheck Mama --config Mama/.luacheckrc
 ```
 
 ## More info
