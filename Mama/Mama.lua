@@ -196,6 +196,7 @@ local function migrate(s, ruleset)
   }
   s.oldRuleset = ruleset
   s.slotsBy, s.history, s.stats, s.accounts, s.profs = nil, nil, nil, nil, nil
+  MF:Debug("pre-ruleset team data -> %s", ruleset)
 end
 
 MF:On("PLAYER_LOGIN", function(self)
@@ -221,7 +222,10 @@ MF:On("PLAYER_LOGIN", function(self)
   s.chars = s.chars or {}
   local last = rs.slotsBy[self.faction] or {}
   local c = s.chars[self.myName]
-  if c and not c.ruleset and self.ruleset ~= s.oldRuleset then c = nil end -- see migrate
+  if c and not c.ruleset and self.ruleset ~= s.oldRuleset then -- see migrate
+    self:Debug("%s: pre-ruleset team dropped (from %s)", self.myName, tostring(s.oldRuleset))
+    c = nil
+  end
   if c then
     s.slot, s.token, s.tokenFaction = c.slot, c.token, c.tokenFaction
     self.otherTeam = last

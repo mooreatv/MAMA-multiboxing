@@ -100,6 +100,7 @@ local function sharedTokens(self)
     sv.Mama = {}
   elseif sv.Mama.token then
     sv.Mama = {[self.ruleset] = {token = sv.Mama.token, faction = sv.Mama.faction}}
+    self:Debug("pre-ruleset PC token -> %s", self.ruleset)
   end
   return sv.Mama
 end
