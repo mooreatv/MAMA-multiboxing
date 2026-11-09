@@ -72,7 +72,7 @@ end
 function MF:Token() return self.db.token and self:ParseToken(self.db.token) or nil end
 
 -- The token is account wide, remembered per character with its team (see PLAYER_LOGIN in Mama.lua); the slot map
--- and candidate history are per faction (no cross faction grouping).
+-- and candidate history are per ruleset and faction (no cross ruleset or faction grouping).
 -- tokenFaction remembers which faction the token's master character belongs to.
 function MF:SetToken(text)
   self.db.token = text
@@ -91,16 +91,35 @@ end
 
 function MF:CanShareToken() return shared() ~= nil end
 
-function MF:ShareToken()
+-- sv.Mama = ruleset -> {token, faction}. Before rulesets (up to v2.14.2) it was a single {token, faction}: kept for the
+-- ruleset of the characters holding it, dropped when there's none (windows save theirs at login when the PC has none).
+local function sharedTokens(self)
   local sv = shared()
-  if sv and self.db.token then sv.Mama = {token = self.db.token, faction = self.db.tokenFaction} end
+  if not sv then return nil end
+  if type(sv.Mama) ~= "table" then
+    sv.Mama = {}
+  elseif sv.Mama.token then
+    local r = self:TokenRuleset(sv.Mama.token)
+    sv.Mama = r and {[r] = {token = sv.Mama.token, faction = sv.Mama.faction}} or {}
+    self:Debug("pre-ruleset PC token -> %s", tostring(r))
+  end
+  return sv.Mama
 end
 
--- Returns the token saved on this PC and its master's faction, nil when there is none (or it's not valid).
+function MF:ShareToken()
+  local tokens = self.db.token and sharedTokens(self)
+  if tokens then tokens[self.ruleset] = {token = self.db.token, faction = self.db.tokenFaction} end
+end
+
+-- Returns this ruleset's token saved on this PC and its master's faction, nil when there is none (or it's not valid, or
+-- held by characters of another ruleset).
 function MF:SharedToken()
-  local sv = shared()
-  local m = sv and type(sv.Mama) == "table" and sv.Mama
-  if m and self:ParseToken(m.token) then return m.token, m.faction end
+  local tokens = sharedTokens(self)
+  local m = tokens and type(tokens[self.ruleset]) == "table" and tokens[self.ruleset]
+  if not (m and self:ParseToken(m.token)) then return nil end
+  local r = self:TokenRuleset(m.token)
+  if r and r ~= self.ruleset then return nil end
+  return m.token, m.faction
 end
 
 -- At login (not when Mama is off for this character): no token yet -> take this PC's; ours and none saved on the PC
@@ -324,7 +343,7 @@ function MF:HistoryCandidates()
       list[#list + 1] = {n, ("slot %d in this account's last team"):format(s)}
     end
   end
-  for s, names in pairs(self.db.history[self.faction] or {}) do
+  for s, names in pairs(self.rs.history[self.faction] or {}) do
     local owner = self.db.slots[s]
     if s ~= self.db.slot and owner and not here(self, owner) then
       for i = 1, math.min(#names, MAX_PER_SLOT) do
@@ -469,7 +488,7 @@ function MF:RecordMember(slot, name, sender)
   end
   slots[slot] = name
   self.db.team[name] = true -- verified team member: auto-accept their invites
-  local hist = self.db.history[self.faction]
+  local hist = self.rs.history[self.faction]
   hist[slot] = hist[slot] or {}
   for i = #hist[slot], 1, -1 do if hist[slot][i] == name then table.remove(hist[slot], i) end end
   table.insert(hist[slot], 1, name)

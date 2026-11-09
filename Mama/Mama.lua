@@ -168,21 +168,70 @@ end
 MF:On("ADDON_ACTION_FORBIDDEN", function(self, ...) blocked(self, "ADDON_ACTION_FORBIDDEN", ...) end)
 MF:On("ADDON_ACTION_BLOCKED", function(self, ...) blocked(self, "ADDON_ACTION_BLOCKED", ...) end)
 
+-- Forever's rulesets (Normal, PvP, RP, RP-PvP, Hardcore) are separate worlds: no grouping, whispers, trades or mail
+-- between them. "Normal", or the active ones of RP, PvP, Hardcore joined with "-" ("RP-PvP").
+local RULESETS = {"RP", "PvP", "Hardcore"}
+function MF:Ruleset()
+  local active = {}
+  for _, r in ipairs(RULESETS) do
+    local rule = Enum.GameRule and Enum.GameRule[r .. "Ruleset"]
+    if rule and C_GameRules and C_GameRules.IsGameRuleActive(rule) then active[#active + 1] = r end
+  end
+  return #active > 0 and table.concat(active, "-") or "Normal"
+end
+
+-- Saved variables from before rulesets (up to v2.14.2): each character keeps its own team as is (tagged with its ruleset
+-- at its next login), even one copied from another ruleset's team when it was created: that copy may work (same team
+-- id and secret after /mama s 1 on this ruleset's master), and a useless one only whispers an absent master, as before.
+-- The slot history goes to the first ruleset loaded since, the account's last team comes back as characters log in,
+-- the rest (gold, bags, professions of the other characters) as they send it.
+local function migrate(s, ruleset)
+  if s.rulesets then return end
+  s.rulesets = {[ruleset] = {history = s.history}}
+  s.slotsBy, s.history, s.stats, s.accounts, s.profs = nil, nil, nil, nil, nil
+  MF:Debug("pre-ruleset slot history -> %s", ruleset)
+end
+
+-- Ruleset of token's team: its master's when that's one of this account's characters (a name belongs to one ruleset),
+-- else that of this account's characters holding it; nil when unknown, or held in several rulesets (copies made before
+-- rulesets, see migrate).
+function MF:TokenRuleset(token)
+  local tok = self:ParseToken(token)
+  if not tok then return nil end
+  local master = self.db.chars[tok.master]
+  if master and master.ruleset then return master.ruleset end
+  local found
+  for _, c in pairs(self.db.chars) do
+    if c.token == token and c.ruleset then
+      if found and found ~= c.ruleset then return nil end
+      found = c.ruleset
+    end
+  end
+  return found
+end
+
 MF:On("PLAYER_LOGIN", function(self)
   self.myName = self:FullName("player")
   -- each login or /reload starts with a marker, so it's easy to see where to start copying in /mama bug
   record(("---reload--- %s %s - Mama %s"):format(date("%Y-%m-%d"), tostring(self.myName), self.version))
-  -- Team slots and the history of who held which slot are remembered per faction (the saved variables are account wide).
+  -- Team slots, the history of who held which slot and the other characters' info are remembered per ruleset then per
+  -- faction (the saved variables are account wide): MF.rs = this ruleset's.
   self.faction = UnitFactionGroup("player") or "Neutral"
+  self.ruleset = self:Ruleset()
+  self:Debug("ruleset %s, faction %s", self.ruleset, self.faction)
   local s = self.db
-  s.slotsBy = s.slotsBy or {}
-  s.history = s.history or {}
-  s.history[self.faction] = s.history[self.faction] or {}
+  migrate(s, self.ruleset)
+  s.rulesets[self.ruleset] = s.rulesets[self.ruleset] or {}
+  local rs = s.rulesets[self.ruleset]
+  self.rs = rs
+  rs.slotsBy = rs.slotsBy or {}
+  rs.history = rs.history or {}
+  rs.history[self.faction] = rs.history[self.faction] or {}
   -- Each character also remembers its own last team (slot map, slot, token): switching between teams of the same
-  -- faction starts from the right one. A character seen for the first time starts from this account's last team.
-  -- The account's last team, when it's another one, is still tried after ours (see MF:HistoryCandidates).
+  -- faction starts from the right one. A character seen for the first time starts from this ruleset's last team.
+  -- The ruleset's last team, when it's another one, is still tried after ours (see MF:HistoryCandidates).
   s.chars = s.chars or {}
-  local last = s.slotsBy[self.faction] or {}
+  local last = rs.slotsBy[self.faction] or {}
   local c = s.chars[self.myName]
   if c then
     s.slot, s.token, s.tokenFaction = c.slot, c.token, c.tokenFaction
@@ -191,18 +240,22 @@ MF:On("PLAYER_LOGIN", function(self)
     c = {slots = {}}
     for slot, name in pairs(last) do c.slots[slot] = name end
     s.chars[self.myName] = c
+    s.slot, s.token, s.tokenFaction = rs.slot or 0, rs.token or false, rs.tokenFaction
     self.otherTeam = {}
   end
-  s.slotsBy[self.faction] = c.slots
+  c.ruleset = self.ruleset
+  rs.slotsBy[self.faction] = c.slots
   s.slots = c.slots
   self:RememberTeam()
   self:Fire("LOGIN")
 end)
 
--- Keeps this character's slot and token with its team (see PLAYER_LOGIN).
+-- Keeps this character's slot and token with its team (see PLAYER_LOGIN), and as its ruleset's last team.
 function MF:RememberTeam()
   local c = self.db.chars and self.myName and self.db.chars[self.myName]
-  if c then c.slot, c.token, c.tokenFaction = self.db.slot, self.db.token, self.db.tokenFaction end
+  if not c then return end
+  c.slot, c.token, c.tokenFaction = self.db.slot, self.db.token, self.db.tokenFaction
+  self.rs.slot, self.rs.token, self.rs.tokenFaction = c.slot, c.token, c.tokenFaction
 end
 
 -- Names in Forever are "First Last" with a space and no realm part: always treat them as opaque whole strings.

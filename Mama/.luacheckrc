@@ -40,6 +40,7 @@ read_globals = {
   "ConfirmAcceptQuest",
   "C_AddOns",
   "C_ChatInfo",
+  "C_GameRules",
   "C_GossipInfo",
   "C_PartyInfo",
   "C_QuestLog",

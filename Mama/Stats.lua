@@ -12,19 +12,26 @@
    ]] --
 -- Stats: each window tells the team its gold, free bag slots and xp in its level ("G;copper;free;slots;xp", the xp is
 -- for quest loot and only as of the last money/bag change, e.g. a quest turn-in), whispered once to each team
--- member we first hear from directly and sent again (debounced) when they change. Remembered per faction across
--- sessions, so characters not logged in (alts) still count, with their last known values.
+-- member we first hear from directly and sent again (debounced) when they change. Remembered per ruleset and faction
+-- across sessions, so characters not logged in (alts) still count, with their last known values (only those of our
+-- ruleset: no gold moves between rulesets).
 -- The hello whisper also carries the account's other characters' gold (";accountId;alliance,horde" copper, fixed for
 -- the session): the faction and grand totals then add each account once, the same in every window that heard them all.
 local _, MF = ...
 
 local DELAY = 5 -- seconds to wait after a change before telling the team (looting changes them in bursts)
 
--- name -> {money = copper, free = free bag slots, slots = bag slots, t = time()} for this faction.
+-- faction -> name -> {money = copper, free = free bag slots, slots = bag slots, t = time()} for this ruleset.
+local function allStats(self)
+  self.rs.stats = self.rs.stats or {}
+  return self.rs.stats
+end
+
+-- name -> stats (see allStats) for this faction.
 function MF:TeamStats()
-  self.db.stats = self.db.stats or {}
-  self.db.stats[self.faction] = self.db.stats[self.faction] or {}
-  return self.db.stats[self.faction]
+  local stats = allStats(self)
+  stats[self.faction] = stats[self.faction] or {}
+  return stats[self.faction]
 end
 
 function MF:StatsOf(name) return name and self:TeamStats()[name] end
@@ -53,7 +60,7 @@ local others = {Alliance = 0, Horde = 0}
 
 local function cacheOthers(self)
   others = {Alliance = 0, Horde = 0}
-  for faction, stats in pairs(self.db.stats or {}) do
+  for faction, stats in pairs(allStats(self)) do
     for name, s in pairs(stats) do
       if name ~= self.myName and self.db.chars[name] and others[faction] then
         others[faction] = others[faction] + s.money
@@ -101,20 +108,21 @@ MF.messageHandlers.G = function(self, sender, rest)
   -- Hello: the latest character of that account and its account's others (its own gold stays live in its stats).
   local id, a, h = tail:match("^;(%w+);(%d+),(%d+)$")
   if id then
-    self.db.accounts = self.db.accounts or {}
-    self.db.accounts[id] = {name = sender, faction = self.faction, Alliance = tonumber(a), Horde = tonumber(h)}
+    self.rs.accounts = self.rs.accounts or {}
+    self.rs.accounts[id] = {name = sender, faction = self.faction, Alliance = tonumber(a), Horde = tonumber(h)}
   end
   self:Fire("STATS", sender)
 end
 
--- faction -> copper of every account we know (ours live, the others' alts as of their last hello plus the sender's
--- last stats), and the grand total.
+-- faction -> copper of every account we know in this ruleset (ours live, the others' alts as of their last hello plus
+-- the sender's last stats), and the grand total.
 function MF:AllMoney()
   local sums = {Alliance = others.Alliance, Horde = others.Horde}
   sums[self.faction] = (sums[self.faction] or 0) + GetMoney()
-  for id, a in pairs(self.db.accounts or {}) do
+  local stats = allStats(self)
+  for id, a in pairs(self.rs.accounts or {}) do
     if id ~= accountId(self) then
-      local s = self.db.stats[a.faction] and self.db.stats[a.faction][a.name]
+      local s = stats[a.faction] and stats[a.faction][a.name]
       sums.Alliance = sums.Alliance + a.Alliance
       sums.Horde = sums.Horde + a.Horde
       if s then sums[a.faction] = (sums[a.faction] or 0) + s.money end
