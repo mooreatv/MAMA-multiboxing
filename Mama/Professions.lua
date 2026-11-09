@@ -83,11 +83,11 @@ local function signature(profs)
   return encode(rounded)
 end
 
--- name -> {[skillLineID] = rank} for this faction's team (us included), remembered across sessions.
+-- name -> {[skillLineID] = rank} for this ruleset and faction's team (us included), remembered across sessions.
 function MF:TeamProfessions()
-  self.db.profs = self.db.profs or {}
-  self.db.profs[self.faction] = self.db.profs[self.faction] or {}
-  return self.db.profs[self.faction]
+  self.rs.profs = self.rs.profs or {}
+  self.rs.profs[self.faction] = self.rs.profs[self.faction] or {}
+  return self.rs.profs[self.faction]
 end
 
 function MF:ProfessionsOf(name) return self:TeamProfessions()[name] end
