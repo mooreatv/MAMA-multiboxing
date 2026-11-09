@@ -91,16 +91,17 @@ end
 
 function MF:CanShareToken() return shared() ~= nil end
 
--- sv.Mama = ruleset -> {token, faction}. Before rulesets (up to v2.14.2) it was a single {token, faction}: the first
--- window to read it takes it as its ruleset's (see migrate in Mama.lua).
+-- sv.Mama = ruleset -> {token, faction}. Before rulesets (up to v2.14.2) it was a single {token, faction}: kept for the
+-- ruleset of the characters holding it, dropped when there's none (windows save theirs at login when the PC has none).
 local function sharedTokens(self)
   local sv = shared()
   if not sv then return nil end
   if type(sv.Mama) ~= "table" then
     sv.Mama = {}
   elseif sv.Mama.token then
-    sv.Mama = {[self.ruleset] = {token = sv.Mama.token, faction = sv.Mama.faction}}
-    self:Debug("pre-ruleset PC token -> %s", self.ruleset)
+    local r = self:TokenRuleset(sv.Mama.token)
+    sv.Mama = r and {[r] = {token = sv.Mama.token, faction = sv.Mama.faction}} or {}
+    self:Debug("pre-ruleset PC token -> %s", tostring(r))
   end
   return sv.Mama
 end
@@ -110,11 +111,15 @@ function MF:ShareToken()
   if tokens then tokens[self.ruleset] = {token = self.db.token, faction = self.db.tokenFaction} end
 end
 
--- Returns this ruleset's token saved on this PC and its master's faction, nil when there is none (or it's not valid).
+-- Returns this ruleset's token saved on this PC and its master's faction, nil when there is none (or it's not valid, or
+-- held by characters of another ruleset).
 function MF:SharedToken()
   local tokens = sharedTokens(self)
   local m = tokens and type(tokens[self.ruleset]) == "table" and tokens[self.ruleset]
-  if m and self:ParseToken(m.token) then return m.token, m.faction end
+  if not (m and self:ParseToken(m.token)) then return nil end
+  local r = self:TokenRuleset(m.token)
+  if r and r ~= self.ruleset then return nil end
+  return m.token, m.faction
 end
 
 -- At login (not when Mama is off for this character): no token yet -> take this PC's; ours and none saved on the PC

@@ -180,23 +180,20 @@ function MF:Ruleset()
   return #active > 0 and table.concat(active, "-") or "Normal"
 end
 
--- Saved variables from before rulesets (up to v2.14.2): their team data goes to the first ruleset loaded since, the
--- rest (gold, bags, professions of the other characters) is dropped and comes back as they log in. Existing characters
--- of the other rulesets start without a team: theirs was copied from that one.
+-- Saved variables from before rulesets (up to v2.14.2): each character keeps its own team (tagged with its ruleset at
+-- its next login, see PLAYER_LOGIN), the slot history goes to the first ruleset loaded since; the account's last team
+-- comes back as characters log in, the rest (gold, bags, professions of the other characters) as they send it.
 local function migrate(s, ruleset)
   if s.rulesets then return end
-  s.rulesets = {
-    [ruleset] = {
-      slotsBy = s.slotsBy,
-      history = s.history,
-      slot = s.slot,
-      token = s.token,
-      tokenFaction = s.tokenFaction
-    }
-  }
-  s.oldRuleset = ruleset
+  s.rulesets = {[ruleset] = {history = s.history}}
   s.slotsBy, s.history, s.stats, s.accounts, s.profs = nil, nil, nil, nil, nil
-  MF:Debug("pre-ruleset team data -> %s", ruleset)
+  MF:Debug("pre-ruleset slot history -> %s", ruleset)
+end
+
+-- Ruleset of this account's characters holding token (nil when none of them is tagged yet).
+function MF:TokenRuleset(token)
+  if not token then return nil end
+  for _, c in pairs(self.db.chars) do if c.token == token and c.ruleset then return c.ruleset end end
 end
 
 MF:On("PLAYER_LOGIN", function(self)
@@ -222,8 +219,10 @@ MF:On("PLAYER_LOGIN", function(self)
   s.chars = s.chars or {}
   local last = rs.slotsBy[self.faction] or {}
   local c = s.chars[self.myName]
-  if c and not c.ruleset and self.ruleset ~= s.oldRuleset then -- see migrate
-    self:Debug("%s: pre-ruleset team dropped (from %s)", self.myName, tostring(s.oldRuleset))
+  -- Created before rulesets with a team of another ruleset (a new character copied the account's last team): drop it.
+  local other = c and not c.ruleset and self:TokenRuleset(c.token)
+  if other and other ~= self.ruleset then
+    self:Debug("%s: pre-ruleset team dropped (token of %s)", self.myName, other)
     c = nil
   end
   if c then
