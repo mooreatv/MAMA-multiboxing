@@ -15,6 +15,54 @@ local _, MF = ...
 
 MF.roster = {} -- full name -> unit token, for the other group members
 
+-- Highest slot of the team.
+function MF:TeamSize()
+  local n = 0
+  for s in pairs(self.db.slots) do if s > n then n = s end end
+  return n
+end
+
+-- Groups: "raid" = the whole team in one group (slot 1 invites, raid above 5); "split" = groups of db.groupSize by slot
+-- (1..N, N+1..2N...), each invited by its first slot. Auto raid on starts as one raid, off split; merging or splitting
+-- (MF:MergeGroups/SplitGroups) sets this character's mode until logout (kept across /reload).
+function MF:GroupMode()
+  local c = self.myName and self.db.chars and self.db.chars[self.myName]
+  return c and c.groupMode or (self.db.autoRaid and "raid" or "split")
+end
+
+function MF:SplitMode() return self:GroupMode() == "split" end
+
+local function setGroupMode(self, mode)
+  local c = self.db.chars[self.myName]
+  c.groupMode, c.groupModeAt = mode, GetServerTime()
+  self:Fire("TEAM_CHANGED")
+end
+
+MF:On("PLAYER_ENTERING_WORLD", function(self, isInitialLogin)
+  local c = isInitialLogin and self.myName and self.db.chars and self.db.chars[self.myName]
+  if c then c.groupMode, c.groupModeAt = nil, nil end
+end)
+
+-- First and last slot of slot s's group (default: ours): the whole team unless split.
+function MF:GroupRange(s)
+  s = s or self.db.slot
+  if s < 1 or not self:SplitMode() then return 1, self.maxSlot end
+  local n = self.db.groupSize
+  local lo = math.floor((s - 1) / n) * n + 1
+  return lo, lo + n - 1
+end
+
+-- Team member of our group (the whole team unless split).
+function MF:InMyGroup(name)
+  local s = self:SlotOf(name)
+  if not s then return false end
+  local lo, hi = self:GroupRange()
+  return s >= lo and s <= hi
+end
+
+-- This window invites its group automatically: slot 1, and when split the first slot of each group.
+function MF:IsGroupInviter() return self:Token() ~= nil and self.db.slot > 0 and self.db.slot == self:GroupRange() end
+
 local wasGrouped
 function MF:RefreshRoster()
   -- An explicit lead belongs to one group: forget it once we leave (or start out of) a group.
@@ -35,10 +83,10 @@ function MF:GetLead()
   -- An explicit lead only counts while it is us, in our current group or in our team (it may be left over from a
   -- previous team); the team case lets the macro follow the lead while not grouped (yet).
   local lead = self.db.lead
-  if lead and (lead == self.myName or self.roster[lead] or self:SlotOf(lead)) then return lead end
+  if lead and (lead == self.myName or self.roster[lead] or self:InMyGroup(lead)) then return lead end
   for _, u in ipairs(self:GroupUnits()) do if UnitIsGroupLeader(u) then return self:FullName(u) end end
-  -- Not grouped: the master (slot 1) leads until someone says otherwise.
-  local master = not IsInGroup() and self.db.slots[1]
+  -- Not grouped: the master (slot 1, or our group's first slot when split) leads until someone says otherwise.
+  local master = not IsInGroup() and self.db.slots[(self:GroupRange())]
   if master and master ~= self.myName then return master end
   return nil
 end
@@ -76,11 +124,11 @@ local function groupState(self)
   end
   if strangers then return "strangers" end
   if mates < n then return nil end
-  local expected = 0
-  for s in pairs(self.db.slots) do if s > expected then expected = s end end
+  local expected = self:TeamSize()
   if expected < 2 then return "partial" end
-  -- away members don't hold back a complete team
-  for s = 1, expected do
+  -- away members don't hold back a complete team; split in groups: our group's slots only
+  local lo, hi = self:GroupRange()
+  for s = lo, math.min(hi, expected) do
     local name = self.db.slots[s]
     if not (name and (name == self.myName or self.roster[name] or self:IsAway(name))) then return "partial" end
   end
@@ -357,8 +405,8 @@ local function processInvites(tries)
       table.remove(inviteQueue, 1)
     else
       if inviteCount >= 5 and not IsInRaid() then
-        if not MF.db.autoRaid then
-          MF:Error("group is full: turn on auto raid (/mama options) to invite more than 5")
+        if MF:SplitMode() then
+          MF:Error("group is full: merge the groups into a raid (Shift+Left click on the status window, /mama merge)")
           inviteQueue = nil
           return
         end
@@ -390,7 +438,8 @@ function MF:InviteMissing(onlyOnline, quiet)
   if inviteQueue then return end -- already running
   inviteQueue = {}
   local slots = {}
-  for s in pairs(self.db.slots) do slots[#slots + 1] = s end
+  local lo, hi = self:GroupRange()
+  for s in pairs(self.db.slots) do if s >= lo and s <= hi then slots[#slots + 1] = s end end
   table.sort(slots)
   for _, s in ipairs(slots) do
     local n = self.db.slots[s]
@@ -411,7 +460,7 @@ end
 -- lagging whispers that saves a whole round trip. Members not logged in yet only give a "not found" error.
 MF:Listen("LOGIN", function(self)
   C_Timer.After(5, function()
-    if not (self.db.autoInvite and self:IsMaster()) or self:Disabled() then return end
+    if not (self.db.autoInvite and self:IsGroupInviter()) or self:Disabled() then return end
     if IsInGroup() and not UnitIsGroupLeader("player") then return end
     self:Debug("inviting the team at login")
     self:InviteMissing(false, true)
@@ -427,7 +476,9 @@ function MF:ScheduleInvites()
     invitePending = false
     local missing = false
     for _, n in pairs(self.db.slots) do
-      if n ~= self.myName and not self.roster[n] and self.online[n] and not self:IsAway(n) then missing = true end
+      if n ~= self.myName and not self.roster[n] and self.online[n] and not self:IsAway(n) and self:InMyGroup(n) then
+        missing = true
+      end
     end
     if missing then self:InviteMissing(true) end
   end)
@@ -440,6 +491,139 @@ function MF:PartyToggle()
   else
     self:Print("switching to raid")
     C_PartyInfo.ConvertToRaid()
+  end
+end
+
+-- Merge and split: every window acts on its own part, so the key binding pressed on all windows at once is quick.
+-- Done on slot 1 only (status window click): a merge whispers the other groups' first slots ("M;r"), which can take a
+-- minute or two to arrive, and they whisper "M;d" back once their group is disbanded; a split goes to the team ("M;s").
+
+-- The first slot of every group but ours (split by db.groupSize, whatever our mode).
+local function otherLeads(self)
+  local n, list = self.db.groupSize, {}
+  for s, name in pairs(self.db.slots) do
+    if s > 1 and (s - 1) % n == 0 and name ~= self.myName then list[#list + 1] = name end
+  end
+  return list
+end
+
+local function groupedWithOutsiders(self)
+  for name in pairs(self.roster) do if self:SlotOf(name) and not self:InMyGroup(name) then return true end end
+  return false
+end
+
+-- Grouped with a team member of another group (split by db.groupSize, whatever our mode): the groups are merged.
+function MF:Merged()
+  local n = self.db.groupSize
+  local mine = math.floor((self.db.slot - 1) / n)
+  for name in pairs(self.roster) do
+    local s = self:SlotOf(name)
+    if s and math.floor((s - 1) / n) ~= mine then return true end
+  end
+  return false
+end
+
+-- A group's first slot, once out of its group: tells slot 1 to invite us (and the rest of our former group).
+local function readyToJoin(self, master, tries)
+  if self:GroupMode() ~= "raid" or self.roster[master] then return end
+  if IsInGroup() then
+    if tries < 30 then C_Timer.After(0.5, function() self:Call(readyToJoin, self, master, tries + 1) end) end
+    return
+  end
+  -- the rest of our group left on our "M;r" at the same time
+  C_Timer.After(1, function() self:SendWhisper(master, "M;d", "ready to join the raid") end)
+end
+
+local function isFirstSlot(self) return self.db.slot > 0 and (self.db.slot - 1) % self.db.groupSize == 0 end
+
+-- Slot 1: the whole team in one raid. Others: out of any group without slot 1. Each window leaves by itself: uninvites
+-- from addon code are blocked (UninviteUnit needs a click or key press), so a group's first slot passes "M;r" on to
+-- its group (the key binding on all windows does it all at once).
+function MF:MergeGroups()
+  setGroupMode(self, "raid")
+  if self.db.slot == 1 then
+    self:Print("merging the groups into one raid")
+    local leads = otherLeads(self)
+    for _, name in ipairs(leads) do self:SendWhisper(name, "M;r", "merging the groups") end
+    -- the others' groups first have to be gone: invites on each lead's "M;d" (quick with the key binding on all
+    -- windows); a late pass for groups whose lead doesn't answer (Mama off), else right away
+    C_Timer.After(#leads > 0 and 15 or 1,
+                  function() if self:GroupMode() == "raid" then self:InviteMissing(false, true) end end)
+    return
+  end
+  local master = self.db.slots[1]
+  if not master or self.roster[master] then return end
+  if IsInGroup() then
+    if isFirstSlot(self) then
+      self:SendGroup("M;r")
+      C_Timer.After(1, function() if not self.roster[master] then C_PartyInfo.LeaveParty() end end) -- once sent
+    else
+      C_PartyInfo.LeaveParty()
+    end
+  end
+  -- a group's first slot tells slot 1 once out (also when the key binding already did it all: harmless)
+  if isFirstSlot(self) then C_Timer.After(0.5, function() self:Call(readyToJoin, self, master, 0) end) end
+end
+
+-- Once no member of another group is left in ours: back to a party, then our group's first slot invites its group.
+local function settleSplit(self, tries)
+  if self:GroupMode() ~= "split" then return end
+  if groupedWithOutsiders(self) then
+    if tries < 30 then C_Timer.After(1, function() self:Call(settleSplit, self, tries + 1) end) end
+    return
+  end
+  if IsInRaid() and UnitIsGroupLeader("player") and GetNumGroupMembers() <= 5 then C_PartyInfo.ConvertToParty() end
+  -- the others of our group may still be leaving the raid
+  if self.db.slot == self:GroupRange() then
+    C_Timer.After(2, function() if self:SplitMode() then self:InviteMissing(false, true) end end)
+  end
+end
+
+-- Groups of db.groupSize: members leave a group led by another group's member (uninvites are blocked from addon code,
+-- see MergeGroups); each group's first slot then invites its group. Slot 1 tells the team on the raid ("M;s", no
+-- whisper lag).
+function MF:SplitGroups()
+  setGroupMode(self, "split")
+  self:Print("splitting the team in groups of %d", self.db.groupSize)
+  if self.db.slot == 1 then self:SendTeam("M;s", true) end
+  if IsInGroup() and not UnitIsGroupLeader("player") and groupedWithOutsiders(self) then
+    local leader
+    for name, u in pairs(self.roster) do if UnitIsGroupLeader(u) then leader = name end end
+    if not (leader and self:InMyGroup(leader)) then C_PartyInfo.LeaveParty() end
+  end
+  C_Timer.After(1, function() self:Call(settleSplit, self, 0) end)
+end
+
+-- Merged <-> split (from the group we're in) when the team is bigger than a group, else party <-> raid.
+function MF:ToggleGroups()
+  if self:TeamSize() <= self.db.groupSize then return self:PartyToggle() end
+  if self:Merged() then
+    self:SplitGroups()
+  else
+    self:MergeGroups()
+  end
+end
+
+-- From slot 1: "r" merge, "s" split; "r" also from our group's first slot (passing it on). "d" (to slot 1): that group
+-- is gone, invite them. Whispers can arrive late: one sent before our last merge or split is ignored.
+MF.messageHandlers.M = function(self, sender, rest, delay)
+  if rest == "d" then
+    if self.db.slot == 1 and self:GroupMode() == "raid" then self:InviteMissing(false, true) end
+    return
+  end
+  local from, n = self:SlotOf(sender), self.db.groupSize
+  local first = self.db.slot > 0 and math.floor((self.db.slot - 1) / n) * n + 1
+  if from ~= 1 and not (rest == "r" and from == first) then return end
+  local c = self.db.chars[self.myName]
+  if c.groupModeAt and c.groupModeAt > GetServerTime() - (delay or 0) then
+    self:Debug("ignoring %s's group change from before ours", sender)
+    return
+  end
+  self:Print("%s asks to %s", sender, rest == "r" and "merge the groups into a raid" or "split the team")
+  if rest == "r" then
+    self:MergeGroups()
+  elseif rest == "s" then
+    self:SplitGroups()
   end
 end
 
@@ -461,11 +645,25 @@ end
 
 MF:AddCommand("disband", function(self) self:Disband() end,
               "disband - leader: uninvite the team; otherwise leave the group")
-MF:AddCommand("raid", function(self) self:PartyToggle() end, "raid - toggle between party and raid")
+MF:AddCommand("raid", function(self) self:ToggleGroups() end,
+              "raid - team bigger than a group: merge the groups into a raid / split it again; else party / raid")
+MF:AddCommand("merge", function(self) self:MergeGroups() end,
+              "merge - the whole team in one raid (this session; key binding on all windows: instant)")
+MF:AddCommand("split", function(self) self:SplitGroups() end,
+              "split - split the team in groups by slot (this session; key binding on all windows: instant)")
+MF:AddCommand("groups", function(self, rest)
+  local n = tonumber(rest)
+  if rest ~= "" and not (n and n >= 2 and n <= 5 and n == math.floor(n)) then
+    self:Print("usage: /mama groups [2-5]")
+    return
+  end
+  if n then self:SetOption("groupSize", n) end
+  self:Print("groups of %d (%s now)", self.db.groupSize, self:SplitMode() and "split" or "one raid")
+end, "groups [2-5] - size of the groups the team splits in (auto raid off, or /mama split)")
 MF:AddCommand("autoinvite", function(self, rest)
   self:SetOption("autoInvite", self:ParseOnOff(rest, self.db.autoInvite))
-  self:Print("slot 1 auto invite is now %s", tostring(self.db.autoInvite))
-end, "autoinvite [on|off] - slot 1 invites team members as they come online")
+  self:Print("auto invite is now %s", tostring(self.db.autoInvite))
+end, "autoinvite [on|off] - slot 1 (when split: each group's first slot) invites team members as they come online")
 
 MF:AddCommand("status", function(self)
   local lead = self:GetLead()

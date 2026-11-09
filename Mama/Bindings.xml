@@ -22,6 +22,9 @@
     <Binding name="MAMA_COMPLETE" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:TeamComplete()
     </Binding>
+    <Binding name="MAMA_GROUPS" category="BINDING_HEADER_MAMAFOREVER">
+        MamaForever:ToggleGroups()
+    </Binding>
     <Binding name="MAMA_DISBAND" category="BINDING_HEADER_MAMAFOREVER">
         MamaForever:Disband()
     </Binding>

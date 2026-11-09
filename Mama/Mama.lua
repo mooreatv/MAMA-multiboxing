@@ -37,6 +37,7 @@ MF.defaults = {
   autoAbandon = true,
   autoInvite = true,
   autoRaid = true,
+  groupSize = 5, -- groups the team splits in (auto raid off, or merged/split by hand, Team.lua)
   autoFFA = true,
   masterLoot = true,
   autoTrade = true,

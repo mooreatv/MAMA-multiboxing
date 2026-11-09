@@ -19,7 +19,8 @@ local ALNUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 local MOD = 4294967296
 local FUTURE_LIMIT, PAST_LIMIT = -5, 120 -- seconds a message may be from the future / past
 -- Whispered info ("slot N is X") is still useful when it arrives late, and whispers can't be seen (so replayed) by
--- others: accept it for longer. Other kinds (abandon, settings...) could undo something done since.
+-- others: accept it for longer. Same for merge/split ("M;", ignored when older than our last change). Other kinds
+-- (abandon, settings...) could undo something done since.
 local LATE_INFO_LIMIT = 600
 
 local function now() return GetServerTime() end
@@ -173,7 +174,8 @@ function MF:VerifyMessage(msg, tok, channel)
   if self:Sign(base, tok.secret) ~= sig then return false, "bad signature" end
   local delta = now() - tonumber(ts)
   if delta < FUTURE_LIMIT then return false, "from the future" end
-  local limit = (channel == "WHISPER" and payload:sub(1, 2) == "I;") and LATE_INFO_LIMIT or PAST_LIMIT
+  local late = payload:sub(1, 2) == "I;" or payload:sub(1, 2) == "M;"
+  local limit = (channel == "WHISPER" and late) and LATE_INFO_LIMIT or PAST_LIMIT
   if delta > limit then return false, ("too old (%ds)"):format(delta) end
   if accepted[sig] then return false, "replayed" end
   accepted[sig] = now()
@@ -539,7 +541,7 @@ function MF:HandleInfo(sender, slot, name, flag)
   if asking then answered[name] = {at = GetTime(), slot = slot} end
   if asking then self:Fire("MEMBER_SEEN", name) end
   if asking and flag == 1 then self:SendInfo(name, 0, "answering their announce", true) end
-  if self.db.autoInvite and self:IsMaster() and not self.roster[name] then
+  if self.db.autoInvite and self:IsGroupInviter() and self:InMyGroup(name) and not self.roster[name] then
     self:Debug("%s isn't grouped with us: scheduling invites", name)
     self:ScheduleInvites()
   end
@@ -576,7 +578,7 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
              delay > 1 and (" (%ds late)"):format(delay) or "", payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
-  if handler then handler(self, sender, rest) end
+  if handler then handler(self, sender, rest, delay) end
 end)
 
 -- kind letter -> function(MF, sender, rest of payload) lives in MF.messageHandlers (defined in Mama.lua).
