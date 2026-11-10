@@ -97,6 +97,7 @@ read_globals = {
   "SelectActiveQuest",
   "SelectAvailableQuest",
   "Settings",
+  "SettingsPanel",
   "StaticPopup_Hide",
   "StaticPopup_OnClick",
   "StaticPopup_Show",

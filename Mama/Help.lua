@@ -58,12 +58,36 @@ local function esc(s) return (s:gsub("|", "||")) end
 local helpFrame
 local bindingKeys = {} -- {font string, binding action}
 
+-- Clicks our section's header in the key bindings list when it's collapsed (what a player click does: the section
+-- remembers it). False while its frame isn't there yet.
+local function unfoldBindings()
+  local list = SettingsPanel and SettingsPanel:GetSettingsList()
+  local box = list and list.ScrollBox
+  if not box or not box.ForEachFrame then return true end -- not the expected UI: give up
+  local found
+  box:ForEachFrame(function(frame)
+    local init = frame.GetElementData and frame:GetElementData()
+    local data = type(init) == "table" and init.data
+    if type(data) == "table" and data.name == BINDING_HEADER_MAMAFOREVER and frame.Button then
+      found = true
+      if not data.expanded then frame.Button:Click() end
+    end
+  end)
+  return found
+end
+
 local function openBindings()
-  if Settings.KEYBINDINGS_CATEGORY_ID then
-    Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, BINDING_HEADER_MAMAFOREVER)
-  else
+  if not Settings.KEYBINDINGS_CATEGORY_ID then
     MF:Error("no key bindings page found: Game Menu > Options > Key bindings")
+    return
   end
+  Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, BINDING_HEADER_MAMAFOREVER)
+  local tries = 0
+  local function try()
+    tries = tries + 1
+    if not unfoldBindings() and tries < 10 then MF:After(0.05, try) end
+  end
+  try()
 end
 
 local function topButton(f, label, tip, x, fn)
