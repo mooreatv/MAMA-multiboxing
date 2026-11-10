@@ -230,7 +230,7 @@ One row per slot. White is this window, green is in the group, yellow is online 
 blue grey is away (left out of the title count), `*` marks the lead. The number right of each name is its free bag slots (orange under 5, red when full). The bottom
 line is the team's gold; hover it for the gold and bag slots of every character of this faction you've played with
 Mama, alts included (last known values), then the gold of all the team's accounts per faction and in total (in compact
-view, hover the title for it). Click the `?` on the title (or Alt+Middle, or `/mama clicks`) for all the shortcuts:
+view, hover the title for it). Click the `?` on the title (or Alt+Middle, or `/mama`) for the help window with all the shortcuts:
 
 | Click | Action |
 |---|---|
@@ -264,10 +264,12 @@ remembered for that character until `/mama enable` turns it back on.
 
 ## Commands and options
 
-`/mama help` lists everything: `s`, `token`, `lead`, `team`, `away`, `back`, `complete`, `invite`, `disband`, `raid`,
-`merge`, `split`, `groups`, `autoinvite`, `status`, `macro`, `setup`, `quest`, `dialog`, `gossip`, `profs`, `trade`,
-`vendor`, `loot`, `identify`, `ui`, `clicks`, `options`, `enable`, `disable`, `debug`, `bug` (copyable log),
-`clearlog`. The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
+`/mama` (or `/mama help`, or the Help button of the options page) opens the help window: the status window's mouse
+shortcuts, the key bindings with their current keys, and every command by topic: `s`, `token`, `team`, `complete`,
+`away`, `back`, `status`, `invite`, `autoinvite`, `disband`, `raid`, `merge`, `split`, `groups`, `lead`, `macro`,
+`quest`, `dialog`, `gossip`, `setup`, `loot`, `trade`, `vendor`, `profs`, `ui`, `identify`, `options`, `enable`,
+`disable`, `bug` (copyable log), `clearlog`, `debug`. Its buttons open the options, the key bindings and the log.
+The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
 for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
 master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
 choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper

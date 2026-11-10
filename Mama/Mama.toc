@@ -29,3 +29,4 @@ Status.lua
 Options.lua
 Bug.lua
 UI.lua
+Help.lua

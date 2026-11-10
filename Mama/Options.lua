@@ -294,7 +294,13 @@ end
 
 MF:Listen("LOGIN", function(self)
   local panel, sub = newPanel("Mama-forever", "Mama-forever (" .. self.version .. ")",
-                              "Team setup: |cFF99E5FF/mama s N|r in each window. All commands: |cFF99E5FF/mama help|r")
+                              "Team setup: |cFF99E5FF/mama s N|r in each window. Commands, mouse shortcuts and key " ..
+                                "bindings: Help (or |cFF99E5FF/mama|r)")
+  local help = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+  help:SetSize(90, 24)
+  help:SetPoint("TOPRIGHT", -16, -16)
+  help:SetText("Help")
+  help:SetScript("OnClick", function() self:ShowHelp() end)
   sendButton(panel, layout(panel, sub, optionSections()))
   groupSizeSlider(panel, checkboxes.autoRaid)
   self.category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)

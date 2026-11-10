@@ -15,7 +15,7 @@
 -- blue grey = away (Alt+left click on its row toggles it), left out of the header count.
 -- Right of each name: free bag slots; the bottom line has the team's gold (hover it for every character's;
 -- in compact view the title tooltip has it).
--- Window clicks (header or any row, listed in the help window: "?" on the header, Alt+Middle or /mama clicks):
+-- Window clicks (header or any row, listed in the help window, Help.lua: "?" on the header, Alt+Middle or /mama):
 -- invite, disband, merge/split groups (also a header button when the team is bigger than a group), auto invite,
 -- resync, token dialog, options, compact view, identify, turn Mama off/on for this character ("disabled" in the
 -- title). Plain click on a row targets it (or invites it if not grouped).
@@ -27,90 +27,6 @@ local frame
 local pendingRefresh
 
 local KEY = "|cFF99E5FF%s|r"
-
--- Help window grid: one line per mouse button, one column per modifier.
-local CLICK_COLUMNS = {"", "Plain", "Shift", "Ctrl", "Alt"}
-local CLICK_ROWS = {
-  {
-    "Left", "Invite the team (our group when split)", "Merge groups into a raid / split again (or party / raid)",
-    "Auto invite on/off", "Resend our info to the team"
-  },
-  {"Right", "Options", "Compact view", "Show / paste the team token", "Team complete (forget slots that aren't here)"},
-  {
-    "Middle", "Disband (leader uninvites the team, others leave)", "Big slot number", "Mama off/on for this character",
-    "This help"
-  }
-}
-local HELP_NOTES = {
-  {
-    "On a member row", ("%s target it (invite it when not grouped), %s its unit menu, %s away/back (no invites, " ..
-      "follow alerts, quest or dialog sync). Other clicks: same as the title."):format(KEY:format("Left"),
-                                                                                       KEY:format("Right"),
-                                                                                       KEY:format("Alt+Left"))
-  }, {
-    "Window", ("%s the title to move, %s to resize. Hover the bottom line (the title in compact view) for every " ..
-      "character's gold and free bag slots."):format(KEY:format("Drag"), KEY:format("Mouse wheel"))
-  }
-}
-
-local helpFrame
-local function BuildHelp()
-  local f = CreateFrame("Frame", "MamaForeverClickHelp", UIParent, "BasicFrameTemplateWithInset")
-  f:SetFrameStrata("DIALOG")
-  f:SetPoint("CENTER", 0, 100)
-  f:EnableMouse(true)
-  f:SetMovable(true)
-  f:SetClampedToScreen(true)
-  f:RegisterForDrag("LeftButton")
-  f:SetScript("OnDragStart", f.StartMoving)
-  f:SetScript("OnDragStop", f.StopMovingOrSizing)
-  tinsert(UISpecialFrames, f:GetName()) -- Escape closes it
-  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  title:SetPoint("TOP", 0, -5)
-  title:SetText("Mama status window: mouse shortcuts")
-  local PAD, FIRST, COL, GAP = 16, 60, 120, 8
-  local width = PAD * 2 + FIRST + COL * (#CLICK_COLUMNS - 1)
-  local y = -36
-  local function line(cells, header)
-    local h = 0
-    local x = PAD
-    for i, text in ipairs(cells) do
-      local w = i == 1 and FIRST or COL
-      local fs = f:CreateFontString(nil, "OVERLAY",
-                                    (header or i == 1) and "GameFontNormalSmall" or "GameFontHighlightSmall")
-      fs:SetPoint("TOPLEFT", x, y)
-      fs:SetWidth(w - GAP)
-      fs:SetJustifyH("LEFT")
-      fs:SetText(text)
-      h = math.max(h, fs:GetStringHeight())
-      x = x + w
-    end
-    y = y - h - GAP
-  end
-  line(CLICK_COLUMNS, true)
-  for _, cells in ipairs(CLICK_ROWS) do line(cells) end
-  for _, note in ipairs(HELP_NOTES) do
-    y = y - 4
-    local head = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    head:SetPoint("TOPLEFT", PAD, y)
-    head:SetText(note[1])
-    y = y - head:GetStringHeight() - 4
-    local body = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    body:SetPoint("TOPLEFT", PAD, y)
-    body:SetWidth(width - PAD * 2)
-    body:SetJustifyH("LEFT")
-    body:SetText(note[2])
-    y = y - body:GetStringHeight() - GAP
-  end
-  f:SetSize(width, 12 - y)
-  return f
-end
-
--- Toggles the mouse shortcuts window.
-function MF:ShowClickHelp()
-  helpFrame = helpFrame or BuildHelp()
-  helpFrame:SetShown(not helpFrame:IsShown())
-end
 
 local function stateOf(name)
   if name == MF.myName then return "me", 1, 1, 1, "ffffff" end
@@ -200,7 +116,7 @@ local function WindowClick(button)
     elseif shift then
       MF:Identify()
     elseif alt then
-      MF:ShowClickHelp()
+      MF:ShowHelp(true)
     else
       MF:Disband()
     end
@@ -275,11 +191,11 @@ local function MakeFrame()
   header:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine(("Mama team: %d of %d grouped"):format(f.grouped or 0, f.counted or 0))
-    GameTooltip:AddLine(("%s invite, %s options, %s or %s all the shortcuts"):format(KEY:format("Left"),
-                                                                                     KEY:format("Right"),
-                                                                                     KEY:format("?"),
-                                                                                     KEY:format("Alt+Middle")), 1, 1, 1,
-                        true)
+    GameTooltip:AddLine(("%s invite, %s options, %s or %s help (all the shortcuts)"):format(KEY:format("Left"),
+                                                                                            KEY:format("Right"),
+                                                                                            KEY:format("?"),
+                                                                                            KEY:format("Alt+Middle")),
+                        1, 1, 1, true)
     if MF.db.compact then -- the gold footer is hidden
       GameTooltip:AddLine(" ")
       MF:StatsTooltip()
@@ -296,10 +212,10 @@ local function MakeFrame()
   help:SetHighlightFontObject("GameFontHighlightSmall")
   help:SetText("?")
   help:RegisterForClicks("AnyUp")
-  help:SetScript("OnClick", function() MF:ShowClickHelp() end)
+  help:SetScript("OnClick", function() MF:ShowHelp(true) end)
   help:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Mouse shortcuts")
+    GameTooltip:AddLine("Help: mouse shortcuts, key bindings, commands")
     GameTooltip:Show()
   end)
   help:SetScript("OnLeave", GameTooltip_Hide)
@@ -520,6 +436,4 @@ MF:AddCommand("ui", function(self, rest)
   self:SetOption("showStatus", self:ParseOnOff(rest, self.db.showStatus))
   self:Print("status window is now %s", self.db.showStatus and "shown" or "hidden")
   self:RefreshStatus()
-end, "ui [on|off] - show or hide the team status window (\"?\" on its title for the mouse shortcuts)")
-MF:AddCommand("clicks", function(self) self:ShowClickHelp() end,
-              "clicks - show or hide the status window's mouse shortcuts")
+end, "ui [on|off] - show or hide the team status window")
