@@ -610,7 +610,7 @@ MF:Listen("LOGIN", function(self)
   self:HashSelfTest()
   local onPC = not self:Disabled() and self:UseSharedToken()
   self:SetOwnSlot()
-  C_Timer.After(5, function() self:Announce() end)
+  self:After(5, function() self:Announce() end)
   local c = self.db.chars[self.myName]
   if onPC and self.db.slot == 0 and not c.slotOff then
     self.askSlotAfterCinematic = true
@@ -675,6 +675,7 @@ function MF:SetSlot(n, fromPrompt)
   self.slotPicked = fromPrompt -- a guess: moves when the master says another member holds it (see RecordMember)
   if n == 0 then
     self:SetOwnSlot()
+    self:Fire("TEAM_CHANGED") -- hides the status window
     self:Print("slot cleared, team features are off in this window")
     return
   end
@@ -717,10 +718,15 @@ MF:AddCommand("s", function(self, rest)
 end, "s N - set this window's slot (once per window: 1 = master window shows the token, others paste it)")
 
 MF:AddCommand("token", function(self, rest)
-  if rest == "new" and self.db.slot == 1 then
+  if rest == "new" then
+    if self.db.slot ~= 1 then
+      self:Error("only slot 1 makes a new token (/mama s 1 first to make this window the team master)")
+      return
+    end
     self:SetToken(self:MakeToken(self.myName))
     wipe(self.db.slots)
     self:SetOwnSlot()
+    self:Fire("TEAM_CHANGED")
     self:ShowTokenDialog("copy")
   elseif rest ~= "" then
     local ok, err = self:AcceptToken(rest)

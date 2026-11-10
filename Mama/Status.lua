@@ -174,7 +174,7 @@ local function WindowClick(button)
   local ctrl, shift, alt = IsControlKeyDown(), IsShiftKeyDown(), IsAltKeyDown()
   if button == "LeftButton" then
     if ctrl then
-      MF.db.autoInvite = not MF.db.autoInvite
+      MF:SetOption("autoInvite", not MF.db.autoInvite)
       MF:Print("auto invite is now %s", tostring(MF.db.autoInvite))
     elseif shift then
       MF:ToggleGroups()

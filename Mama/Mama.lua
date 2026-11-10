@@ -55,8 +55,16 @@ local log = {}
 MF.log = log
 
 -- Plain text: no colors (item links use "|cnIQ4:" quality colors) and links reduced to their "[Name]".
+-- The same line again right away (a key pressed over and over...) only updates the last one's time and "(xN)" count.
+local lastMsg, repeats
 local function record(msg)
   msg = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|cn[^:|]*:", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
+  if msg == lastMsg and #log > 0 then
+    repeats = repeats + 1
+    log[#log] = ("%s %s (x%d)"):format(date("%H:%M:%S"), msg, repeats)
+    return
+  end
+  lastMsg, repeats = msg, 1
   log[#log + 1] = date("%H:%M:%S") .. " " .. msg
   if #log > MAX_LOG then table.remove(log, 1) end
 end
@@ -90,14 +98,37 @@ function MF:LoadLog()
   log = saved
 end
 
--- Internal (non-Blizzard) callbacks between modules.
+-- An error in our code goes in the log (once per message, with where, for /mama bug: most players have script errors
+-- off), then to the game's error handler as usual. The other handlers of the event still run.
+local errorsSeen = {}
+local function onError(err)
+  local msg = tostring(err)
+  if not errorsSeen[msg] then
+    errorsSeen[msg] = true
+    MF:Debug("error: %s; %s", msg, (debugstack(2, 4, 0) or ""):gsub("\n", " | "))
+  end
+  geterrorhandler()(err)
+  return err
+end
+
+-- Calls fn(...), errors logged (see onError). Returns whether it worked.
+function MF:Call(fn, ...) return (xpcall(fn, onError, ...)) end
+
+-- C_Timer.After with errors logged.
+function MF:After(seconds, fn) C_Timer.After(seconds, function() xpcall(fn, onError) end) end
+
+-- Chat text, senders and unit GUIDs can be secret values (in dungeons, chat lockdown): they can't be compared, tested
+-- or used as strings.
+function MF.IsSecret(v) return issecretvalue ~= nil and issecretvalue(v) end
+
+-- Internal (non-Blizzard) callbacks between modules: a failing one (logged) doesn't stop the others.
 local listeners = {}
 function MF:Listen(name, fn)
   listeners[name] = listeners[name] or {}
   table.insert(listeners[name], fn)
 end
 
-function MF:Fire(name, ...) for _, fn in ipairs(listeners[name] or {}) do fn(self, ...) end end
+function MF:Fire(name, ...) for _, fn in ipairs(listeners[name] or {}) do xpcall(fn, onError, self, ...) end end
 
 -- Blizzard events: any number of handlers per event, called as fn(MF, ...).
 local frame = CreateFrame("Frame")
@@ -110,22 +141,6 @@ function MF:On(event, fn, first)
   end
   table.insert(handlers[event], first and 1 or #handlers[event] + 1, fn)
 end
-
--- An error in our code goes in the log (once per message, with where, for /mama bug: most players have script errors
--- off), then to the game's error handler as usual. The event's other handlers still run.
-local errorsSeen = {}
-local function onError(err)
-  local msg = tostring(err)
-  if not errorsSeen[msg] then
-    errorsSeen[msg] = true
-    MF:Debug("error: %s; %s", msg, (debugstack(2, 4, 0) or ""):gsub("\n", " | "))
-  end
-  geterrorhandler()(err)
-  return err
-end
-
--- Calls fn(...), errors logged (see onError): for timers. Returns whether it worked.
-function MF:Call(fn, ...) return (xpcall(fn, onError, ...)) end
 
 frame:SetScript("OnEvent",
                 function(_, event, ...) for _, fn in ipairs(handlers[event]) do xpcall(fn, onError, MF, ...) end end)
@@ -331,8 +346,9 @@ SlashCmdList["MAMA"] = function(msg)
   local cmd, rest = (msg or ""):match("^(%S*)%s*(.-)%s*$")
   local c = MF.commands[cmd:lower()]
   if c then
-    c.fn(MF, rest)
+    MF:Call(c.fn, MF, rest)
   else
+    if cmd ~= "" then MF:Error("unknown command %q", cmd) end
     MF:Help()
   end
 end
@@ -341,7 +357,7 @@ MF:AddCommand("help", function(self) self:Help() end, "help - this list")
 MF:AddCommand("debug", function(self, rest)
   self:SetOption("debug", self:ParseOnOff(rest, self.db.debug))
   self:Print("debug is now %s", tostring(self.db.debug))
-end, "debug [on|off] - toggle debug output")
+end, "debug [on|off] - also show the debug lines in chat (they are always in /mama bug)")
 MF:AddCommand("enable", function(self, rest) self:SetDisabled(rest:lower() == "off") end,
               "enable [on|off] - turn Mama on/off for this character (off: no team messages or automation)")
 MF:AddCommand("disable", function(self) self:SetDisabled(true) end, "disable - same as enable off")

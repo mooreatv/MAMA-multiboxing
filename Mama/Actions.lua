@@ -100,8 +100,8 @@ local function makeButton(name)
   b:SetAttribute("useOnKeyDown", false)
   b:RegisterForClicks("AnyUp", "AnyDown")
   b:HookScript("PreClick", function(btn, button, down)
-    MF:Debug("%s pressed (%s, down=%s): %s", name, tostring(button), tostring(down),
-             tostring(btn:GetAttribute("macrotext")):gsub("\n", " | "))
+    if down then return end -- the action runs on key up: one log line per press (repeats collapse in the log)
+    MF:Debug("%s pressed (%s): %s", name, tostring(button), tostring(btn:GetAttribute("macrotext")):gsub("\n", " | "))
   end)
   return b
 end
@@ -230,13 +230,18 @@ local escortConfirmed = false -- the next accepted quest is an escort we joined:
 -- Not for quests shared by a player: the modifier state is seen by every window, so a modifier still held on the
 -- lead while it accepts would leave the shared quest open on the others.
 local heldNpc -- GUID of the NPC whose dialog was opened with a modifier held
-local function noteModifier() heldNpc = IsModifierKeyDown() and UnitGUID("npc") or nil end
+-- nil without a dialog, or when the GUID is a secret value (in dungeons: can't be compared)
+local function npcGUID()
+  local guid = UnitGUID("npc")
+  if not MF.IsSecret(guid) then return guid end
+end
+local function noteModifier() heldNpc = IsModifierKeyDown() and npcGUID() or nil end
 MF:On("GOSSIP_SHOW", noteModifier)
 MF:On("QUEST_GREETING", noteModifier)
 
 local function acceptQuest(self)
   local shared = UnitIsPlayer("questnpc")
-  if not shared and (IsModifierKeyDown() or (heldNpc and heldNpc == UnitGUID("npc"))) then
+  if not shared and (IsModifierKeyDown() or (heldNpc and heldNpc == npcGUID())) then
     self:Debug("not auto accepting quest: modifier held")
     return
   end
@@ -337,4 +342,4 @@ end, "macro [on|off|reset] - show or set whether to maintain this character's MA
 MF:AddCommand("quest", function(self, rest)
   self:SetOption("autoQuest", self:ParseOnOff(rest, self.db.autoQuest))
   self:Print("auto accept quests (while grouped) is now %s", tostring(self.db.autoQuest))
-end, "quest [on|off] - auto accept shared quests/quest dialogs while grouped")
+end, "quest [on|off] - while grouped, auto accept the quests NPCs offer and the ones shared by the team")

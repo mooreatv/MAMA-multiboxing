@@ -58,7 +58,8 @@ local SECTIONS = {
     "Quests and dialogs", {
       {
         "autoQuest", "Auto accept quests",
-        "Accept quests shared by your other windows (and quest dialogs) while grouped."
+        "While grouped, accept the quests NPCs offer and the ones shared by your other windows. Hold Shift, Ctrl " ..
+          "or Alt while opening the NPC to read a quest first."
       },
       {
         "autoShare", "Auto share quests",
