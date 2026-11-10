@@ -99,6 +99,10 @@ hand (or have both in the same guild). Once grouped they record each other and i
 The "lead" is the group leader by default. `/mama lead` on a window makes **that** window the lead for the whole team
 (and the group leader promotes it), `/mama lead auto` goes back to following the group leader.
 
+Macros and key bindings can't change in combat: in a party, they name `party1` (the group leader on every other
+window), so a new group leader is followed and assisted right away, even mid-fight (on the new leader's own window,
+they only clear when combat ends). The follow key stops following a dead lead but keeps assisting it.
+
 Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,

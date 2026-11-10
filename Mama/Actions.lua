@@ -137,8 +137,17 @@ local function retarget(body, target)
   end))
 end
 
+-- What the follow/assist lines name: in a party, the group leader is party1 on every other window (the client lists
+-- it first, again after a promotion), so lines naming party1 keep up with a new leader even in combat, when they can't
+-- be rewritten; otherwise (raid, lead not the group leader, not grouped) the lead's name. nil: we lead, or no lead.
+local function leadTarget(self, lead)
+  if not lead or lead == self.myName then return nil end
+  if not IsInRaid() and self.roster[lead] == "party1" and UnitIsGroupLeader("party1") then return "party1" end
+  return self:CommandName(lead)
+end
+
 -- Lead window (or no lead): follow self (harmless, no chat output) so the macro only does the rest for the lead.
-local function macroTarget(self, lead) return lead and lead ~= self.myName and self:CommandName(lead) or "player" end
+local function macroTarget(self, lead) return leadTarget(self, lead) or "player" end
 
 local function makeButton(name)
   local b = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
@@ -232,11 +241,12 @@ function MF:RefreshActions()
   end
   self.pendingRefresh = nil
   local lead = self:GetLead()
-  local target = lead and lead ~= self.myName and (self.roster[lead] or self:CommandName(lead)) or nil
+  local target = leadTarget(self, lead)
   local follow, assist = "", ""
   if target then
     assist = "/assist " .. target
-    follow = assist .. "\n/follow " .. target
+    -- /follow takes no conditionals; a dead lead is still assisted (it keeps targeting), just not followed
+    follow = assist .. (target == "party1" and "\n/stopmacro [@party1,dead]" or "") .. "\n/follow " .. target
   end
   local train = "/follow player"
   if target and self.db.slot > 0 then
