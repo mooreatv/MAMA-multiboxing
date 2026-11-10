@@ -399,11 +399,24 @@ local inviteCount
 -- less than INVITE_AGAIN seconds ago (clicking invite always invites).
 local INVITE_AGAIN = 150
 local invitedAt = {} -- name -> GetTime() of our last invite
-local INVITE_STAGGER = 0.1 -- seconds between two invites of a pass (at least)
 local JOIN_WAIT = 2 -- seconds to wait for an invited member to join before inviting the next one
 
+-- One invite at a time, so the party is listed by slot: after inviting a member we heard from (the others may not be
+-- logged in), the next invite waits until it joins (TEAM_CHANGED below) or JOIN_WAIT passed.
+local processInvites
+local waitingFor, waitStart, waitTimer
+
+local function doneWaiting(joined)
+  MF:Debug("%s %s after %.2fs", waitingFor, joined and "joined" or "not joined", GetTime() - waitStart)
+  waitingFor = nil
+  waitTimer:Cancel()
+  processInvites(0)
+end
+
+MF:Listen("TEAM_CHANGED", function(self) if waitingFor and self.roster[waitingFor] then doneWaiting(true) end end)
+
 -- Invites the missing team members in slot order; above 5 it waits for the group to exist, then converts to raid.
-local function processInvites(tries)
+processInvites = function(tries)
   while inviteQueue and #inviteQueue > 0 do
     local name = inviteQueue[1]
     if MF.roster[name] then
@@ -431,22 +444,9 @@ local function processInvites(tries)
       C_PartyInfo.InviteUnit(name)
       inviteCount = inviteCount + 1
       table.remove(inviteQueue, 1)
-      if #inviteQueue > 0 then
-        -- one at a time, so the party is listed by slot: the next invite once this one joined (members we heard
-        -- from; the others may not be logged in) or JOIN_WAIT passed
-        local waitFor, start = MF.online[name] and name, GetTime()
-        local function waitJoin()
-          local joined = waitFor and MF.roster[waitFor]
-          if waitFor and not joined and GetTime() - start < JOIN_WAIT then
-            MF:After(INVITE_STAGGER, waitJoin)
-            return
-          end
-          if waitFor then
-            MF:Debug("%s %s after %.1fs", waitFor, joined and "joined" or "not joined", GetTime() - start)
-          end
-          processInvites(0)
-        end
-        MF:After(INVITE_STAGGER, waitJoin)
+      if #inviteQueue > 0 and MF.online[name] then
+        waitingFor, waitStart = name, GetTime()
+        waitTimer = C_Timer.NewTimer(JOIN_WAIT, function() MF:Call(doneWaiting, false) end)
         return
       end
     end
