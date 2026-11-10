@@ -345,8 +345,7 @@ SlashCmdList["MAMA"] = function(msg)
   elseif cmd == "" then
     MF:ShowHelp(true)
   else
-    MF:Error("unknown command %q", cmd)
-    MF:ShowHelp()
+    MF:Error("unknown command %q: /mama help for the list", cmd)
   end
 end
 
