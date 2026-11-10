@@ -237,7 +237,8 @@ MF:AddCommand("lead", function(self, rest)
     self:AnnounceLead(rest)
   end
   self:Print("lead is %s%s", self:GetLead() or "(none)", self.db.lead and "" or " (follows group leader)")
-end, "lead [Full Name|auto] - no name: make this window the lead (all windows follow it); auto: follow the group leader")
+end, "lead [Full Name|auto] - no name: make this window the lead, the one the other windows assist and follow " ..
+                "(best done with the \"Make me lead\" key binding); auto: the group leader is the lead")
 
 MF:AddCommand("team", function(self, rest)
   local sub, arg = rest:match("^(%S*)%s*(.-)$")
