@@ -73,6 +73,11 @@ local function unfoldBindings()
       if not data.expanded then frame.Button:Click() end
     end
   end)
+  -- the first opening of the page doesn't scroll (its list is filled after OpenToCategory's scroll): scroll again
+  -- once the unfolded section is laid out
+  if found and list.ScrollToElementByName then
+    MF:After(0.05, function() list:ScrollToElementByName(BINDING_HEADER_MAMAFOREVER) end)
+  end
   return found
 end
 
