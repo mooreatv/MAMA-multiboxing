@@ -43,6 +43,7 @@ MF.defaults = {
   autoTrade = true,
   autoRepair = false,
   followWarn = true,
+  questWarn = true,
   forwardWhispers = true,
   compact = false,
   identifyOnLogin = true,

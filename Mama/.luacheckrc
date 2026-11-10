@@ -71,6 +71,7 @@ read_globals = {
   "GetNumGroupMembers",
   "GetNumQuestChoices",
   "GetQuestID",
+  "IsQuestFlaggedCompleted",
   "GetQuestItemLink",
   "GetQuestReward",
   "GetServerTime",

@@ -107,6 +107,11 @@ local SECTIONS = {
         "Out of combat, when this window stops following and the lead gets away (stuck behind something), or a " ..
           "follow key or macro doesn't start following, warn the lead's window."
       }, {
+        "questWarn", "Warn when a quest is missed",
+        "When most of the team accepts a quest but this window doesn't get it (the quest can't be shared, or the " ..
+          "share didn't reach it), warn the lead's window. Not for quests only one window took (class quests...), " ..
+          "quests this window already completed, or ones skipped by holding a modifier at the NPC."
+      }, {
         "forwardWhispers", "Forward whispers to the lead",
         "Whispers from players outside the team are shown in the lead's window too."
       }
