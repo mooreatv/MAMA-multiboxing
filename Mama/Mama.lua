@@ -335,25 +335,23 @@ function MF:AddCommand(name, fn, help)
   table.insert(self.commandOrder, name)
 end
 
-function MF:Help()
-  self:Print("commands (|cFF99E5FF/mama <command>|r):")
-  -- "|" doubled: chat reads "|r", "|n"... as escape sequences ("off|reset" showed as "offeset")
-  for _, name in ipairs(self.commandOrder) do print("  |cFF99E5FF/mama|r " .. self.commands[name].help:gsub("|", "||")) end
-end
-
+-- The commands are listed in the help window (Help.lua), by topic.
 SLASH_MAMA1 = "/mama"
 SlashCmdList["MAMA"] = function(msg)
   local cmd, rest = (msg or ""):match("^(%S*)%s*(.-)%s*$")
   local c = MF.commands[cmd:lower()]
   if c then
     MF:Call(c.fn, MF, rest)
+  elseif cmd == "" then
+    MF:ShowHelp(true)
   else
-    if cmd ~= "" then MF:Error("unknown command %q", cmd) end
-    MF:Help()
+    MF:Error("unknown command %q", cmd)
+    MF:ShowHelp()
   end
 end
 
-MF:AddCommand("help", function(self) self:Help() end, "help - this list")
+MF:AddCommand("help", function(self) self:ShowHelp(true) end,
+              "help - this window: commands, status window clicks and key bindings (also /mama alone)")
 MF:AddCommand("debug", function(self, rest)
   self:SetOption("debug", self:ParseOnOff(rest, self.db.debug))
   self:Print("debug is now %s", tostring(self.db.debug))
