@@ -10,13 +10,15 @@ local DYNAMIC_ICON = 134400 -- question mark: the client shows the #showtooltip 
 -- Starting point of each class's MAMA macro (the user edits it from there): pet = also send the pet. All get
 -- /startattack (hunters too: melee in range, doesn't stop Auto Shot). Stages = spells to /cast; while the macro is
 -- an untouched starter it moves to the last stage whose `known` spell IDs (rank 1) are all learned. "!" keeps spamming
--- from toggling Auto Shot off; "#" lines are ignored by the client.
+-- from toggling Auto Shot off (Serpent Sting starts Auto Shot by itself, even on cooldown); "#" lines are ignored by
+-- the client. The bare #showtooltip shows the first spell the macro would cast. `old` = that stage's spells in older
+-- versions (still an untouched starter).
 local STARTERS = {
   DRUID = {{"Wrath"}},
-  HUNTER = {pet = true, {"!Auto Shot"}, {"!Auto Shot", "Serpent Sting", known = {1978}}},
+  HUNTER = {pet = true, {"!Auto Shot"}, {"Serpent Sting", known = {1978}, old = {"!Auto Shot", "Serpent Sting"}}},
   MAGE = {{WOW_PROJECT_ID == 1 and "Frostbolt" or "Fireball"}}, -- retail mages start with Frostbolt
   PALADIN = {{hint = "# /cast Judgement"}, {"Judgement", known = {20271}}},
-  PRIEST = {{"Smite"}},
+  PRIEST = {{"Smite"}, {"Shadow Word: Pain", known = {589}}},
   ROGUE = {{"Sinister Strike"}},
   SHAMAN = {{"Lightning Bolt"}},
   WARLOCK = {pet = true, {"Shadow Bolt"}},
@@ -43,9 +45,9 @@ local function bestStage(starter)
   return best
 end
 
--- #showtooltip takes conditionals like /cast: the conditional spells first, in order, then the last spell
+-- Older versions' tooltip line: the conditional spells first, in order, then the last spell
 -- (e.g. "[nocombat] Charge; Rend").
-local function tooltip(spells)
+local function oldTooltip(spells)
   local parts = {}
   for _, spell in ipairs(spells) do if spell:match("^%[") then parts[#parts + 1] = spell end end
   local last = spells[#spells]
@@ -53,14 +55,58 @@ local function tooltip(spells)
   return #parts > 0 and " " .. table.concat(parts, "; ") or ""
 end
 
--- Returns the class starter macro body and icon, for the given stage (default: the best known one).
-local function starterMacro(target, stage)
+-- What a bare #showtooltip shows: the first spell the macro would cast, i.e. the conditional spells in order up to
+-- the first unconditional one.
+local function bareTooltip(spells)
+  local parts = {}
+  for _, spell in ipairs(spells) do
+    if not spell:match("^%[") then
+      parts[#parts + 1] = (spell:gsub("^!", ""))
+      break
+    end
+    parts[#parts + 1] = spell
+  end
+  return #parts > 0 and " " .. table.concat(parts, "; ") or ""
+end
+
+-- Older versions always named the spell: drops a "#showtooltip <spells>" that a bare one shows anyway (also in
+-- edited macros: same tooltip either way). Any /use, /castsequence... before the first unconditional /cast keeps it.
+local function dropRedundantTooltip(body)
+  local casts = {}
+  for line in body:gmatch("[^\n]+") do
+    local cmd, arg = line:match("^%s*/(%a+)%s+(.-)%s*$")
+    cmd = cmd and cmd:lower()
+    if cmd == "cast" then
+      casts[#casts + 1] = arg
+    elseif cmd == "use" or cmd == "castsequence" or cmd == "castrandom" or cmd == "userandom" then
+      casts[#casts + 1] = "\0" -- never matches a tooltip
+    end
+  end
+  local done
+  return (body:gsub("[^\n]+", function(line)
+    if done then return end
+    local arg = line:match("^#showtooltip%s+(.-)%s*$")
+    if not arg or arg == "" then return end
+    done = true
+    if " " .. arg == bareTooltip(casts) then return "#showtooltip" end
+  end))
+end
+
+-- Returns the class starter macro body and icon, for the given stage (default: the best known one); old = that
+-- stage as older versions made it (nil if unchanged).
+local function starterMacro(target, stage, old)
   local starter = classStarter()
   local spells = starter[stage or bestStage(starter)]
+  local tip = ""
+  if old then
+    if not spells.old then return end
+    spells = spells.old
+    tip = oldTooltip(spells)
+  end
   local last = spells[#spells]
   local lines = {
-    "#showtooltip" .. tooltip(spells), "/follow " .. target, "/assist " .. target,
-    "/stopmacro [help][dead][noexists][noharm]", "/startattack"
+    "#showtooltip" .. tip, "/follow " .. target, "/assist " .. target, "/stopmacro [help][dead][noexists][noharm]",
+    "/startattack"
   }
   if starter.pet then lines[#lines + 1] = "/petattack" end
   for _, spell in ipairs(spells) do lines[#lines + 1] = "/cast " .. spell end
@@ -137,15 +183,18 @@ function MF:UpdateMacro(lead)
   if not idx then return self:CreateMamaMacro(target) end
   local _, icon, current = GetMacroInfo(idx)
   current = current or ""
-  local body = retarget(current, target)
+  local body = dropRedundantTooltip(retarget(current, target))
   local newIcon -- nil: keep whatever the user chose
   local best = bestStage(classStarter())
-  for stage = 1, best - 1 do
-    local old, oldIcon = starterMacro(target, stage)
-    if stripTrailing(body) == old then -- still an earlier starter, not edited: use the newly learned spell
+  local trimmed = stripTrailing(body)
+  for stage = 1, best do
+    local older, oldIcon = starterMacro(target, stage)
+    if stage == best then older = nil end -- already the best starter
+    local legacy, legacyIcon = starterMacro(target, stage, true)
+    if trimmed == older or trimmed == legacy then -- still a starter, not edited: the current best one
       body, newIcon = starterMacro(target, best)
-      if icon ~= oldIcon then newIcon = nil end
-      self:Print("the %s macro now uses your newly learned spell", MACRO_NAME)
+      if icon ~= (trimmed == older and oldIcon or legacyIcon) then newIcon = nil end
+      if stage < best then self:Print("the %s macro now uses your newly learned spell", MACRO_NAME) end
       break
     end
   end
