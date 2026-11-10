@@ -399,6 +399,7 @@ local inviteCount
 -- less than INVITE_AGAIN seconds ago (clicking invite always invites).
 local INVITE_AGAIN = 150
 local invitedAt = {} -- name -> GetTime() of our last invite
+local INVITE_STAGGER = 0.1 -- seconds between two invites of a pass
 
 -- Invites the missing team members in slot order; above 5 it waits for the group to exist, then converts to raid.
 local function processInvites(tries)
@@ -428,8 +429,11 @@ local function processInvites(tries)
       if MF.online[name] then invitedAt[name] = GetTime() end
       C_PartyInfo.InviteUnit(name)
       inviteCount = inviteCount + 1
-      tries = 0
       table.remove(inviteQueue, 1)
+      if #inviteQueue > 0 then -- staggered: they tend to join in invite order, so the party is listed by slot
+        MF:After(INVITE_STAGGER, function() processInvites(0) end)
+        return
+      end
     end
   end
   inviteQueue = nil
