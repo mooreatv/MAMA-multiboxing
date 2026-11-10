@@ -343,13 +343,13 @@ SlashCmdList["MAMA"] = function(msg)
   if c then
     MF:Call(c.fn, MF, rest)
   elseif cmd == "" then
-    MF:ShowHelp(true)
+    MF:ShowHelp()
   else
     MF:Error("unknown command %q: /mama help for the list", cmd)
   end
 end
 
-MF:AddCommand("help", function(self) self:ShowHelp(true) end,
+MF:AddCommand("help", function(self) self:ShowHelp() end,
               "help - this window: commands, status window clicks and key bindings (also /mama alone)")
 MF:AddCommand("debug", function(self, rest)
   self:SetOption("debug", self:ParseOnOff(rest, self.db.debug))

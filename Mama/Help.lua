@@ -85,6 +85,7 @@ end
 
 local function Build()
   local f = CreateFrame("Frame", "MamaForeverHelp", UIParent, "BasicFrameTemplateWithInset")
+  f:Hide() -- new frames start shown: the first toggle would hide it
   f:SetFrameStrata("DIALOG")
   f:SetToplevel(true)
   f:SetPoint("CENTER", 0, 50)
@@ -205,18 +206,24 @@ local function refreshKeys()
   end
 end
 
--- Shows the help window; toggle: hides it instead when it's already shown.
+-- Shows the help window (with a chat line); toggle (status window clicks): hides it instead when it's already shown.
 function MF:ShowHelp(toggle)
   self:Call(function()
     helpFrame = helpFrame or Build()
-    if toggle and helpFrame:IsShown() then
-      helpFrame:Hide()
+    if helpFrame:IsShown() then
+      if toggle then
+        helpFrame:Hide()
+      else
+        self:Print("see the open help window")
+        helpFrame:Raise()
+      end
       return
     end
+    self:Print("opening the help window")
     refreshKeys() -- keys may have changed since
     helpFrame:Show()
     helpFrame:Raise()
   end)
 end
 
-MF:AddCommand("clicks", function(self) self:ShowHelp(true) end, "clicks - same as help")
+MF:AddCommand("clicks", function(self) self:ShowHelp() end, "clicks - same as help")
