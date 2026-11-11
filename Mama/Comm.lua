@@ -218,11 +218,18 @@ local function pump()
   end
 end
 
-local function schedule(fn, job)
+-- urgent (group messages): ahead of the queued whispers (a team of 15 split in 3: 10 whispers per team message), after
+-- the job being sent and the urgent ones already queued.
+local function schedule(fn, job, urgent)
   if MF:Disabled() then return end
   job = job or {}
-  job.fn, job.tries = fn, 0
-  queue[#queue + 1] = job
+  job.fn, job.tries, job.urgent = fn, 0, urgent
+  local at = #queue + 1
+  if urgent and at > 2 then
+    at = 2
+    while queue[at] and queue[at].urgent do at = at + 1 end
+  end
+  table.insert(queue, at, job)
   if pumping then return end
   pumping = true
   local wait = nextSend - GetTime()
@@ -306,7 +313,7 @@ function MF:SendGroup(payload)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     if tries == 0 then self:Debug("group msg: %s", payload) end
     send(msg, groupChannel())
-  end)
+  end, nil, true)
 end
 
 local function infoPayload(slot, name, flag) return ("I;%d;%s;%d"):format(slot, name, flag) end
@@ -590,17 +597,18 @@ end
 -- Send to every other team member we know: one group message for those grouped with us, whispers for the rest
 -- (onlineOnly: only to those we heard from, for frequent messages, whispers to offline characters are lost anyway).
 function MF:SendTeam(payload, onlineOnly)
-  local anyGrouped = false
+  local anyGrouped, whisper = false, {}
   for _, name in pairs(self.db.slots) do
     if name ~= self.myName then
       if self.roster[name] then
         anyGrouped = true
       elseif self.online[name] or not onlineOnly then
-        self:SendWhisper(name, payload)
+        whisper[#whisper + 1] = name
       end
     end
   end
-  if anyGrouped then self:SendGroup(payload) end
+  if anyGrouped then self:SendGroup(payload) end -- first: whispers are queued 0.25s apart
+  for _, name in ipairs(whisper) do self:SendWhisper(name, payload) end
 end
 
 local function askSlot(self) if self.db.slot == 0 and not InCinematic() then self:ShowSlotDialog() end end

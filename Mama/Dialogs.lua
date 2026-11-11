@@ -108,7 +108,8 @@ local function send(self, verb, id, text)
   lastSent[key] = t
   local payload = ("D;%s;%d;%d;%s"):format(verb, currentNpc() or lastNpc, tonumber(id) or 0, clean(text))
   self:Debug("dialog: mirroring %s", payload)
-  self:SendTeam(payload)
+  -- the lead is grouped (iAmLead) and only followed by its group: other groups (split) have their own lead
+  self:SendGroup(payload)
 end
 
 local function sendGossipIndex(self, index)
