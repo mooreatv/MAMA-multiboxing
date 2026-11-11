@@ -179,7 +179,8 @@ MF:On("CHAT_MSG_WHISPER", function(self, text, sender, _, _, _, flag)
   if not sender or self:SlotOf(sender) or self.db.team[sender] then return end
   local parts = split(text, CHUNK)
   for i, part in ipairs(parts) do
-    self:SendWhisper(l, ("W;%d/%d;%s;%s;%s"):format(i, #parts, flag, sender, part), "forwarding a whisper")
+    -- private: not on the guild channel, whose other members' addons could read it
+    self:SendWhisper(l, ("W;%d/%d;%s;%s;%s"):format(i, #parts, flag, sender, part), "forwarding a whisper", nil, true)
   end
 end)
 

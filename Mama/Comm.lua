@@ -7,8 +7,9 @@
 -- replayed.
 -- Messages are whispered to the master (slot 1) by full name (works ungrouped and across home realms)
 -- and sent on the party/raid channel once grouped. The master relays who is on the team.
--- Whispers can arrive minutes late (seen on the beta server), group messages don't: a "whisper" to someone grouped
--- with us goes on the group channel, addressed to them ("T;Name;payload").
+-- Whispers can arrive minutes late (seen on the beta server), group and guild messages don't: a "whisper" to someone
+-- grouped with us goes on the group channel, addressed to them ("T;Name;payload"), else on the guild channel once we
+-- heard from them there (MF.guild).
 local _, MF = ...
 
 local PREFIX = "MAMAFOREVER"
@@ -255,9 +256,30 @@ local function send(msg, channel, to)
   end
 end
 
--- Payload fine for the whole group to see (team info: slots, away list, professions, stats) for a grouped member:
--- merged with the same queued payload for other grouped members into one plain group message (all the answers to a
--- reload's announces, or several reloads at once, go out once). Held GATHER seconds first, for the other askers.
+-- Team members heard from on the guild channel this session (signed with our token: in our guild, running Mama).
+-- Messages for them go on the guild channel rather than whispers: one message for all of them, and no lag (whispers
+-- can take 90s or more; a guild announce arrived the same second as its party copy, 2026-11-11).
+MF.guild = {}
+function MF:GuildReachable(name) return self.guild[name] and IsInGuild() or false end
+
+-- How a message reaches a team member: "group", "guild" (not for private ones) or "whisper".
+local function route(self, name, private)
+  if self.roster[name] and IsInGroup() then return "group" end
+  if not private and self:GuildReachable(name) then return "guild" end
+  return "whisper"
+end
+
+-- Signed once, when first sent (so queueing doesn't age it), and kept for its other copies and throttled retries:
+-- a member getting it on several channels (group and guild, a late whisper) acts on it once (replayed).
+local function signedOnce(self, job, payload, tok)
+  job.msg = job.msg or self:SecureMessage(payload, tok)
+  return job.msg
+end
+
+-- Payload fine for the whole team to see (team info: slots, away list, professions, stats) for a member reachable on
+-- the group or guild channel: merged with the same queued payload for others into one plain message per channel (all
+-- the answers to a reload's announces, or several reloads at once, go out once). Held GATHER seconds first, for the
+-- other askers.
 local GATHER = 0.5
 local gathering = {} -- payload -> job not queued yet
 local function sendShared(self, tok, to, payload, why)
@@ -275,34 +297,40 @@ local function sendShared(self, tok, to, payload, why)
     schedule(job.send, job)
   end)
   job.send = function(tries)
-    if IsInGroup() then
-      if tries == 0 then self:Debug("group msg for %s: %s%s", table.concat(job.names, ", "), payload, why) end
-      send(self:SecureMessage(payload, tok), groupChannel())
-      return
+    local by = {group = {}, guild = {}, whisper = {}}
+    for _, name in ipairs(job.names) do table.insert(by[route(self, name)], name) end -- may have changed meanwhile
+    local msg = signedOnce(self, job, payload, tok)
+    for kind, names in pairs({group = by.group, guild = by.guild}) do
+      if #names > 0 then
+        if tries == 0 then MF:Debug("%s msg for %s: %s%s", kind, table.concat(names, ", "), payload, why) end
+        send(msg, kind == "group" and groupChannel() or "GUILD")
+      end
     end
-    for _, name in ipairs(job.names) do -- left the group while queued
-      if tries == 0 then self:Debug("whisper to %s: %s%s", name, payload, why) end
-      send(self:SecureMessage(payload, tok), "WHISPER", name)
+    for _, name in ipairs(by.whisper) do -- left the group or the guild while queued
+      if tries == 0 then MF:Debug("whisper to %s: %s%s", name, payload, why) end
+      send(msg, "WHISPER", name)
     end
   end
 end
 
--- why: optional reason, shown in the debug log; groupOK: see sendShared.
-function MF:SendWhisper(to, payload, why, groupOK)
+-- why: optional reason, shown in the debug log; groupOK: see sendShared; private: never on the guild channel.
+function MF:SendWhisper(to, payload, why, groupOK, private)
   local tok = self:Token()
   if not tok or to == self.myName then return end
   why = why and (" (" .. why .. ")") or ""
-  if groupOK and self.roster[to] and IsInGroup() then return sendShared(self, tok, to, payload, why) end
-  schedule(function(tries)
-    if self.roster[to] and IsInGroup() then
-      local msg = self:SecureMessage("T;" .. to .. ";" .. payload, tok)
-      if tries == 0 then self:Debug("group msg to %s: %s%s", to, payload, why) end
-      send(msg, groupChannel())
+  if groupOK and route(self, to) ~= "whisper" then return sendShared(self, tok, to, payload, why) end
+  schedule(function(tries, job)
+    local r = route(self, to, private)
+    if r == "whisper" then
+      local msg = self:SecureMessage(payload, tok)
+      if tries == 0 then self:Debug("whisper to %s: %s%s", to, payload, why) end
+      send(msg, "WHISPER", to)
       return
     end
-    local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
-    if tries == 0 then self:Debug("whisper to %s: %s%s", to, payload, why) end
-    send(msg, "WHISPER", to)
+    -- addressed to them: the others on that channel ignore it
+    local msg = signedOnce(self, job, "T;" .. to .. ";" .. payload, tok)
+    if tries == 0 then self:Debug("%s msg to %s: %s%s", r, to, payload, why) end
+    send(msg, r == "group" and groupChannel() or "GUILD")
   end)
 end
 
@@ -375,7 +403,7 @@ function MF:Broadcast(payload)
     local msg = self:SecureMessage(payload, tok) -- signed when actually sent, so queueing doesn't age it
     if tries == 0 then self:Debug("broadcast on GUILD: %s", payload) end
     send(msg, "GUILD")
-  end)
+  end, nil, true)
 end
 
 -- Once we heard from someone directly, we both have each other's info (either they asked and we answered, or they
@@ -383,20 +411,21 @@ end
 function MF:AnnounceDirect(force)
   local tok = self:Token()
   if not tok then return end
+  -- first: ahead of the whispers
+  self:Broadcast(infoPayload(self.db.slot, self.myName, 1))
   local sent = {}
-  local function sendTo(list) -- grouped ones get the group message instead
+  local function sendTo(list) -- grouped ones get the group message instead, guild ones the broadcast
     for _, c in ipairs(list) do
       local name, why = c[1], c[2]
-      if not sent[name] and not self.roster[name] and (force or not self.online[name]) then
+      if not sent[name] and route(self, name) == "whisper" and (force or not self.online[name]) then
         sent[name] = true
         self:SendInfo(name, 1, why)
       end
     end
   end
   sendTo(self:SlotCandidates())
-  C_Timer.After(HISTORY_DELAY,
-                function() if self.db.slot > 0 and self:Token() then sendTo(self:HistoryCandidates()) end end)
-  self:Broadcast(infoPayload(self.db.slot, self.myName, 1))
+  self:After(HISTORY_DELAY,
+             function() if self.db.slot > 0 and self:Token() then sendTo(self:HistoryCandidates()) end end)
 end
 
 -- Someone in our group we haven't heard from yet (a new member, or one that hasn't announced itself), asked fewer
@@ -514,11 +543,17 @@ end
 local ANSWER_EVERY = 60
 local answered = {} -- name -> {at = GetTime(), slot = slot} of our last answer to their announce
 
+-- Members a and b (heard from) hear each other directly: both grouped with us, or both on the guild channel.
+local function inTouch(self, a, b)
+  if not self.online[b] then return false end
+  return self.roster[a] and self.roster[b] or self:GuildReachable(a) and self:GuildReachable(b)
+end
+
 local RELAY_DELAY = 2
 local function relay(self, name, slot, recorded)
   if not self:IsMaster() or self:Disabled() then return end
   for s, n in pairs(self.db.slots) do
-    if n ~= name and n ~= self.myName and not (self.roster[name] and self.roster[n] and self.online[n]) then
+    if n ~= name and n ~= self.myName and not inTouch(self, name, n) then
       if recorded and self.online[n] then
         self:SendWhisper(n, infoPayload(slot, name, 0), "relaying " .. name, true)
       end
@@ -554,7 +589,7 @@ function MF:HandleInfo(sender, slot, name, flag)
   end
   -- The master shares the team with a newcomer (or one asking, e.g. after a reload), not on every reply: who holds
   -- each slot (only the slot map: relayed info marks nobody online), and the newcomer to the members it may not reach.
-  -- Not between two members grouped with us that we heard from: they get each other's info directly on the group.
+  -- Not between two members that hear each other directly (inTouch: grouped with us, or on the guild channel).
   -- RELAY_DELAY later, so the others of a whole team reload are heard from first.
   if self:IsMaster() and asking then
     C_Timer.After(RELAY_DELAY, function() self:Call(relay, self, name, slot, recorded) end)
@@ -570,18 +605,26 @@ MF:OnTeam("CHAT_MSG_ADDON", function(self, prefix, text, channel, sender)
   end
   local ok, payload, delay = self:VerifyMessage(text, tok, channel)
   if not ok then
-    self:Debug("ignoring %s message from %s: %s", tostring(channel), tostring(sender), payload)
+    -- replayed: mostly our own copies of one message on several channels (see signedOnce)
+    if payload ~= "replayed" then
+      self:Debug("ignoring %s message from %s: %s", tostring(channel), tostring(sender), payload)
+    end
     return
   end
+  if channel == "GUILD" and not self.guild[sender] then
+    self.guild[sender] = true
+    self:Debug("%s can be reached on the guild channel", tostring(sender))
+  end
+  local via = channel == "GUILD" and "guild" or "group"
   local to, inner = payload:match("^T;([^;]+);(.*)$")
   if to then
-    if to ~= self.myName then -- addressed to another member of the group
-      self:Debug("group msg from %s for %s: %s", tostring(sender), to, inner:match("^(%a)") or "?")
+    if to ~= self.myName then -- addressed to another member on that channel
+      self:Debug("%s msg from %s for %s: %s", via, tostring(sender), to, inner:match("^(%a)") or "?")
       return
     end
     payload = inner
   end
-  self:Debug("%s msg from %s%s: %s", to and "group" or tostring(channel), tostring(sender),
+  self:Debug("%s msg from %s%s: %s", to and via or tostring(channel), tostring(sender),
              delay > 1 and (" (%ds late)"):format(delay) or "", payload)
   local kind, rest = payload:match("^(%a);(.*)$")
   local handler = kind ~= "T" and kind and self.messageHandlers[kind]
@@ -597,18 +640,31 @@ end
 -- Send to every other team member we know: one group message for those grouped with us, whispers for the rest
 -- (onlineOnly: only to those we heard from, for frequent messages, whispers to offline characters are lost anyway).
 function MF:SendTeam(payload, onlineOnly)
-  local anyGrouped, whisper = false, {}
+  local tok = self:Token()
+  if not tok then return end
+  local by = {group = {}, guild = {}, whisper = {}}
   for _, name in pairs(self.db.slots) do
-    if name ~= self.myName then
-      if self.roster[name] then
-        anyGrouped = true
-      elseif self.online[name] or not onlineOnly then
-        whisper[#whisper + 1] = name
-      end
-    end
+    local r = name ~= self.myName and route(self, name)
+    if r and (r ~= "whisper" or self.online[name] or not onlineOnly) then table.insert(by[r], name) end
   end
-  if anyGrouped then self:SendGroup(payload) end -- first: whispers are queued 0.25s apart
-  for _, name in ipairs(whisper) do self:SendWhisper(name, payload) end
+  local signed = {} -- one signature for every copy (see signedOnce)
+  if #by.group + #by.guild > 0 then -- first: whispers are queued 0.25s apart
+    schedule(function(tries)
+      local msg = signedOnce(self, signed, payload, tok)
+      for kind, names in pairs({group = by.group, guild = by.guild}) do
+        if #names > 0 and (kind == "group" and IsInGroup() or kind == "guild" and IsInGuild()) then
+          if tries == 0 then self:Debug("%s msg: %s", kind, payload) end
+          send(msg, kind == "group" and groupChannel() or "GUILD")
+        end
+      end
+    end, nil, true)
+  end
+  for _, name in ipairs(by.whisper) do
+    schedule(function(tries)
+      if tries == 0 then self:Debug("whisper to %s: %s", name, payload) end
+      send(signedOnce(self, signed, payload, tok), "WHISPER", name)
+    end)
+  end
 end
 
 local function askSlot(self) if self.db.slot == 0 and not InCinematic() then self:ShowSlotDialog() end end
