@@ -917,13 +917,6 @@ end
 
 -- Loot method
 
-local function masterLooterName(self)
-  local method, partyID, raidID = C_PartyInfo.GetLootMethod()
-  if method ~= MASTER then return end
-  if raidID then return self:FullName("raid" .. raidID) end
-  if partyID then return partyID == 0 and self.myName or self:FullName("party" .. partyID) end
-end
-
 -- Leader: when the loot method becomes master loot (picked in the group menu), greys and up, once: a threshold
 -- raised again afterwards stays. The menu doesn't offer below uncommon.
 local lastMethod -- nil until the first event (login, reload, joining a group): no change then
@@ -931,6 +924,10 @@ MF:On("PARTY_LOOT_METHOD_CHANGED", function(self)
   local method = C_PartyInfo.GetLootMethod()
   local was = lastMethod
   lastMethod = method
+  if method ~= was then -- whoever changed it (us, the leader's window, the game)
+    self:Debug("loot method %s -> %s%s, threshold %d", was and MF.LootMethodName(was) or "-", MF.LootMethodName(method),
+               method == MASTER and (" (" .. (self:MasterLooterName() or "?") .. ")") or "", GetLootThreshold())
+  end
   if was == nil or method ~= MASTER or was == MASTER then return end
   if not self.db.masterLoot or self:Disabled() or not UnitIsGroupLeader("player") then return end
   if not SetLootThreshold then
@@ -939,7 +936,7 @@ MF:On("PARTY_LOOT_METHOD_CHANGED", function(self)
   end
   C_Timer.After(0.5, function()
     if GetLootThreshold() > POOR then
-      self:Print("master loot to %s: greys and up", masterLooterName(self) or "?")
+      self:Print("master loot to %s: greys and up", self:MasterLooterName() or "?")
       SetLootThreshold(POOR)
     end
   end)
@@ -949,12 +946,11 @@ MF:Listen("LOGIN", function() lastMethod = IsInGroup() and C_PartyInfo.GetLootMe
 
 MF:AddCommand("loot", function(self, rest)
   if rest ~= "" then self:SetOption("masterLoot", self:ParseOnOff(rest, self.db.masterLoot)) end
-  local method = C_PartyInfo.GetLootMethod()
-  for name, value in pairs(Enum.LootMethod) do if value == method then method = name end end
+  local method = MF.LootMethodName(C_PartyInfo.GetLootMethod())
   local quality = _G["ITEM_QUALITY" .. GetLootThreshold() .. "_DESC"] or GetLootThreshold()
   self:Print(
     "master loot auto distribution is %s (used the next time the full team gets grouped); loot method now: " ..
       "%s, master looter %s, threshold %s", self.db.masterLoot and "on" or "off", tostring(method),
-    masterLooterName(self) or "-", tostring(quality))
+    self:MasterLooterName() or "-", tostring(quality))
 end, "loot [on|off] - master loot for the full team (off: free for all), the master looter's window gives each " ..
                 "item to who uses it (soulbound ones after a click)")
