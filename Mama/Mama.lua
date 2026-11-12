@@ -40,6 +40,7 @@ MF.defaults = {
   groupSize = 5, -- groups the team splits in (auto raid off, or merged/split by hand, Team.lua)
   autoFFA = true,
   masterLoot = true,
+  leaderLast = false, -- master loot: quest items to the lead only once the others have theirs (Loot.lua)
   autoTrade = true,
   autoRepair = false,
   followWarn = true,
