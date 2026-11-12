@@ -80,6 +80,11 @@ local SECTIONS = {
         "When an NPC offers only one option and no quest (most vendors and trainers), pick it: straight to the " ..
           "vendor. Same for an NPC offering only one quest to pick up, or only one completed quest to turn in. " ..
           "Hold Shift, Ctrl or Alt while opening the NPC to see the dialog."
+      }, {
+        "leaderLast", "Quest items to the lead last",
+        "Master loot auto distribution: the lead only gets a quest item once no other team member in reach still " ..
+          "needs it, so the lead's window keeps showing everyone's progress until the others are done. Also " ..
+          "|cFF99E5FF/mama loot leaderlast|r."
       }
     }
   }, {
