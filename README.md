@@ -104,8 +104,8 @@ Macros and key bindings can't change in combat: in a party, they name `party1` (
 window), so a new group leader is followed and assisted right away, even mid-fight (on the new leader's own window,
 they only clear when combat ends). The follow key stops following a dead lead but keeps assisting it.
 
-Nothing follows by itself: press the key (or the MAMA macro) in each window that should follow, by hand or with key
-broadcasting. Older MAMA versions could make the other windows follow from the lead's window. The game no longer
+Nothing follows by itself: press the key (or the MAMA macro) in each window that should follow (one press per window:
+key broadcasting is not allowed). Older MAMA versions could make the other windows follow from the lead's window. The game no longer
 allows that: follow and assist only work from a key press in that window.
 
 Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
