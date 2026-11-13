@@ -10,7 +10,8 @@ It lets all your windows of the same team:
 
 - find each other and form a group automatically (one-time setup: on one PC, just type a slot number per window),
 - play as **one raid or several groups** (teams of more than 5: merge and split with one click or key),
-- **follow and assist** whoever is the lead, with one key or one macro,
+- **follow and assist** whoever is the lead: one key (or macro) pressed in each window, follow + assist + opening
+  spell,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
 - **sell** the same junk at every vendor (a team wide sell list, greys optional),
@@ -102,6 +103,10 @@ The "lead" is the group leader by default. `/mama lead` on a window makes **that
 Macros and key bindings can't change in combat: in a party, they name `party1` (the group leader on every other
 window), so a new group leader is followed and assisted right away, even mid-fight (on the new leader's own window,
 they only clear when combat ends). The follow key stops following a dead lead but keeps assisting it.
+
+Nothing follows by itself: press the key (or the MAMA macro) in each window that should follow (one press per window:
+key broadcasting is not allowed). Older MAMA versions could make the other windows follow from the lead's window. The game no longer
+allows that: follow and assist only work from a key press in that window.
 
 Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
 
