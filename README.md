@@ -227,6 +227,11 @@ the loot to give it all by hand. Turn it off with "Master loot auto distribution
   while the lead is fighting, while casting, or in the few seconds after a fight.
   Only for windows that were near the lead in the last 2 minutes, and never while the lead is dead, a ghost or on a
   flight, nor right after it came back to life, released, landed or went through a loading screen.
+- **Missed quest**: when most of the team accepts a quest within a few seconds but a window doesn't get it (the
+  quest can't be shared and has to be accepted at the NPC, or the share didn't reach it: too far, quest log full...),
+  the lead's window gets a raid warning and a sound naming the window and the quest. Not when only one window took
+  the quest (class quests...), for a window that already completed it or skipped it by holding a modifier at the NPC,
+  nor for away windows. Turn it off with "Warn when a quest is missed" (Options).
 - **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
   name to answer). GM whispers are tagged `<GM>` with a raid warning and the GM sound. If the whisper can't be read
   (chat lockdown), the lead is still told to look at that window.
@@ -281,8 +286,8 @@ shortcuts, the key bindings with their current keys, and every command by topic:
 The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
 for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
 master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
-choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
-forwarding, status window, slot display at login, compact status window.
+choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, missed quest
+warning, whisper forwarding, status window, slot display at login, compact status window.
 
 ## Reporting a problem
 
