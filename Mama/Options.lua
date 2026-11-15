@@ -80,6 +80,11 @@ local SECTIONS = {
         "When an NPC offers only one option and no quest (most vendors and trainers), pick it: straight to the " ..
           "vendor. Same for an NPC offering only one quest to pick up, or only one completed quest to turn in. " ..
           "Hold Shift, Ctrl or Alt while opening the NPC to see the dialog."
+      }, {
+        "leadLast", "Quest items to the lead last",
+        "Master loot auto distribution: the lead only gets a quest item once no other team member in reach still " ..
+          "needs it, so the lead finishes each objective last (the others' progress also shows when hovering the " ..
+          "quest in the tracker or the quest log). Also |cFF99E5FF/mama loot leadlast|r."
       }
     }
   }, {
@@ -125,6 +130,12 @@ local SECTIONS = {
         "compact", "Compact status window",
         "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
           "Also Shift+Right click on the window."
+      }, {
+        "questSparkle", "Sparkles on quest items",
+        "Quest items to pick up in the world sparkle like they used to (quest givers too), instead of the game's " ..
+          "thin outline. WoW Forever only. This turns the outline graphics off on this PC, for all its accounts " ..
+          "(no outline on your own character either); turning it off, on every account's window, puts them " ..
+          "back after a game restart."
       }
     }
   }

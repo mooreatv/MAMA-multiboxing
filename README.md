@@ -10,7 +10,8 @@ It lets all your windows of the same team:
 
 - find each other and form a group automatically (one-time setup: on one PC, just type a slot number per window),
 - play as **one raid or several groups** (teams of more than 5: merge and split with one click or key),
-- **follow and assist** whoever is the lead, with one key or one macro,
+- **follow and assist** whoever is the lead: one key (or macro) pressed in each window, follow + assist + opening
+  spell,
 - **follow in a train** ordered by team slot, with one key,
 - share, accept and abandon **quests** together,
 - **sell** the same junk at every vendor (a team wide sell list, greys optional),
@@ -103,6 +104,10 @@ Macros and key bindings can't change in combat: in a party, they name `party1` (
 window), so a new group leader is followed and assisted right away, even mid-fight (on the new leader's own window,
 they only clear when combat ends). The follow key stops following a dead lead but keeps assisting it.
 
+Nothing follows by itself: press the key (or the MAMA macro) in each window that should follow (one press per window:
+key broadcasting is not allowed). Older MAMA versions could make the other windows follow from the lead's window. The game no longer
+allows that: follow and assist only work from a key press in that window.
+
 Follow and assist are protected actions that must come from a key press or your own macro, so there are two ways:
 
 - **Key bindings** (Game Menu > Key Bindings > Mama-forever): *Follow + assist lead*, *Assist lead*,
@@ -151,6 +156,12 @@ default: bars you turned off, your own key bindings or a custom layout are left 
 - The lead's dialog choices (gossip options, quests, flight paths) are made on the other windows too, and so are the
   lead's clicks on popups (spirit healer, accept resurrect or summon, release spirit...) on the windows showing the
   same popup. Never for deleting items, logging out or quitting. `/mama dialog off` turns it off.
+- Quest with several rewards to choose from: a reward selected on another window before the lead turns in is kept
+  there (the others get the lead's pick). Or hold Shift, Ctrl or Alt while completing the quest on the lead: the other
+  windows stay on the reward page for you to pick on each.
+- WoW Forever: quest items to pick up in the world sparkle (quest givers too) instead of getting the game's thin
+  outline. This turns the outline graphics off on the PC (also the one around your own character); `/mama sparkle off`
+  (on each account's window, or once then "Send settings to team") puts them back as they were, after a game restart.
 
 ### Professions and trading mats
 
@@ -204,7 +215,9 @@ who uses it:
 - quest items to whoever still needs them: the one furthest behind in level and xp, or among those about level
   with it the one closest to finishing the quest (so a quest gets done instead of half done on two characters), the
   looter on a tie; quest items that drop once per player (heads...): the looter keeps its copy and the lead's window gets one raid
-  warning listing who must loot theirs,
+  warning listing who must loot theirs; with "Quest items to the lead last" (Options, or `/mama loot leadlast`,
+  off by default) the lead only gets a quest item once no other member in reach still needs it, so the lead
+  finishes each objective last (the others' progress also shows when hovering the quest in the tracker or quest log),
 - mats and recipes to the best profession holder (same kinds as trades),
 - armor to the classes that wear that type (leather to the rogue or druid...), weapons to the classes that can use
   them, taking turns; greens nobody uses to the enchanter,
@@ -222,16 +235,17 @@ the loot to give it all by hand. Turn it off with "Master loot auto distribution
   while the lead is fighting, while casting, or in the few seconds after a fight.
   Only for windows that were near the lead in the last 2 minutes, and never while the lead is dead, a ghost or on a
   flight, nor right after it came back to life, released, landed or went through a loading screen.
-- **Missed quest**: when most of the team accepts a quest within a few seconds but a window doesn't get it (the
-  quest can't be shared and has to be accepted at the NPC, or the share didn't reach it: too far, quest log full...),
-  the lead's window gets a raid warning and a sound naming the window and the quest. Not when only one window took
-  the quest (class quests...), for a window that already completed it or skipped it by holding a modifier at the NPC,
-  nor for away windows. Turn it off with "Warn when a quest is missed" (Options).
+- **Missed quest** (off by default: turn on "Warn when a quest is missed" in the Options of every window, or on one
+  then "Send settings to team"): when most of the group accepts a quest within a few seconds but a window doesn't
+  get it (the quest can't be shared and has to be accepted at the NPC, or the window was too far, has a full quest
+  log, can't take it...), the lead's window gets a raid warning and a sound naming the window and the quest. Not
+  when only one window took the quest (class quests...), for a window that already completed it or skipped it by
+  holding a modifier at the NPC, nor for away windows.
 - **Whispers**: whispers from players outside the team to the other windows are shown in the lead's window (click the
   name to answer). GM whispers are tagged `<GM>` with a raid warning and the GM sound. If the whisper can't be read
   (chat lockdown), the lead is still told to look at that window.
 
-Both are on by default (Options > Alerts to the lead).
+Follow broken and whispers are on by default (Options > Alerts to the lead and display).
 
 ### Status window
 
@@ -276,21 +290,23 @@ remembered for that character until `/mama enable` turns it back on.
 `/mama` (or `/mama help`, or the Help button of the options page) opens the help window: the status window's mouse
 shortcuts, the key bindings with their current keys, and every command by topic: `s`, `token`, `team`, `complete`,
 `away`, `back`, `status`, `invite`, `autoinvite`, `disband`, `raid`, `merge`, `split`, `groups`, `lead`, `macro`,
-`quest`, `dialog`, `gossip`, `setup`, `loot`, `trade`, `vendor`, `profs`, `ui`, `identify`, `options`, `enable`,
+`quest`, `dialog`, `gossip`, `sparkle`, `setup`, `loot`, `trade`, `vendor`, `profs`, `ui`, `identify`, `options`, `enable`,
 `disable`, `bug` (copyable log), `clearlog`, `debug`. Its buttons open the options, the key bindings and the log.
 The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
 for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
 master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
-choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, missed quest
-warning, whisper forwarding, status window, slot display at login, compact status window.
+choices, skip single option dialogs, quest items to the lead last, MAMA macro, auto fill trades, auto repair, follow
+broken warning, missed quest warning, whisper forwarding, status window, slot display at login, compact status window,
+quest item sparkles.
 
 ## Reporting a problem
 
 `/mama bug` shows Mama's recent messages, debug details included, in a window: select the end of it (click where to
 start, Shift-click at the end; or Ctrl+A for all), Ctrl+C, and paste it in a
-[GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected. The log only keeps the
-last 100 lines: copy it right after the problem (ideally from the window it happened on and from slot 1), or
-`/mama clearlog` and reproduce it first.
+[GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected, or come to our
+<a href="https://discord.gg/zx77nr2"><img src="https://wowopenbox.org/discord.svg" alt="Discord" align="center" height="24pt"></a>
+(usually a faster answer). The log only keeps the last 100 lines: copy it right after the problem (ideally from the
+window it happened on and from slot 1), or `/mama clearlog` and reproduce it first.
 
 ## Not included (compared to the old addons)
 

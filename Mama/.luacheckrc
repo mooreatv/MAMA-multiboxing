@@ -110,6 +110,7 @@ read_globals = {
   "tinsert",
   "UIParent",
   "UISpecialFrames",
+  "GameMenuFrame",
   "UnitClass",
   "UnitExists",
   "UnitFactionGroup",

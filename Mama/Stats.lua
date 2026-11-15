@@ -52,7 +52,8 @@ local function refreshOwn(self)
   return s
 end
 
-local function payload(s) return ("G;%d;%d;%d;%d"):format(s.money, s.free, s.slots, s.xp) end
+-- Copper as %.0f: WoW's %d stops at 2^31 (214748g, "integer overflow attempting to store"), retail gold goes past it.
+local function payload(s) return ("G;%.0f;%d;%d;%d"):format(s.money, s.free, s.slots, s.xp) end
 
 -- Copper of this account's other characters (those that logged in since stats exist) per faction. Fixed while we're
 -- logged in (one character per account at a time), so computed once at login.
@@ -88,7 +89,7 @@ local lastSent
 function MF:SendStats(to, why)
   local p = payload(refreshOwn(self))
   if to then
-    self:SendWhisper(to, ("%s;%s;%d,%d"):format(p, accountId(self), others.Alliance, others.Horde), why, true)
+    self:SendWhisper(to, ("%s;%s;%.0f,%.0f"):format(p, accountId(self), others.Alliance, others.Horde), why, true)
   else
     lastSent = p
     self:SendTeam(p, true)

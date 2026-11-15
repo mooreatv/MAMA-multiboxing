@@ -63,16 +63,24 @@ end
 -- This window invites its group automatically: slot 1, and when split the first slot of each group.
 function MF:IsGroupInviter() return self:Token() ~= nil and self.db.slot > 0 and self.db.slot == self:GroupRange() end
 
-local wasGrouped
+local wasGrouped, lastGroup
 function MF:RefreshRoster()
   -- An explicit lead belongs to one group: forget it once we leave (or start out of) a group.
   local grouped = IsInGroup()
   if not grouped and wasGrouped ~= false and self.db.lead then self.db.lead = false end
   wasGrouped = grouped
   wipe(self.roster)
+  local leader = UnitIsGroupLeader("player") and self.myName
   for _, u in ipairs(self:GroupUnits()) do
     local n = self:FullName(u)
     if n and n ~= UNKNOWN then self.roster[n] = u end
+    if UnitIsGroupLeader(u) then leader = n end
+  end
+  -- for the log: joining or leaving a group, party <-> raid, new group leader
+  local group = grouped and ("%s, leader %s"):format(IsInRaid() and "raid" or "party", tostring(leader)) or "none"
+  if group ~= lastGroup then
+    lastGroup = group
+    self:Debug("group: %s", group)
   end
   self:Fire("TEAM_CHANGED")
 end
@@ -111,6 +119,53 @@ local GROUP = Enum.LootMethod.Group
 local UNCOMMON = 2
 local lootState -- nil (unknown yet), "solo", "partial" (team members only, not all here), "team" or "strangers"
 local formed, hadStrangers -- the whole team was grouped / strangers were in the group, since we joined it
+
+function MF.LootMethodName(method)
+  for name, value in pairs(Enum.LootMethod) do if value == method then return name end end
+  return tostring(method)
+end
+
+function MF:MasterLooterName()
+  local method, partyID, raidID = C_PartyInfo.GetLootMethod()
+  if method ~= MASTER then return end
+  if raidID then return self:FullName("raid" .. raidID) end
+  if partyID then return partyID == 0 and self.myName or self:FullName("party" .. partyID) end
+end
+
+-- The game resets the loot method to group loot when a raid becomes a party (raid of 6 split in groups of 3,
+-- 2026-11-11): after a conversion we asked for, master loot or free for all is put back.
+local keepLoot -- {method, looter, at} while a conversion we asked for is under way
+
+function MF:ConvertGroup(toRaid, why)
+  local method = C_PartyInfo.GetLootMethod()
+  self:Debug("converting to a %s (%s), loot %s", toRaid and "raid" or "party", why, MF.LootMethodName(method))
+  keepLoot = nil
+  if method == MASTER or method == FFA then
+    keepLoot = {method = method, looter = self:MasterLooterName(), at = GetTime()}
+  end
+  if toRaid then
+    C_PartyInfo.ConvertToRaid()
+  else
+    C_PartyInfo.ConvertToParty()
+  end
+end
+
+MF:On("PARTY_LOOT_METHOD_CHANGED", function(self)
+  local keep = keepLoot
+  if not keep or GetTime() - keep.at > 5 then return end
+  local cur = C_PartyInfo.GetLootMethod()
+  if cur == keep.method then return end
+  keepLoot = nil
+  if cur ~= GROUP or not UnitIsGroupLeader("player") or self:Disabled() then return end
+  if keep.method == MASTER then
+    local looter = keep.looter and self.roster[keep.looter] and keep.looter or self:GetLead() or self.myName
+    self:Print("the game switched to group loot when converting the group: master loot to %s again", looter)
+    C_PartyInfo.SetLootMethod(MASTER, looter)
+  else
+    self:Print("the game switched to group loot when converting the group: free for all again")
+    C_PartyInfo.SetLootMethod(FFA)
+  end
+end)
 
 -- nil while some member's name isn't known yet (cross realm joins show up as Unknown for a moment).
 local function groupState(self)
@@ -153,8 +208,11 @@ function MF:UpdateLoot()
       self:Print("strangers in the group, switching to group loot")
       C_PartyInfo.SetLootMethod(GROUP)
       -- no rolls on greys (master loot lowered the threshold); after the method change applies
-      C_Timer.After(1, function()
-        if UnitIsGroupLeader("player") and GetLootThreshold() < UNCOMMON then SetLootThreshold(UNCOMMON) end
+      self:After(1, function()
+        if UnitIsGroupLeader("player") and GetLootThreshold() < UNCOMMON then
+          self:Debug("loot threshold %d -> uncommon", GetLootThreshold())
+          SetLootThreshold(UNCOMMON)
+        end
       end)
     end
   elseif state == "team" then
@@ -205,12 +263,14 @@ end
 -- When we are the group leader, hand the group lead to `name` (another member of our group).
 function MF:PromoteIfLeader(name)
   if UnitIsGroupLeader("player") and name ~= self.myName and self.roster[name] then
+    self:Debug("promoting %s to group leader", name)
     C_PartyInfo.PromoteToLeader(self.roster[name])
   end
 end
 
 -- Make `name` the lead on every window; whoever is group leader promotes them if needed.
 function MF:AnnounceLead(name)
+  self:Debug("lead: %s, telling the team", name)
   self:SetLead(name)
   self:SendTeam("L;" .. name)
   if IsInGroup() and not UnitIsGroupLeader("player") and name == self.myName then
@@ -433,7 +493,7 @@ processInvites = function(tries)
           inviteQueue = nil
           return
         end
-        if IsInGroup() and UnitIsGroupLeader("player") then C_PartyInfo.ConvertToRaid() end
+        if IsInGroup() and UnitIsGroupLeader("player") then MF:ConvertGroup(true, "more than 5 to invite") end
         C_Timer.After(0.5, function() processInvites(tries + 1) end)
         return
       end
@@ -509,10 +569,10 @@ end
 function MF:PartyToggle()
   if IsInRaid() then
     self:Print("switching to party (if possible)")
-    C_PartyInfo.ConvertToParty()
+    self:ConvertGroup(false, "raid toggle")
   else
     self:Print("switching to raid")
-    C_PartyInfo.ConvertToRaid()
+    self:ConvertGroup(true, "raid toggle")
   end
 end
 
@@ -578,8 +638,13 @@ function MF:MergeGroups()
   if IsInGroup() then
     if isFirstSlot(self) then
       self:SendGroup("M;r")
-      C_Timer.After(1, function() if not self.roster[master] then C_PartyInfo.LeaveParty() end end) -- once sent
+      self:After(1, function() -- once sent
+        if self.roster[master] then return end
+        self:Debug("leaving the group to merge")
+        C_PartyInfo.LeaveParty()
+      end)
     else
+      self:Debug("leaving the group to merge")
       C_PartyInfo.LeaveParty()
     end
   end
@@ -594,7 +659,9 @@ local function settleSplit(self, tries)
     if tries < 30 then C_Timer.After(1, function() self:Call(settleSplit, self, tries + 1) end) end
     return
   end
-  if IsInRaid() and UnitIsGroupLeader("player") and GetNumGroupMembers() <= 5 then C_PartyInfo.ConvertToParty() end
+  if IsInRaid() and UnitIsGroupLeader("player") and GetNumGroupMembers() <= 5 then
+    self:ConvertGroup(false, "split done")
+  end
   -- the others of our group may still be leaving the raid
   if self.db.slot == self:GroupRange() then
     C_Timer.After(2, function() if self:SplitMode() then self:InviteMissing(false, true) end end)
@@ -611,7 +678,10 @@ function MF:SplitGroups()
   if IsInGroup() and not UnitIsGroupLeader("player") and groupedWithOutsiders(self) then
     local leader
     for name, u in pairs(self.roster) do if UnitIsGroupLeader(u) then leader = name end end
-    if not (leader and self:InMyGroup(leader)) then C_PartyInfo.LeaveParty() end
+    if not (leader and self:InMyGroup(leader)) then
+      self:Debug("leaving the group of %s to split", tostring(leader))
+      C_PartyInfo.LeaveParty()
+    end
   end
   C_Timer.After(1, function() self:Call(settleSplit, self, 0) end)
 end
@@ -704,8 +774,7 @@ function MF:StateText()
     group = ("%s of %d%s"):format(IsInRaid() and "raid" or "party", GetNumGroupMembers(),
                                   UnitIsGroupLeader("player") and " (leader)" or "")
   end
-  local method = C_PartyInfo.GetLootMethod()
-  for name, value in pairs(Enum.LootMethod) do if value == method then method = name end end
+  local method = MF.LootMethodName(C_PartyInfo.GetLootMethod())
   local options = {}
   for key, default in pairs(self.defaults) do
     local value = self.db[key]

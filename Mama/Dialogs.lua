@@ -108,7 +108,8 @@ local function send(self, verb, id, text)
   lastSent[key] = t
   local payload = ("D;%s;%d;%d;%s"):format(verb, currentNpc() or lastNpc, tonumber(id) or 0, clean(text))
   self:Debug("dialog: mirroring %s", payload)
-  self:SendTeam(payload)
+  -- the lead is grouped (iAmLead) and only followed by its group: other groups (split) have their own lead
+  self:SendGroup(payload)
 end
 
 local function sendGossipIndex(self, index)
@@ -490,6 +491,11 @@ MF:Listen("LOGIN", function(self)
     if reward.questID == 0 then return end
     if not reward.open then -- a quest addon calling it blindly (seen with RestedXP)
       self:Debug("dialog: GetQuestReward(%s) with no quest reward dialog open: not mirrored", tostring(choice))
+      return
+    end
+    -- a modifier held while turning in a quest with several rewards: each window picks its own
+    if #reward.items > 1 and IsModifierKeyDown() and not mirroring and self.db.autoDialog and iAmLead(self) then
+      self:Print("modifier held: turn in of quest %d not mirrored, pick the reward on each window", reward.questID)
       return
     end
     send(self, "qr", reward.questID, tostring(choice and choice > 0 and reward.items[choice] or 0))
