@@ -120,6 +120,12 @@ local SECTIONS = {
         "compact", "Compact status window",
         "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
           "Also Shift+Right click on the window."
+      }, {
+        "questSparkle", "Sparkles on quest items",
+        "Quest items to pick up in the world sparkle like they used to (quest givers too), instead of the game's " ..
+          "thin outline. WoW Forever only. This turns the outline graphics off on this PC, for all its accounts " ..
+          "(no outline on your own character either); turning it off, on every account's window, puts them " ..
+          "back after a game restart."
       }
     }
   }

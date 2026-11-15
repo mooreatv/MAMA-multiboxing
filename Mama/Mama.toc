@@ -23,6 +23,7 @@ Trade.lua
 Vendor.lua
 Loot.lua
 Dialogs.lua
+Sparkle.lua
 Alerts.lua
 Stats.lua
 Status.lua
