@@ -30,6 +30,7 @@ local function set(self, cvar, value, why)
 end
 
 local pending -- reason of the change waiting for the end of combat
+local told
 
 function MF:ApplySparkles(why)
   if WOW_PROJECT_ID == 1 or C_CVar.GetCVar(EFFECT) == nil then return end
@@ -49,15 +50,16 @@ function MF:ApplySparkles(why)
       end
     end
     set(self, EFFECT, "1", why)
-    if outlines then
+    if outlines and not told then
+      told = true -- once per session, whatever sets the outlines back
       self:Print("quest item sparkles: outline graphics turned off on this PC (/mama sparkle off puts them back)")
     end
   elseif db.sparkleSaved then
     set(self, EFFECT, "0", why)
     for _, cvar in ipairs(OUTLINES) do if db.sparkleSaved[cvar] then set(self, cvar, db.sparkleSaved[cvar], why) end end
     db.sparkleSaved = nil
-    self:Print("quest item sparkles off, outline graphics back as they were: restart the game to see it (a /reload " ..
-                 "isn't enough)")
+    self:Print("quest item sparkles off, outline graphics back as they were: turn it off on your other accounts' " ..
+                 "windows too (or Send settings to team), then restart the game (a /reload isn't enough)")
   end
 end
 

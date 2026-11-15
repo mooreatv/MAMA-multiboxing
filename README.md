@@ -158,7 +158,7 @@ default: bars you turned off, your own key bindings or a custom layout are left 
   same popup. Never for deleting items, logging out or quitting. `/mama dialog off` turns it off.
 - WoW Forever: quest items to pick up in the world sparkle (quest givers too) instead of getting the game's thin
   outline. This turns the outline graphics off on the PC (also the one around your own character); `/mama sparkle off`
-  puts them back as they were, after a game restart.
+  (on each account's window, or once then "Send settings to team") puts them back as they were, after a game restart.
 
 ### Professions and trading mats
 

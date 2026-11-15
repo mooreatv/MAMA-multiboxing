@@ -84,7 +84,8 @@ local SECTIONS = {
         "questSparkle", "Sparkles on quest items",
         "Quest items to pick up in the world sparkle like they used to (quest givers too), instead of the game's " ..
           "thin outline. WoW Forever only. This turns the outline graphics off on this PC, for all its accounts " ..
-          "(no outline on your own character either); turning it off puts them back, after a game restart."
+          "(no outline on your own character either); turning it off, on every account's window, puts them " ..
+          "back after a game restart."
       }
     }
   }, {
