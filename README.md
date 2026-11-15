@@ -284,8 +284,8 @@ shortcuts, the key bindings with their current keys, and every command by topic:
 The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
 for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
 master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
-choices, skip single option dialogs, quest item sparkles, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
-forwarding, status window, slot display at login, compact status window.
+choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
+forwarding, status window, slot display at login, compact status window, quest item sparkles.
 
 ## Reporting a problem
 
