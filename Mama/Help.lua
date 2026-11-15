@@ -43,7 +43,7 @@ local CLICK_NOTES = {
 local TOPICS = {
   {"Team setup", {"s", "token", "team", "complete", "away", "back", "status"}},
   {"Group and lead", {"invite", "autoinvite", "disband", "raid", "merge", "split", "groups", "lead"}},
-  {"Follow, quests and dialogs", {"macro", "quest", "dialog", "gossip", "setup"}},
+  {"Follow, quests and dialogs", {"macro", "quest", "dialog", "gossip", "sparkle", "setup"}},
   {"Loot, trade and merchants", {"loot", "trade", "vendor", "profs"}},
   {"Display", {"ui", "identify", "options", "help", "clicks"}},
   {"This character, problems", {"enable", "disable", "bug", "clearlog", "debug"}}

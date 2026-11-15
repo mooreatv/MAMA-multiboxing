@@ -156,6 +156,9 @@ default: bars you turned off, your own key bindings or a custom layout are left 
 - The lead's dialog choices (gossip options, quests, flight paths) are made on the other windows too, and so are the
   lead's clicks on popups (spirit healer, accept resurrect or summon, release spirit...) on the windows showing the
   same popup. Never for deleting items, logging out or quitting. `/mama dialog off` turns it off.
+- WoW Forever: quest items to pick up in the world sparkle (quest givers too) instead of getting the game's thin
+  outline. This turns the outline graphics off on the PC (also the one around your own character); `/mama sparkle off`
+  puts them back as they were, after a game restart.
 
 ### Professions and trading mats
 
@@ -276,12 +279,12 @@ remembered for that character until `/mama enable` turns it back on.
 `/mama` (or `/mama help`, or the Help button of the options page) opens the help window: the status window's mouse
 shortcuts, the key bindings with their current keys, and every command by topic: `s`, `token`, `team`, `complete`,
 `away`, `back`, `status`, `invite`, `autoinvite`, `disband`, `raid`, `merge`, `split`, `groups`, `lead`, `macro`,
-`quest`, `dialog`, `gossip`, `setup`, `loot`, `trade`, `vendor`, `profs`, `ui`, `identify`, `options`, `enable`,
+`quest`, `dialog`, `gossip`, `sparkle`, `setup`, `loot`, `trade`, `vendor`, `profs`, `ui`, `identify`, `options`, `enable`,
 `disable`, `bug` (copyable log), `clearlog`, `debug`. Its buttons open the options, the key bindings and the log.
 The options panel is in Game Menu > Options > AddOns > Mama-forever (`/mama options`; hover an option
 for what it does): auto accept team invites, auto invite, auto raid and group size, team loot (free for all or
 master), master loot auto distribution, auto accept/share quests, abandon everywhere, mirror the lead's dialog
-choices, skip single option dialogs, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
+choices, skip single option dialogs, quest item sparkles, MAMA macro, auto fill trades, auto repair, follow broken warning, whisper
 forwarding, status window, slot display at login, compact status window.
 
 ## Reporting a problem

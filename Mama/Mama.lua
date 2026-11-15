@@ -28,6 +28,7 @@ MF.defaults = {
   autoQuest = true,
   autoDialog = true,
   autoGossip = true,
+  questSparkle = true,
   autoAccept = true,
   lead = false,
   slot = 0,
