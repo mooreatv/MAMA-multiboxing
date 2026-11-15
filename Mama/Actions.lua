@@ -295,6 +295,8 @@ local function npcGUID()
   if not MF.IsSecret(guid) then return guid end
 end
 local function noteModifier() heldNpc = IsModifierKeyDown() and npcGUID() or nil end
+-- Quest IDs not auto accepted because a modifier was held: skipped on purpose, no missed quest warning (Alerts.lua).
+MF.questSkipped = {}
 MF:On("GOSSIP_SHOW", noteModifier)
 MF:On("QUEST_GREETING", noteModifier)
 
@@ -302,6 +304,7 @@ local function acceptQuest(self)
   local shared = UnitIsPlayer("questnpc")
   if not shared and (IsModifierKeyDown() or (heldNpc and heldNpc == npcGUID())) then
     self:Debug("not auto accepting quest: modifier held")
+    self.questSkipped[GetQuestID()] = true
     return
   end
   if self.db.autoQuest and IsInGroup() and not self:IsAway() then

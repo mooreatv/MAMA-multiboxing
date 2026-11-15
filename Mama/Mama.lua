@@ -45,6 +45,7 @@ MF.defaults = {
   autoTrade = true,
   autoRepair = false,
   followWarn = true,
+  questWarn = false, -- warn the lead when most of the group accepted a quest this window didn't get (Alerts.lua)
   forwardWhispers = true,
   compact = false,
   identifyOnLogin = true,
