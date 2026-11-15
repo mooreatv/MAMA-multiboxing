@@ -295,9 +295,9 @@ forwarding, status window, slot display at login, compact status window, quest i
 `/mama bug` shows Mama's recent messages, debug details included, in a window: select the end of it (click where to
 start, Shift-click at the end; or Ctrl+A for all), Ctrl+C, and paste it in a
 [GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected, or come to our
-[Discord](https://discord.gg/zx77nr2) (usually a faster answer). The log only keeps the last 100 lines: copy it right
-after the problem (ideally from the window it happened on and from slot 1), or `/mama clearlog` and reproduce it
-first.
+<a href="https://discord.gg/zx77nr2"><img src="https://wowopenbox.org/discord.svg" alt="Discord" align="center" height="24pt"></a>
+(usually a faster answer). The log only keeps the last 100 lines: copy it right after the problem (ideally from the
+window it happened on and from slot 1), or `/mama clearlog` and reproduce it first.
 
 ## Not included (compared to the old addons)
 
