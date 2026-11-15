@@ -142,6 +142,30 @@ local function classicLayout(done)
   return true
 end
 
+-- After the layout switch, until a /reload: the reload dialog. A new character's intro cinematic (still playing when
+-- setup runs) closes open windows, like the slot dialog (Comm.lua): shown once it's over. Escape closes it too, so
+-- it comes back with the game menu, whose Logout/Exit are the ones blocked.
+local reloadPending
+
+local function askReload(self)
+  if InCinematic() then
+    self:Debug("setup: reload dialog after the cinematic")
+    return
+  end
+  self:Debug("setup: reload dialog shown")
+  self:ShowReloadDialog()
+end
+
+local function needReload(self)
+  if not reloadPending then
+    reloadPending = true
+    GameMenuFrame:HookScript("OnShow", function() self:Call(askReload, self) end)
+  end
+  askReload(self)
+end
+
+MF:On("CINEMATIC_STOP", function(self) if reloadPending then self:After(1, function() askReload(self) end) end end)
+
 -- force: run (again) whatever the level and whether it was already done; prints even when nothing changed.
 function MF:NewCharSetup(force)
   if InCombatLockdown() then
@@ -161,7 +185,7 @@ function MF:NewCharSetup(force)
   elseif force then
     self:Print("new character setup: nothing to change")
   end
-  if switched then self:ShowReloadDialog() end
+  if switched then needReload(self) end
 end
 
 MF:Listen("LOGIN", function(self)
