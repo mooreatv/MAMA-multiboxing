@@ -487,14 +487,23 @@ local CLOSE = 0.05 -- of a level's xp: candidates this close to the furthest beh
 -- The candidate who still needs this quest item and is furthest behind (so they finish the quest first), and the
 -- reason; among those about level with them, the one furthest along the quest (all its objectives: one member gets
 -- both items of a two item quest, it gets done instead of half done on two). nil: nobody needs it. needs: QuestNeeds.
--- leaderLast option: the lead only gets one once no other candidate needs it (a lead done with an objective first no
--- longer shows the others' progress on it).
+-- leadLast option: the lead only gets one once no other candidate needs it (a lead done with an objective first no
+-- longer shows the others' progress on it); the reason then says the lead was passed over.
 function MF:QuestItemRecipient(cands, needs)
-  if self.db.leaderLast then
+  local held = "" -- added to the reason when the lead needs the item too and waits
+  if self.db.leadLast then
     local lead = self:GetLead() or self.myName -- GetLead is nil on the group leader's own window (no explicit lead)
-    local others = {}
-    for _, c in ipairs(cands) do if c.name ~= lead and needs[c.name] then others[#others + 1] = c end end
-    if #others > 0 then cands = others end
+    local others, waits = {}, false
+    for _, c in ipairs(cands) do
+      if needs[c.name] then
+        if c.name == lead then
+          waits = true
+        else
+          others[#others + 1] = c
+        end
+      end
+    end
+    if waits and #others > 0 then cands, held = others, ", lead last" end
   end
   local last
   for _, c in ipairs(cands) do if needs[c.name] and (not last or behind(self, c, last)) then last = c end end
@@ -510,8 +519,8 @@ function MF:QuestItemRecipient(cands, needs)
     end
   end
   local w = needs[best.name]
-  if close == 1 then return best, ("quest %d/%d, furthest behind"):format(w.have, w.need) end
-  return best, ("quest %d/%d, %d%% done, furthest along"):format(w.have, w.need, math.floor(bestDone * 100))
+  if close == 1 then return best, ("quest %d/%d, furthest behind%s"):format(w.have, w.need, held) end
+  return best, ("quest %d/%d, %d%% done, furthest along%s"):format(w.have, w.need, math.floor(bestDone * 100), held)
 end
 
 -- What the picker shows next to each candidate (needs, known: QuestNeeds for a quest item).
@@ -954,10 +963,10 @@ MF:Listen("LOGIN", function() lastMethod = IsInGroup() and C_PartyInfo.GetLootMe
 
 MF:AddCommand("loot", function(self, rest)
   local sub, arg = rest:lower():match("^(%S*)%s*(.-)$")
-  if sub == "leaderlast" then
-    self:SetOption("leaderLast", self:ParseOnOff(arg, self.db.leaderLast))
-    self:Print("master loot quest items to the lead last is %s%s", self.db.leaderLast and "on" or "off",
-               self.db.leaderLast and ": the lead only gets a quest item once nobody else in reach needs it" or "")
+  if sub == "leadlast" then
+    self:SetOption("leadLast", self:ParseOnOff(arg, self.db.leadLast))
+    self:Print("master loot quest items to the lead last is %s%s", self.db.leadLast and "on" or "off",
+               self.db.leadLast and ": the lead only gets a quest item once nobody else in reach needs it" or "")
     return
   end
   if rest ~= "" then self:SetOption("masterLoot", self:ParseOnOff(rest, self.db.masterLoot)) end
@@ -966,7 +975,7 @@ MF:AddCommand("loot", function(self, rest)
   self:Print(
     "master loot auto distribution is %s (used the next time the full team gets grouped); loot method now: " ..
       "%s, master looter %s, threshold %s; quest items to the lead last: %s", self.db.masterLoot and "on" or "off",
-    tostring(method), self:MasterLooterName() or "-", tostring(quality), self.db.leaderLast and "on" or "off")
+    tostring(method), self:MasterLooterName() or "-", tostring(quality), self.db.leadLast and "on" or "off")
 end, "loot [on|off] - master loot for the full team (off: free for all), the master looter's window gives each " ..
-                "item to who uses it (soulbound ones after a click); loot leaderlast [on|off] - quest items go to " ..
+                "item to who uses it (soulbound ones after a click); loot leadlast [on|off] - quest items go to " ..
                 "the lead only once the others have theirs")
