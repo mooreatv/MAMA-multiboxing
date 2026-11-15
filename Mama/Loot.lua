@@ -487,8 +487,9 @@ local CLOSE = 0.05 -- of a level's xp: candidates this close to the furthest beh
 -- The candidate who still needs this quest item and is furthest behind (so they finish the quest first), and the
 -- reason; among those about level with them, the one furthest along the quest (all its objectives: one member gets
 -- both items of a two item quest, it gets done instead of half done on two). nil: nobody needs it. needs: QuestNeeds.
--- leadLast option: the lead only gets one once no other candidate needs it (a lead done with an objective first no
--- longer shows the others' progress on it); the reason then says the lead was passed over.
+-- leadLast option: the lead only gets one once no other candidate needs it (#126: so the lead isn't done with
+-- an objective before the others; their progress shows in the quest tracker/log tooltips either way); the
+-- reason then says the lead was passed over.
 function MF:QuestItemRecipient(cands, needs)
   local held = "" -- added to the reason when the lead needs the item too and waits
   if self.db.leadLast then

@@ -83,8 +83,8 @@ local SECTIONS = {
       }, {
         "leadLast", "Quest items to the lead last",
         "Master loot auto distribution: the lead only gets a quest item once no other team member in reach still " ..
-          "needs it, so the lead's window keeps showing everyone's progress until the others are done. Also " ..
-          "|cFF99E5FF/mama loot leadlast|r."
+          "needs it, so the lead finishes each objective last (the others' progress also shows when hovering the " ..
+          "quest in the tracker or the quest log). Also |cFF99E5FF/mama loot leadlast|r."
       }
     }
   }, {

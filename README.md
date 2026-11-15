@@ -216,8 +216,8 @@ who uses it:
   with it the one closest to finishing the quest (so a quest gets done instead of half done on two characters), the
   looter on a tie; quest items that drop once per player (heads...): the looter keeps its copy and the lead's window gets one raid
   warning listing who must loot theirs; with "Quest items to the lead last" (Options, or `/mama loot leadlast`,
-  off by default) the lead only gets a quest item once no other member in reach still needs it, so the lead's
-  window keeps showing everyone's progress until the others are done,
+  off by default) the lead only gets a quest item once no other member in reach still needs it, so the lead
+  finishes each objective last (the others' progress also shows when hovering the quest in the tracker or quest log),
 - mats and recipes to the best profession holder (same kinds as trades),
 - armor to the classes that wear that type (leather to the rogue or druid...), weapons to the classes that can use
   them, taking turns; greens nobody uses to the enchanter,
