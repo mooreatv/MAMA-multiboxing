@@ -18,7 +18,7 @@
 -- away member; the lead drops them while it's dead or flying and for a bit after it's back, landed or teleported.
 -- "U;questID;why;title": most of the team accepted a quest we didn't get, why "n" when it can't be shared (to accept
 -- by hand at the NPC), "s" when it can (the share didn't reach us: too far, quest log full, can't take it...).
--- Between all windows: "N;questID;shareable;title" we accepted a quest (shareable "1" or "0"), see questWarn below.
+-- Within the group: "N;questID;shareable;title" we accepted a quest (shareable "1" or "0"), see questWarn below.
 -- "W;i/n;flag;sender;text": a whisper from someone outside the team (in parts, addon messages are limited to 255
 -- bytes), flag "GM" or "". "W;0/0;flag;;" when the whisper was secret (chat lockdown).
 local _, MF = ...
@@ -151,26 +151,24 @@ MF.messageHandlers.F = function(self, sender, rest)
   PlaySound(SOUNDKIT.RAID_WARNING)
 end
 
--- Missed quests: every window tells the team about the quests it accepts ("N"). A window that hears from enough of
--- the team about a quest it doesn't get within TALLY seconds tells the lead ("U"), or warns itself when it's the lead.
+-- Missed quests (questWarn option, off by default): every window with the option on tells its group about the quests
+-- it accepts ("N", group channel only). A window that hears from enough of the group about a quest it doesn't get
+-- within TALLY seconds tells the lead ("U"), or warns itself when it's the lead.
 -- Enough: at least MIN_TOOK windows and more than half the other active (grouped, not away) team members, so a quest
 -- only one window took (class quest...) never warns. Not for a quest we already completed, skipped on purpose
 -- (modifier held at the NPC, MF.questSkipped) or were already warned about this session, nor when we're away or
--- weren't near the lead lately.
+-- weren't near the lead lately. The lead prints every one, with a raid warning and sound at most once per SPAM
+-- seconds per window (a full quest log at a quest hub).
 local TALLY = 10 -- seconds after the first teammate accepts a quest to see whether we got it too
 local MIN_TOOK = 2 -- fewest other windows that must have accepted a quest for a missing one to be worth a warning
 
 local tally = {} -- questID -> {took = {name = true}, n = count, shareable = bool, title = string}
 local questWarned = {} -- questID -> true once we warned about it
+local lastQuestWarn = {} -- window -> GetTime() of its last missed quest raid warning
 
 local function questTitle(id)
-  local title = C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(id)
+  local title = C_QuestLog.GetTitleForQuestID(id)
   return type(title) == "string" and title or ""
-end
-
-local function questCompleted(id)
-  local done = C_QuestLog.IsQuestFlaggedCompleted or IsQuestFlaggedCompleted
-  return done and done(id) or false
 end
 
 -- Other team members grouped with us and not away.
@@ -183,9 +181,11 @@ end
 local function showMissedQuest(self, who, id, why, title)
   local slot = self:SlotOf(who)
   local quest = title ~= "" and title or ("quest " .. id)
-  local hint = why == "n" and "can't be shared: accept it at the NPC" or "the share didn't reach it"
+  local hint = why == "n" and "can't be shared: accept it at the NPC" or "not in reach of the share, or can't take it"
   local msg = ("Slot %s %s didn't get %s (%s)"):format(slot or "?", who, quest, hint)
   self:Print("|cFFFF4040%s|r", msg)
+  if GetTime() - (lastQuestWarn[who] or -SPAM) < SPAM then return end
+  lastQuestWarn[who] = GetTime()
   RaidNotice_AddMessage(RaidWarningFrame, msg, ChatTypeInfo.RAID_WARNING)
   PlaySound(SOUNDKIT.RAID_WARNING)
 end
@@ -196,7 +196,7 @@ local function checkQuest(self, id)
   if not t or questWarned[id] or not (self.db.questWarn and IsInGroup()) or self:IsAway() then return end
   if C_QuestLog.GetLogIndexForQuestID(id) then return end -- we got it
   local quest = t.title ~= "" and t.title or ("quest " .. id)
-  if questCompleted(id) then
+  if C_QuestLog.IsQuestFlaggedCompleted(id) then
     self:Debug("missed %s: we already completed it, no warning", quest)
     return
   end
@@ -227,9 +227,9 @@ end
 MF:OnTeam("QUEST_ACCEPTED", function(self, id)
   if not id then return end
   questWarned[id], self.questSkipped[id] = nil, nil
-  if not IsInGroup() or self:IsAway() then return end
+  if not (self.db.questWarn and IsInGroup()) or self:IsAway() then return end
   local shareable = C_QuestLog.IsPushableQuest(id) and "1" or "0"
-  self:SendTeam(("N;%d;%s;%s"):format(id, shareable, questTitle(id)), true)
+  self:SendGroup(("N;%d;%s;%s"):format(id, shareable, questTitle(id)))
 end)
 
 MF.messageHandlers.N = function(self, sender, rest)
@@ -241,7 +241,7 @@ MF.messageHandlers.N = function(self, sender, rest)
   if not t then
     t = {took = {}, n = 0, shareable = false, title = ""}
     tally[id] = t
-    C_Timer.After(TALLY, function() self:Call(checkQuest, self, id) end)
+    self:After(TALLY, function() checkQuest(self, id) end)
   end
   if not t.took[sender] then
     t.took[sender] = true

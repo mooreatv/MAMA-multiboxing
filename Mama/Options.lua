@@ -106,31 +106,31 @@ local SECTIONS = {
       }
     }
   }, {
-    "Alerts to the lead", {
+    "Alerts to the lead and display", {
       {
         "followWarn", "Warn when follow breaks",
         "Out of combat, when this window stops following and the lead gets away (stuck behind something), or a " ..
           "follow key or macro doesn't start following, warn the lead's window."
       }, {
         "questWarn", "Warn when a quest is missed",
-        "When most of the team accepts a quest but this window doesn't get it (the quest can't be shared, or the " ..
-          "share didn't reach it), warn the lead's window. Not for quests only one window took (class quests...), " ..
-          "quests this window already completed, or ones skipped by holding a modifier at the NPC."
-      }, {
-        "forwardWhispers", "Forward whispers to the lead",
-        "Whispers from players outside the team are shown in the lead's window too."
+        "When most of the group accepts a quest but this window doesn't get it (the quest can't be shared, or " ..
+          "this window wasn't in reach or can't take it), warn the lead's window. Not for quests only one window " ..
+          "took (class quests...), quests this window already completed, or ones skipped by holding a modifier at " ..
+          "the NPC. Off by default; turn it on on every window (Send settings to team)."
       }
-    }
-  }, {
-    "Display", {
-      {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."},
-      {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."}
     }, {
       {
+        "forwardWhispers", "Forward whispers to the lead",
+        "Whispers from players outside the team are shown in the lead's window too."
+      }, {"showStatus", "Show team status window", "Small window listing the team: click to target or invite."}
+    }, {
+      {"identifyOnLogin", "Show slot on login", "Briefly show a big slot number, class and name at login."}, {
         "compact", "Compact status window",
         "Status window as a single line of slot numbers (colored like the rows); hover it for gold and bags. " ..
           "Also Shift+Right click on the window."
-      }, {
+      }
+    }, {
+      {
         "questSparkle", "Sparkles on quest items",
         "Quest items to pick up in the world sparkle like they used to (quest givers too), instead of the game's " ..
           "thin outline. WoW Forever only. This turns the outline graphics off on this PC, for all its accounts " ..
