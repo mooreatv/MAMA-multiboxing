@@ -156,6 +156,9 @@ default: bars you turned off, your own key bindings or a custom layout are left 
 - The lead's dialog choices (gossip options, quests, flight paths) are made on the other windows too, and so are the
   lead's clicks on popups (spirit healer, accept resurrect or summon, release spirit...) on the windows showing the
   same popup. Never for deleting items, logging out or quitting. `/mama dialog off` turns it off.
+- Quest with several rewards to choose from: a reward selected on another window before the lead turns in is kept
+  there (the others get the lead's pick). Or hold Shift, Ctrl or Alt while completing the quest on the lead: the other
+  windows stay on the reward page for you to pick on each.
 - WoW Forever: quest items to pick up in the world sparkle (quest givers too) instead of getting the game's thin
   outline. This turns the outline graphics off on the PC (also the one around your own character); `/mama sparkle off`
   (on each account's window, or once then "Send settings to team") puts them back as they were, after a game restart.
@@ -291,9 +294,10 @@ forwarding, status window, slot display at login, compact status window, quest i
 
 `/mama bug` shows Mama's recent messages, debug details included, in a window: select the end of it (click where to
 start, Shift-click at the end; or Ctrl+A for all), Ctrl+C, and paste it in a
-[GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected. The log only keeps the
-last 100 lines: copy it right after the problem (ideally from the window it happened on and from slot 1), or
-`/mama clearlog` and reproduce it first.
+[GitHub issue](https://github.com/mooreatv/MAMA-multiboxing/issues) with what you expected, or come to our
+<a href="https://discord.gg/zx77nr2"><img src="https://wowopenbox.org/discord.svg" alt="Discord" align="center" height="24pt"></a>
+(usually a faster answer). The log only keeps the last 100 lines: copy it right after the problem (ideally from the
+window it happened on and from slot 1), or `/mama clearlog` and reproduce it first.
 
 ## Not included (compared to the old addons)
 
