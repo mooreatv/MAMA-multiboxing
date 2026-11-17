@@ -297,6 +297,20 @@ function MF:CommandName(name)
   return short and realm == GetNormalizedRealmName() and short or name
 end
 
+-- Bags 0 to 4, then the reagent bag (bag 5, Forever and retail).
+MF.LAST_BAG = NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4
+MF.REAGENT_BAG = Enum.BagIndex and Enum.BagIndex.ReagentBag
+
+-- Whether the item can go in that bag: general bags take anything, a family bag (herbs, mining, leather...: also
+-- reagent bags) what shares a family bit, the generic reagent bag (family 0) any crafting reagent.
+function MF:BagFits(bag, itemID)
+  local _, family = C_Container.GetContainerNumFreeSlots(bag)
+  family = family or 0
+  if family ~= 0 then return bit.band(C_Item.GetItemFamily(itemID) or 0, family) ~= 0 end
+  if bag ~= self.REAGENT_BAG then return true end
+  return select(17, C_Item.GetItemInfo(itemID)) == true
+end
+
 -- Unit tokens of the other group members (not including the player).
 function MF:GroupUnits()
   local others = {}

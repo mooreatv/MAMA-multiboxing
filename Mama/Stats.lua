@@ -183,3 +183,28 @@ function MF:TeamMoney()
   end
   return total
 end
+
+-- Bag layout for bug reports: each bag's size, free slots and family, the trade goods in it (any item in the reagent
+-- bag) with their family and crafting reagent flag, and which test items the reagent bag would take.
+local FIT_TESTS = {2770, 2592, 2318, 118} -- Copper Ore, Wool Cloth, Light Leather, Minor Healing Potion
+MF:AddCommand("bags", function(self)
+  for bag = 0, self.LAST_BAG do
+    local n = C_Container.GetContainerNumSlots(bag) or 0
+    local f, family = C_Container.GetContainerNumFreeSlots(bag)
+    self:Debug("bag %d: %d slots, %d free, family %s", bag, n, f or 0, tostring(family))
+    for s = 1, n do
+      local id = C_Container.GetContainerItemID(bag, s)
+      if id and (bag == self.REAGENT_BAG or select(6, C_Item.GetItemInfoInstant(id)) == 7) then
+        self:Debug("  %d %s: family %s, reagent %s", id, C_Item.GetItemNameByID(id) or "?",
+                   tostring(C_Item.GetItemFamily(id)), tostring(select(17, C_Item.GetItemInfo(id))))
+      end
+    end
+  end
+  if self.REAGENT_BAG then
+    for _, id in ipairs(FIT_TESTS) do
+      self:Debug("reagent bag takes %d %s: %s", id, C_Item.GetItemNameByID(id) or "?",
+                 tostring(self:BagFits(self.REAGENT_BAG, id)))
+    end
+  end
+  self:Print("bags logged, see /mama bug")
+end, "bags - log the bags, their families and what the reagent bag takes (for bug reports)")

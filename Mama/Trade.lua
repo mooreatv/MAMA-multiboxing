@@ -161,7 +161,7 @@ end
 function MF:MatsFor(partner, manual)
   local list = {}
   local gives = {} -- cache: category key -> GivesTo (recipes vary per item, not cached)
-  for bag = 0, NUM_BAG_SLOTS or 4 do
+  for bag = 0, self.LAST_BAG do
     for slot = 1, C_Container.GetContainerNumSlots(bag) do
       local info = C_Container.GetContainerItemInfo(bag, slot)
       if info and not info.isBound and not info.isLocked then

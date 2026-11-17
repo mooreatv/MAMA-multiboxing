@@ -46,7 +46,7 @@ local TOPICS = {
   {"Follow, quests and dialogs", {"macro", "quest", "dialog", "gossip", "sparkle", "setup"}},
   {"Loot, trade and merchants", {"loot", "trade", "vendor", "profs"}},
   {"Display", {"ui", "identify", "options", "help", "clicks"}},
-  {"This character, problems", {"enable", "disable", "bug", "clearlog", "debug"}}
+  {"This character, problems", {"enable", "disable", "bug", "clearlog", "debug", "bags"}}
 }
 
 local WIDTH, PAD, TOP, BAR = 640, 14, 58, 34 -- TOP: title and buttons above the scroll area; BAR: scroll bar room

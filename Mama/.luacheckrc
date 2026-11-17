@@ -134,6 +134,7 @@ read_globals = {
   "GetProfessions",
   "GetTradePlayerItemInfo",
   "NUM_BAG_SLOTS",
+  "NUM_TOTAL_EQUIPPED_BAG_SLOTS",
   "TradeFrame",
   "wipe",
   "ActionButton1",
