@@ -24,6 +24,7 @@ local _, MF = ...
 
 local MASTER = Enum.LootMethod.Masterlooter
 local ARMOR, WEAPON, QUEST_CLASS = 4, 2, 12
+local CONSUMABLE, SCROLL = 0, 4 -- class, subclass
 local BOP, QUEST = 1, 4 -- C_Item.GetItemInfo bindType
 local POOR = 0
 local MAX_CANDIDATES = 40
@@ -307,6 +308,15 @@ function MF:LootRecipient(it, cands)
   end
   if #team == 0 then return end
   local function named(name) for _, m in ipairs(team) do if m.name == name then return m end end end
+  -- Forever's undeciphered scrolls (consumable, scroll, mage only, Comprehension skill: "Scroll: CWAL"; the classic
+  -- Scroll of Stamina... share the subclass): to the first mage by slot with room, else the usual way
+  if it.class == CONSUMABLE and it.sub == SCROLL and type(it.name) == "string" and it.name:find("^Scroll: ") then
+    local mages = {}
+    for _, m in ipairs(team) do if m.class == "MAGE" then mages[#mages + 1] = m end end
+    table.sort(mages, bySlot)
+    for _, m in ipairs(mages) do if hasRoom(self, it, m) then return m, "mage, to decipher" end end
+    if mages[1] then self:Debug("loot: no mage with room for %s", it.link) end
+  end
   -- mats and recipes: the best profession holder (as for trades; BoE greens are below)
   for _, c in ipairs(self.tradeCategories) do
     local key, label, default, match, to = c[1], c[2], c[3], c[4], c[5]
