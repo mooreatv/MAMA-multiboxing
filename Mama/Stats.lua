@@ -184,8 +184,9 @@ function MF:TeamMoney()
   return total
 end
 
--- Bag layout, asked for on bag/loot room/trade fill issues only (many log lines, not part of /mama bug): each bag's size, free slots and family, the trade goods in it (any item in the reagent
--- bag) with their family and crafting reagent flag, and which test items the reagent bag would take.
+-- Bag layout, asked for on bag/loot room/trade fill issues only (many log lines, not part of /mama bug): each bag's
+-- size, free slots and family, the trade goods in it (any item in the reagent bag) with their family and crafting
+-- reagent flag, and which test items the reagent bag would take.
 local FIT_TESTS = {2770, 2592, 2318, 118} -- Copper Ore, Wool Cloth, Light Leather, Minor Healing Potion
 MF:AddCommand("bags", function(self)
   for bag = 0, self.LAST_BAG do
@@ -207,5 +208,4 @@ MF:AddCommand("bags", function(self)
     end
   end
   self:Print("bags logged, see /mama bug")
-end,
-              "bags - log the bags, their families and what the reagent bag takes (bag, loot room or trade fill issues: fills the log)")
+end, "bags - log the bags and what the reagent bag takes (bag, loot room or trade fill issues: fills the log)")
