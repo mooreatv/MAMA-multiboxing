@@ -197,12 +197,12 @@ end
 -- item ID remembers who got it last (db.lootKeepers) and how many this session (the room left in that stack).
 local stacked = {} -- item ID -> {name, count}: given to the current keeper this session
 
--- Our bags: room left in the stacks of this item, free general purpose slots.
+-- Our bags: room left in the stacks of this item, free slots it can go in (general bags, a family or reagent bag
+-- that takes it).
 local function ownRoom(it)
   local room, free, maxStack = 0, 0, it.maxStack or 1
-  for bag = 0, NUM_BAG_SLOTS or 4 do
-    local f, family = C_Container.GetContainerNumFreeSlots(bag)
-    if (family or 0) == 0 then free = free + (f or 0) end
+  for bag = 0, MF.LAST_BAG do
+    if MF:BagFits(bag, it.id) then free = free + (C_Container.GetContainerNumFreeSlots(bag) or 0) end
     for s = 1, C_Container.GetContainerNumSlots(bag) or 0 do
       local info = C_Container.GetContainerItemInfo(bag, s)
       if info and info.itemID == it.id then room = room + math.max(maxStack - info.stackCount, 0) end
@@ -252,7 +252,7 @@ local gone, goneTimer = {}, false
 
 local function bagItems()
   local counts = {}
-  for bag = 0, NUM_BAG_SLOTS or 4 do
+  for bag = 0, MF.LAST_BAG do
     for s = 1, C_Container.GetContainerNumSlots(bag) or 0 do
       local info = C_Container.GetContainerItemInfo(bag, s)
       if info and info.itemID then counts[info.itemID] = (counts[info.itemID] or 0) + info.stackCount end
