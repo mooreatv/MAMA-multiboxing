@@ -613,7 +613,7 @@ local function give(self, it, m, why, key, others)
   GiveMasterLoot(it.slot, m.index)
   C_Timer.After(GIVE_CHECK, function() self:Call(checkGiven, self, it, m, 1) end)
   if others and #others > 0 then reminders[it.name] = others end
-  if (it.maxStack or 1) > 1 and not it.quest then -- the next ones of this item go to the same stack
+  if (it.maxStack or 1) > 1 and (not it.quest or it.noQuest) then -- the next ones of this item go to the same stack
     self.db.lootKeepers = self.db.lootKeepers or {}
     self.db.lootKeepers[it.id] = m.name
     local s = stacked[it.id]
@@ -689,8 +689,19 @@ function MF:DistributeLoot(tries)
           w.have = w.have + it.count
           local others = perPlayer(it) and othersNeeding(self, m, needs) or nil
           enqueue({it = it, m = m, why = why, others = others}, stacks)
-        elseif not known then
-          picks[#picks + 1] = it -- not one of our quests: who needs it is unknown, ask
+        elseif not known and perPlayer(it) then -- our copy only: a give lands in our bags anyway, ask
+          self:Debug("quest item %s: no quest in our log asks for it, one per player: picker", it.name)
+          picks[#picks + 1] = it
+        elseif not known then -- turned in elsewhere (Gnomeregan's Grime-Encrusted Object...): the usual rules
+          m, why = self:LootRecipient(it, cands)
+          self:Debug("quest item %s: no quest in our log asks for it, usual rules: %s", it.name,
+                     m and (m.name .. ", " .. why) or "nobody")
+          if m then
+            it.noQuest = true -- stacks on the same member as any other item
+            enqueue({it = it, m = m, why = "no quest asks for it, " .. why}, why:find("stacks") ~= nil)
+          else
+            picks[#picks + 1] = it
+          end
         else
           self:Print("loot: nobody needs %s for a quest, left in the loot", it.link)
         end
